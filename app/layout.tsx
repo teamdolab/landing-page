@@ -1,0 +1,43 @@
+import type { Metadata } from "next";
+import { Orbitron, Share_Tech_Mono, IBM_Plex_Sans_KR } from "next/font/google";
+import "./globals.css";
+
+const orbitron = Orbitron({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-orbitron",
+});
+
+const shareTechMono = Share_Tech_Mono({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-share-tech-mono",
+});
+
+const ibmPlexSansKR = IBM_Plex_Sans_KR({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-body",
+});
+
+export const metadata: Metadata = {
+  title: "DO:LAB — Presidential Poker",
+  description: "당신의 두뇌 ON. DO:NEON PROJECT 참가자 모집",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html
+      lang="ko"
+      className={`${orbitron.variable} ${shareTechMono.variable} ${ibmPlexSansKR.variable}`}
+    >
+      <body className={`${ibmPlexSansKR.className} antialiased`}>
+        {children}
+      </body>
+    </html>
+  );
+}
