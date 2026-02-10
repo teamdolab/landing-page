@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase, type User } from '@/lib/supabase';
+import { supabase, type UserInfo } from '@/lib/supabase';
 
 type Screen = 'intro' | 'pin' | 'nickname' | 'password' | 'nfc' | 'success';
 
 export default function LoginPage() {
   const [screen, setScreen] = useState<Screen>('intro');
   const [pin, setPin] = useState('');
-  const [users, setUsers] = useState<User[]>([]);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<UserInfo[]>([]);
+  const [selectedUser, setSelectedUser] = useState<UserInfo | null>(null);
   const [selectedNickname, setSelectedNickname] = useState('');
   const [password, setPassword] = useState('');
   const [pinError, setPinError] = useState(false);
@@ -42,9 +42,9 @@ export default function LoginPage() {
     setErrorMessage('');
     try {
       const { data, error } = await supabase
-        .from('users')
+        .from('user_info')
         .select('*')
-        .eq('phone_pin', pin);
+        .eq('pin', pin);
 
       if (error) {
         console.error('Supabase error:', error);
@@ -54,10 +54,10 @@ export default function LoginPage() {
       }
       if (!data || data.length === 0) {
         setPinError(true);
-        setErrorMessage('일치하는 회원이 없습니다. (PIN 확인 또는 테스트 데이터 추가)');
+        setErrorMessage('일치하는 회원이 없습니다. (PIN 확인 또는 가입 필요)');
         return;
       }
-      setUsers(data as User[]);
+      setUsers(data as UserInfo[]);
       setSelectedNickname('');
       setSelectedUser(null);
       showScreen('nickname');
@@ -92,7 +92,7 @@ export default function LoginPage() {
       return;
     }
     // TODO: 실제 배포 시 bcrypt로 해시 비교. 테스트용 평문 비교
-    if (selectedUser.password_hash === password) {
+    if (selectedUser.password === password) {
       setPasswordError(false);
       showScreen('nfc');
     } else {

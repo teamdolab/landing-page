@@ -1,8 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Power } from 'lucide-react';
+import { 
+  supabase, 
+  checkUserExists, 
+  getSessionAvailability, 
+  getUserCredits,
+  type UserInfo,
+  type SessionAvailability 
+} from '@/lib/supabase';
 
 const PRIVACY_TERMS = `개인정보 수집 및 이용 동의 (필수)
 
@@ -57,10 +65,37 @@ export default function Home() {
   const [showFormStep2, setShowFormStep2] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
   const [showComplete, setShowComplete] = useState(false);
-  const [creditUsed, setCreditUsed] = useState('');
-  const [referrer, setReferrer] = useState('');
+  
+  // 실시간 예약 현황 모달
+  const [showAvailability, setShowAvailability] = useState(false);
+  const [sessions, setSessions] = useState<SessionAvailability[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+  
+  // 폼 데이터
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [nickname, setNickname] = useState('');
   const [password, setPassword] = useState('');
+  const [privacyConsent, setPrivacyConsent] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
+  const [referrer, setReferrer] = useState('');
+  
+  // 유저 정보
+  const [isExistingUser, setIsExistingUser] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userCredits, setUserCredits] = useState(0);
+  
+  // 참가 신청
+  const [selectedSession, setSelectedSession] = useState('');
+  const [creditUsed, setCreditUsed] = useState('');
+  const [refundConsent, setRefundConsent] = useState(false);
+  
+  // 약관 모달
   const [termsModal, setTermsModal] = useState<'privacy' | 'marketing' | null>(null);
+  
+  // 로딩 및 에러
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handlePowerClick = () => {
     if (isPowerOn) return;
@@ -68,6 +103,217 @@ export default function Home() {
     setTimeout(() => setSweepDone(true), 1200);
     // 텍스트 전류 효과 끝난 뒤 2초 후 신청 페이지로 전환
     setTimeout(() => setShowSignUp(true), 3200);
+  };
+
+  // 실시간 예약 현황 로드
+  const loadAvailability = async () => {
+    setLoadingSessions(true);
+    try {
+      const data = await getSessionAvailability();
+      setSessions(data);
+    } catch (err) {
+      console.error('세션 조회 실패:', err);
+      setError('세션 정보를 불러오는데 실패했습니다.');
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  // Step 1: 성명 + 전화번호로 유저 확인
+  const handleStep1Continue = async () => {
+    if (!name.trim() || !phone.trim()) {
+      setError('성명과 전화번호를 입력해주세요.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    
+    try {
+      const result = await checkUserExists(name, phone);
+      
+      if (result.user_exists) {
+        // 기존 유저
+        setIsExistingUser(true);
+        setUserId(result.user_id);
+        setNickname(result.nickname || '');
+        setUserCredits(result.credits);
+        // 바로 참가 신청 페이지로
+        await loadSessionsForSchedule();
+        setShowSchedule(true);
+      } else {
+        // 신규 유저 - Step 2로 이동
+        setIsExistingUser(false);
+        setShowFormStep2(true);
+      }
+    } catch (err) {
+      console.error('유저 확인 실패:', err);
+      setError('유저 정보를 확인하는데 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 2: 신규 유저 가입
+  const handleStep2Continue = async () => {
+    if (!nickname.trim() || !password || password.length !== 4) {
+      setError('닉네임과 4자리 패스워드를 입력해주세요.');
+      return;
+    }
+
+    if (!privacyConsent) {
+      setError('개인정보 수집 및 이용에 동의해주세요.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      // 신규 유저 등록
+      const { data, error: insertError } = await supabase
+        .from('user_info')
+        .insert({
+          name,
+          phone,
+          nickname,
+          password, // TODO: 실제 배포 시 해시 처리
+          privacy_consent: privacyConsent,
+          privacy_consent_at: new Date().toISOString(),
+          marketing_consent: marketingConsent,
+          marketing_consent_at: marketingConsent ? new Date().toISOString() : null,
+          referrer_phone: referrer || null,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('가입 실패:', insertError);
+        setError('가입에 실패했습니다: ' + insertError.message);
+        return;
+      }
+
+      if (data) {
+        setUserId(data.id);
+        // 크레딧은 DB 트리거에서 자동 충전됨
+        // 다시 조회해서 크레딧 확인
+        const { data: userData } = await supabase
+          .from('user_info')
+          .select('credits')
+          .eq('id', data.id)
+          .single();
+        
+        if (userData) {
+          setUserCredits(userData.credits);
+        }
+      }
+
+      // 참가 신청 페이지로 이동
+      await loadSessionsForSchedule();
+      setShowSchedule(true);
+    } catch (err) {
+      console.error('가입 중 에러:', err);
+      setError('가입 처리 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 참가 신청용 세션 로드
+  const loadSessionsForSchedule = async () => {
+    setLoadingSessions(true);
+    try {
+      const data = await getSessionAvailability();
+      setSessions(data.filter(s => s.status === '모집중')); // 모집 중인 세션만
+    } catch (err) {
+      console.error('세션 조회 실패:', err);
+      setError('세션 정보를 불러오는데 실패했습니다.');
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  // 참가 신청 완료
+  const handleApplyComplete = async () => {
+    if (!selectedSession) {
+      setError('참가 일정을 선택해주세요.');
+      return;
+    }
+
+    if (!refundConsent) {
+      setError('환불 규정에 동의해주세요.');
+      return;
+    }
+
+    if (!userId) {
+      setError('유저 정보가 없습니다.');
+      return;
+    }
+
+    const usedCreditsNum = Number(creditUsed) || 0;
+    if (usedCreditsNum > userCredits) {
+      setError('사용 가능한 크레딧을 초과했습니다.');
+      return;
+    }
+
+    const selectedSessionData = sessions.find(s => s.session_id === selectedSession);
+    if (!selectedSessionData) {
+      setError('선택한 세션 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    const finalPrice = Math.max(0, selectedSessionData.base_price - usedCreditsNum);
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const { error: applyError } = await supabase
+        .from('apply')
+        .insert({
+          user_id: userId,
+          session_id: selectedSession,
+          used_credits: usedCreditsNum,
+          final_price: finalPrice,
+          refund_policy_consent: refundConsent,
+          refund_policy_consent_at: new Date().toISOString(),
+          status: '확정',
+        });
+
+      if (applyError) {
+        console.error('신청 실패:', applyError);
+        setError('신청에 실패했습니다: ' + applyError.message);
+        return;
+      }
+
+      // 신청 완료 화면으로
+      setShowComplete(true);
+    } catch (err) {
+      console.error('신청 중 에러:', err);
+      setError('신청 처리 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 크레딧 조회
+  const handleCheckCredits = async () => {
+    if (!phone) {
+      setError('전화번호를 먼저 입력해주세요.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const credits = await getUserCredits(phone);
+      setUserCredits(credits);
+      alert(`현재 잔여 크레딧: ${credits.toLocaleString()}원`);
+    } catch (err) {
+      console.error('크레딧 조회 실패:', err);
+      setError('크레딧 조회에 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -110,6 +356,92 @@ export default function Home() {
                   className="w-full font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
                 >
                   확인
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 실시간 예약 현황 모달 */}
+      <AnimatePresence>
+        {showAvailability && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60"
+            onClick={() => setShowAvailability(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-phantom-white border-2 border-neon-orange clip-cut-corner max-h-[85vh] w-full max-w-2xl flex flex-col"
+            >
+              <div className="p-4 border-b-2 border-neon-orange/30 flex-shrink-0">
+                <h3 className="font-orbitron text-lg font-bold text-neon-orange uppercase tracking-widest">
+                  실시간 예약 현황
+                </h3>
+              </div>
+              <div className="p-4 overflow-y-auto flex-1">
+                {loadingSessions ? (
+                  <p className="text-center text-text-sub font-share-tech-mono">로딩 중...</p>
+                ) : sessions.length === 0 ? (
+                  <p className="text-center text-text-sub font-share-tech-mono">예약 가능한 세션이 없습니다.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {sessions.map((session) => (
+                      <div
+                        key={session.session_id}
+                        className="border-2 border-neon-orange/30 clip-cut-corner p-4 bg-white/50"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="font-orbitron text-base font-bold text-text-main">
+                              {session.game_name}
+                            </h4>
+                            <p className="font-share-tech-mono text-sm text-text-sub">
+                              {session.session_id}
+                            </p>
+                          </div>
+                          <span
+                            className={`font-orbitron text-xs font-bold px-2 py-1 border clip-cut-corner ${
+                              session.status === '모집중'
+                                ? 'bg-neon-orange text-white border-neon-orange'
+                                : 'bg-gray-400 text-white border-gray-400'
+                            }`}
+                          >
+                            {session.status}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <p className="font-share-tech-mono text-text-sub">
+                            일시: {session.session_date} {session.session_time}
+                          </p>
+                          <p className="font-share-tech-mono text-text-sub">
+                            참가비: {session.base_price.toLocaleString()}원
+                          </p>
+                          <p className="font-share-tech-mono text-text-sub">
+                            현재 인원: {session.current_capacity} / {session.max_capacity}
+                          </p>
+                          <p className="font-share-tech-mono text-text-sub">
+                            잔여 석: {session.available_slots}석
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30">
+                <button
+                  type="button"
+                  onClick={() => setShowAvailability(false)}
+                  className="w-full font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
+                >
+                  닫기
                 </button>
               </div>
             </motion.div>
@@ -333,13 +665,27 @@ export default function Home() {
               </span>
             </div>
             {/* 게임 참가하기 버튼 — 클릭 시 참가자 정보 폼 화면으로 */}
-            <button
-              type="button"
-              onClick={() => setShowForm(true)}
-              className="inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
-            >
-              게임 참가하기
-            </button>
+            <div className="flex flex-col gap-4">
+              <button
+                type="button"
+                onClick={() => setShowForm(true)}
+                className="inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
+              >
+                게임 참가하기
+              </button>
+              
+              {/* 실시간 예약 확인 버튼 */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAvailability(true);
+                  loadAvailability();
+                }}
+                className="inline-flex font-orbitron text-base md:text-lg font-bold uppercase tracking-[0.2em] py-2.5 px-5 border-2 border-neon-orange bg-transparent text-neon-orange clip-cut-corner transition-all duration-300 hover:bg-neon-orange hover:text-text-light focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
+              >
+                실시간 예약 확인
+              </button>
+            </div>
           </motion.section>
         )}
 
@@ -373,6 +719,8 @@ export default function Home() {
                   id="name"
                   type="text"
                   placeholder="000"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   className="w-full font-share-tech-mono text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
                 />
               </div>
@@ -385,18 +733,25 @@ export default function Home() {
                 <input
                   id="phone"
                   type="tel"
-                  placeholder="000-0000-0000"
+                  placeholder="010-0000-0000"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   className="w-full font-share-tech-mono text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
                 />
               </div>
+              
+              {error && (
+                <p className="font-share-tech-mono text-sm text-red-500">{error}</p>
+              )}
             </div>
 
             <button
               type="button"
-              onClick={() => setShowFormStep2(true)}
-              className="mt-10 inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
+              onClick={handleStep1Continue}
+              disabled={loading}
+              className="mt-10 inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              계속
+              {loading ? '확인 중...' : '계속'}
             </button>
           </motion.section>
         )}
@@ -431,6 +786,8 @@ export default function Home() {
                   id="nickname"
                   type="text"
                   placeholder="000"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
                   className="w-full font-share-tech-mono text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
                 />
               </div>
@@ -455,7 +812,12 @@ export default function Home() {
               {/* 개인정보 수집 및 이용 동의(필수) */}
               <div className="flex flex-wrap items-center gap-3">
                 <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 accent-neon-orange border-2 border-neon-orange rounded" />
+                  <input 
+                    type="checkbox" 
+                    checked={privacyConsent}
+                    onChange={(e) => setPrivacyConsent(e.target.checked)}
+                    className="w-4 h-4 accent-neon-orange border-2 border-neon-orange rounded" 
+                  />
                   <span className="font-share-tech-mono text-sm text-text-main">
                     개인정보 수집 및 이용 동의(필수)
                   </span>
@@ -472,7 +834,12 @@ export default function Home() {
               {/* 마케팅 정보 동의(선택) */}
               <div className="flex flex-wrap items-center gap-3">
                 <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 accent-neon-orange border-2 border-neon-orange rounded" />
+                  <input 
+                    type="checkbox" 
+                    checked={marketingConsent}
+                    onChange={(e) => setMarketingConsent(e.target.checked)}
+                    className="w-4 h-4 accent-neon-orange border-2 border-neon-orange rounded" 
+                  />
                   <span className="font-share-tech-mono text-sm text-text-main">
                     마케팅 정보 동의(선택)
                   </span>
@@ -511,14 +878,19 @@ export default function Home() {
                   className="w-full font-share-tech-mono text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
                 />
               </div>
+              
+              {error && (
+                <p className="font-share-tech-mono text-sm text-red-500">{error}</p>
+              )}
             </div>
 
             <button
               type="button"
-              onClick={() => setShowSchedule(true)}
-              className="mt-10 inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
+              onClick={handleStep2Continue}
+              disabled={loading}
+              className="mt-10 inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              가입 및 신청하기
+              {loading ? '가입 중...' : '가입 및 신청하기'}
             </button>
           </motion.section>
         )}
@@ -549,15 +921,24 @@ export default function Home() {
                 <label htmlFor="schedule" className="block font-share-tech-mono text-xs text-text-sub uppercase tracking-widest mb-2">
                   참가 일정
                 </label>
-                <select
-                  id="schedule"
-                  className="w-full font-share-tech-mono text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0 appearance-none bg-no-repeat bg-right pr-10"
-                  style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%23FF4F00\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E")' }}
-                >
-                  <option value="2026-02-07">2026-02-07</option>
-                  <option value="2026-02-14">2026-02-14</option>
-                  <option value="2026-02-21">2026-02-21</option>
-                </select>
+                {loadingSessions ? (
+                  <p className="font-share-tech-mono text-sm text-text-sub">로딩 중...</p>
+                ) : (
+                  <select
+                    id="schedule"
+                    value={selectedSession}
+                    onChange={(e) => setSelectedSession(e.target.value)}
+                    className="w-full font-share-tech-mono text-text-main bg-white border-2 border-neon-orange clip-cut-corner py-3 px-4 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0 appearance-none bg-no-repeat bg-right pr-10"
+                    style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%23FF4F00\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E")' }}
+                  >
+                    <option value="">-- 일정 선택 --</option>
+                    {sessions.map((session) => (
+                      <option key={session.session_id} value={session.session_id}>
+                        {session.game_name} | {session.session_date} {session.session_time} | 잔여: {session.available_slots}석
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {/* 크레딧 사용 + 잔여 크레딧 확인하기 */}
@@ -565,39 +946,61 @@ export default function Home() {
                 <label htmlFor="credit" className="block font-share-tech-mono text-xs text-text-sub uppercase tracking-widest mb-2">
                   크레딧 사용
                 </label>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 mb-2">
                   <input
                     id="credit"
                     type="text"
                     placeholder="0000"
                     value={creditUsed}
                     onChange={(e) => setCreditUsed(e.target.value.replace(/\D/g, ''))}
-                    className="w-24 font-share-tech-mono text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
+                    className="w-32 font-share-tech-mono text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
                   />
                   <span className="text-text-sub">/</span>
                   <button
                     type="button"
-                    className="font-share-tech-mono text-xs text-neon-orange border-2 border-neon-orange clip-cut-corner py-2.5 px-4 hover:bg-neon-orange hover:text-text-light transition-colors"
+                    onClick={handleCheckCredits}
+                    disabled={loading}
+                    className="font-share-tech-mono text-xs text-neon-orange border-2 border-neon-orange clip-cut-corner py-2.5 px-4 hover:bg-neon-orange hover:text-text-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     잔여 크레딧 확인하기
                   </button>
                 </div>
+                <p className="font-share-tech-mono text-sm text-text-sub">
+                  현재 크레딧: {userCredits.toLocaleString()}원
+                </p>
               </div>
 
-              {/* 참가비 — 25000에서 크레딧 사용분 뺀 금액 */}
+              {/* 참가비 — 세션 금액에서 크레딧 사용분 뺀 금액 */}
               <div>
                 <p className="font-share-tech-mono text-xs text-text-sub uppercase tracking-widest mb-2">
                   참가비
                 </p>
-                <p className="font-orbitron text-lg text-text-main">
-                  25000 - {creditUsed || '0'}(크레딧) = {Math.max(0, 25000 - Number(creditUsed) || 0).toLocaleString()}원
-                </p>
+                {selectedSession ? (
+                  (() => {
+                    const session = sessions.find(s => s.session_id === selectedSession);
+                    const basePrice = session?.base_price || 25000;
+                    const credits = Number(creditUsed) || 0;
+                    const finalPrice = Math.max(0, basePrice - credits);
+                    return (
+                      <p className="font-orbitron text-lg text-text-main">
+                        {basePrice.toLocaleString()} - {credits.toLocaleString()}(크레딧) = {finalPrice.toLocaleString()}원
+                      </p>
+                    );
+                  })()
+                ) : (
+                  <p className="font-orbitron text-lg text-text-sub">일정을 먼저 선택해주세요</p>
+                )}
               </div>
 
               {/* 환불 규정 동의(필수) */}
               <div className="flex flex-wrap items-center gap-3">
                 <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 accent-neon-orange border-2 border-neon-orange rounded" />
+                  <input 
+                    type="checkbox"
+                    checked={refundConsent}
+                    onChange={(e) => setRefundConsent(e.target.checked)}
+                    className="w-4 h-4 accent-neon-orange border-2 border-neon-orange rounded" 
+                  />
                   <span className="font-share-tech-mono text-sm text-text-main">
                     환불 규정 동의(필수)
                   </span>
@@ -613,24 +1016,28 @@ export default function Home() {
               {/* 설명 칸 — 입금 조건, 입금 등 3줄 배치 */}
               <div className="bg-deep-dark/5 border-2 border-neon-orange clip-cut-corner p-4 md:p-5">
                 <p className="font-share-tech-mono text-xs text-text-sub uppercase tracking-widest mb-2">
-                  설명 칸
+                  입금 안내
                 </p>
                 <p className="text-text-main text-sm leading-relaxed">
-                  (입금 조건, 입금 안내 등 3줄 정도 들어갈 예정입니다.)
-                  <br />
-                  <br />
-                  <br />
+                  참가비는 아래 계좌로 입금해주세요.<br />
+                  은행: 카카오뱅크 | 예금주: DO:LAB<br />
+                  입금 확인 후 참가가 최종 확정됩니다.
                 </p>
               </div>
+              
+              {error && (
+                <p className="font-share-tech-mono text-sm text-red-500">{error}</p>
+              )}
             </div>
 
             {/* 참가 신청 완료 — 클릭 시 완료 화면으로 */}
             <button
               type="button"
-              onClick={() => setShowComplete(true)}
-              className="mt-10 inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
+              onClick={handleApplyComplete}
+              disabled={loading}
+              className="mt-10 inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              참가 신청 완료
+              {loading ? '신청 중...' : '참가 신청 완료'}
             </button>
           </motion.section>
         )}
