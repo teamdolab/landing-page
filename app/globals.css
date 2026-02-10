@@ -85,3 +85,20 @@ body {
 .sweep-line {
   animation: sweep-line 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
+
+/* Login kiosk - shake, pulse-wave */
+@keyframes login-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+.animate-login-shake {
+  animation: login-shake 0.4s ease-in-out;
+}
+@keyframes login-pulse-wave {
+  0% { transform: scale(0.8); opacity: 0.8; border-width: 2px; }
+  100% { transform: scale(3); opacity: 0; border-width: 0; }
+}
+.animate-login-pulse-wave {
+  animation: login-pulse-wave 2s infinite;
+}

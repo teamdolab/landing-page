@@ -4,13 +4,63 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Power } from 'lucide-react';
 
+const PRIVACY_TERMS = `개인정보 수집 및 이용 동의 (필수)
+
+제1조 (수집 및 이용 목적)
+DO:LAB(이하 '회사')은 멤버십 가입 및 행사 진행을 위해 아래와 같이 개인정보를 수집·이용합니다.
+
+• 멤버십 관리: 본인 확인, 멤버십 서비스(크레딧 등) 제공, 불량 회원의 부정이용 방지
+• 행사 운영: 참가 신청 접수, 예약 확정 및 취소 안내, 입장 확인
+• 고객 지원: 문의 사항 처리 및 공지사항 전달
+
+제2조 (수집하는 항목)
+필수항목: 성명, 휴대전화번호, (입금 확인 시) 은행명/입금자명
+
+제3조 (보유 및 이용 기간)
+회원 탈퇴 시까지 (단, 관계 법령에 의하여 보존할 필요가 있는 경우 해당 기간 동안 보관합니다.)
+• 소비자의 불만 또는 분쟁처리에 관한 기록: 3년 (전자상거래법)
+• 대금결제 및 재화 등의 공급에 관한 기록: 5년 (전자상거래법)
+
+제4조 (동의 거부 권리 및 불이익)
+귀하는 개인정보 수집 및 이용에 거부할 권리가 있습니다. 단, 동의를 거부할 경우 멤버십 가입 및 행사 참가 신청이 불가능합니다.
+
+[유의사항 : 크레딧 및 환불 정책]
+• 크레딧 성격: 적립된 '크레딧'은 DO:LAB 서비스 내에서만 사용 가능한 비현금성 포인트이며, 현금으로 환급되지 않습니다.
+• 소멸: 회원 탈퇴 시 보유 크레딧은 즉시 소멸되며 복구되지 않습니다.
+• 회수: 부정한 방법(중복 가입, 허위 추천 등)으로 획득한 크레딧은 사전 통보 없이 회수될 수 있습니다.
+
+회원 탈퇴 및 마케팅 동의 거부는 두랩 카카오톡 플러스 친구를 통해 하실 수 있습니다.`;
+
+const MARKETING_TERMS = `마케팅 정보 수신 및 혜택 알림 동의 (선택)
+
+제1조 (수집 및 이용 목적)
+• DO:LAB의 신규 이벤트, 파티, 프로모션 안내 (SMS/알림톡)
+• 멤버십 혜택(크레딧, 쿠폰) 지급 및 관리
+• 맞춤형 광고 전송 및 이벤트 참여 기회 제공
+
+제2조 (수집 항목)
+성명, 휴대전화번호, 마케팅 수신 동의 여부
+
+제3조 (보유 및 이용 기간)
+회원 탈퇴 또는 마케팅 동의 철회 시까지
+
+제4조 (동의 거부 권리 및 불이익)
+귀하는 마케팅 정보 수신에 대한 동의를 거부할 수 있습니다. 동의하지 않더라도 기본 서비스(행사 예약) 이용에는 제한이 없으나, 마케팅 수신 동의자에게 제공되는 혜택(크레딧 적립, 할인 쿠폰 등)은 제공되지 않습니다.
+
+회원 탈퇴 및 마케팅 동의 거부는 두랩 카카오톡 플러스 친구를 통해 하실 수 있습니다.`;
+
 export default function Home() {
   const [isPowerOn, setIsPowerOn] = useState(false);
   const [sweepDone, setSweepDone] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showFormStep2, setShowFormStep2] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showComplete, setShowComplete] = useState(false);
   const [creditUsed, setCreditUsed] = useState('');
+  const [referrer, setReferrer] = useState('');
+  const [password, setPassword] = useState('');
+  const [termsModal, setTermsModal] = useState<'privacy' | 'marketing' | null>(null);
 
   const handlePowerClick = () => {
     if (isPowerOn) return;
@@ -27,6 +77,45 @@ export default function Home() {
       <div className="absolute top-6 right-6 w-12 h-12 border-r-2 border-t-2 border-neon-orange pointer-events-none" />
       <div className="absolute bottom-6 left-6 w-12 h-12 border-l-2 border-b-2 border-neon-orange pointer-events-none" />
       <div className="absolute bottom-6 right-6 w-12 h-12 border-r-2 border-b-2 border-neon-orange pointer-events-none" />
+
+      {/* 약관 모달 */}
+      <AnimatePresence>
+        {termsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60"
+            onClick={() => setTermsModal(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-phantom-white border-2 border-neon-orange clip-cut-corner max-h-[85vh] w-full max-w-lg flex flex-col"
+            >
+              <div className="p-4 border-b-2 border-neon-orange/30 flex-shrink-0">
+                <h3 className="font-orbitron text-sm font-bold text-neon-orange uppercase tracking-widest">
+                  {termsModal === 'privacy' ? '개인정보 수집 및 이용 동의' : '마케팅 정보 수신 동의'}
+                </h3>
+              </div>
+              <div className="p-4 overflow-y-auto flex-1 text-text-main text-sm leading-relaxed whitespace-pre-line">
+                {termsModal === 'privacy' ? PRIVACY_TERMS : MARKETING_TERMS}
+              </div>
+              <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30">
+                <button
+                  type="button"
+                  onClick={() => setTermsModal(null)}
+                  className="w-full font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
+                >
+                  확인
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ========== 인트로 화면 (전원 ~ 텍스트 켜짐) ========== */}
       {!showSignUp && (
@@ -232,7 +321,7 @@ export default function Home() {
             </div>
 
             {/* 금액 — 35,000 → 25,000 (28% 할인) */}
-            <div className="flex flex-wrap items-baseline gap-3 mb-8">
+            <div className="flex flex-wrap items-baseline gap-3 mb-4">
               <span className="font-share-tech-mono text-text-sub text-lg line-through">
                 35,000
               </span>
@@ -243,7 +332,6 @@ export default function Home() {
                 28% 할인
               </span>
             </div>
-
             {/* 게임 참가하기 버튼 — 클릭 시 참가자 정보 폼 화면으로 */}
             <button
               type="button"
@@ -255,10 +343,10 @@ export default function Home() {
           </motion.section>
         )}
 
-        {/* ========== 참가자 정보 & 약관 동의 폼 ========== */}
-        {showSignUp && showForm && !showSchedule && (
+        {/* ========== 참가자 정보 폼 Step 1 — 성명, 전화번호 ========== */}
+        {showSignUp && showForm && !showFormStep2 && (
           <motion.section
-            key="form"
+            key="form-step1"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -276,10 +364,10 @@ export default function Home() {
             </p>
 
             <div className="space-y-6">
-              {/* 성함 */}
+              {/* 성명 */}
               <div>
                 <label htmlFor="name" className="block font-share-tech-mono text-xs text-text-sub uppercase tracking-widest mb-2">
-                  성함
+                  성명
                 </label>
                 <input
                   id="name"
@@ -301,6 +389,68 @@ export default function Home() {
                   className="w-full font-share-tech-mono text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
                 />
               </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowFormStep2(true)}
+              className="mt-10 inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
+            >
+              계속
+            </button>
+          </motion.section>
+        )}
+
+        {/* ========== 참가자 정보 폼 Step 2 — 닉네임, 패스워드, 약관 동의, 추천인 ========== */}
+        {showSignUp && showForm && showFormStep2 && !showSchedule && (
+          <motion.section
+            key="form-step2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="relative w-full max-w-2xl mx-auto px-6 py-12 md:py-16 z-10"
+          >
+            <p className="font-orbitron text-sm md:text-base font-bold tracking-[0.3em] text-neon-orange uppercase mb-1">
+              DO:LAB
+            </p>
+            <h1 className="font-orbitron text-2xl md:text-3xl lg:text-4xl font-black text-text-main tracking-tight mb-1">
+              NEON PROJECT
+            </h1>
+            <p className="font-share-tech-mono text-sm text-text-sub uppercase tracking-widest mb-8 md:mb-10">
+              SEASON:0 베타 테스터 가입
+            </p>
+
+            <div className="space-y-6">
+              {/* 닉네임 */}
+              <div>
+                <label htmlFor="nickname" className="block font-share-tech-mono text-xs text-text-sub uppercase tracking-widest mb-2">
+                  닉네임
+                </label>
+                <input
+                  id="nickname"
+                  type="text"
+                  placeholder="000"
+                  className="w-full font-share-tech-mono text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
+                />
+              </div>
+
+              {/* 패스워드(숫자 4자리) */}
+              <div>
+                <label htmlFor="password" className="block font-share-tech-mono text-xs text-text-sub uppercase tracking-widest mb-2">
+                  패스워드(숫자 4자리)
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  placeholder="0000"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  className="w-full font-share-tech-mono text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
+                />
+              </div>
 
               {/* 개인정보 수집 및 이용 동의(필수) */}
               <div className="flex flex-wrap items-center gap-3">
@@ -312,6 +462,7 @@ export default function Home() {
                 </label>
                 <button
                   type="button"
+                  onClick={() => setTermsModal('privacy')}
                   className="font-share-tech-mono text-xs text-neon-orange border border-neon-orange clip-cut-corner py-1.5 px-3 hover:bg-neon-orange hover:text-text-light transition-colors"
                 >
                   약관확인
@@ -328,27 +479,40 @@ export default function Home() {
                 </label>
                 <button
                   type="button"
+                  onClick={() => setTermsModal('marketing')}
                   className="font-share-tech-mono text-xs text-neon-orange border border-neon-orange clip-cut-corner py-1.5 px-3 hover:bg-neon-orange hover:text-text-light transition-colors"
                 >
                   약관확인
                 </button>
+                <span className="font-share-tech-mono text-xs">
+                  <span className="text-neon-orange font-bold">신규 유저 이벤트!</span>
+                  <span className="text-black"> 최초 마케팅 동의 시 3천 크레딧 적립</span>
+                </span>
               </div>
 
-              {/* 추천인 */}
+              {/* 추천인 — 전화번호(하이픈 제외) + 동료 테스터 이벤트 */}
               <div>
-                <label htmlFor="referrer" className="block font-share-tech-mono text-xs text-text-sub uppercase tracking-widest mb-2">
-                  추천인
-                </label>
+                <div className="flex flex-wrap items-center gap-3 mb-2">
+                  <label htmlFor="referrer" className="font-share-tech-mono text-xs text-text-sub uppercase tracking-widest">
+                    추천인
+                  </label>
+                  <span className="font-share-tech-mono text-xs">
+                    <span className="text-neon-orange font-bold">동료 테스터 초대 이벤트!</span>
+                    <span className="text-black"> 신규 테스터가 가입할 경우, 추천인과 신규 테스터 모두 2천 크레딧 적립(추천인 코드는 추천인의 전화번호 입니다.)</span>
+                  </span>
+                </div>
                 <input
                   id="referrer"
                   type="text"
-                  placeholder=""
+                  inputMode="numeric"
+                  placeholder="전화번호(하이픈 제외)"
+                  value={referrer}
+                  onChange={(e) => setReferrer(e.target.value.replace(/\D/g, ''))}
                   className="w-full font-share-tech-mono text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
                 />
               </div>
             </div>
 
-            {/* 가입 및 신청하기 — 클릭 시 일정/참가비 화면으로 */}
             <button
               type="button"
               onClick={() => setShowSchedule(true)}
@@ -360,7 +524,7 @@ export default function Home() {
         )}
 
         {/* ========== 참가 일정 / 크레딧 / 참가비 / 환불 동의 ========== */}
-        {showSignUp && showForm && showSchedule && (
+        {showSignUp && showForm && showSchedule && !showComplete && (
           <motion.section
             key="schedule"
             initial={{ opacity: 0 }}
@@ -380,28 +544,20 @@ export default function Home() {
             </p>
 
             <div className="space-y-6">
-              {/* 참가 일정 — 드롭다운 + 실시간 예약 현황 */}
+              {/* 참가 일정 */}
               <div>
                 <label htmlFor="schedule" className="block font-share-tech-mono text-xs text-text-sub uppercase tracking-widest mb-2">
                   참가 일정
                 </label>
-                <div className="flex flex-wrap items-center gap-3">
-                  <select
-                    id="schedule"
-                    className="flex-1 min-w-0 font-share-tech-mono text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0 appearance-none bg-no-repeat bg-right pr-10"
-                    style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%23FF4F00\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E")' }}
-                  >
-                    <option value="2026-02-07">2026-02-07</option>
-                    <option value="2026-02-14">2026-02-14</option>
-                    <option value="2026-02-21">2026-02-21</option>
-                  </select>
-                  <button
-                    type="button"
-                    className="font-share-tech-mono text-xs text-neon-orange border-2 border-neon-orange clip-cut-corner py-2.5 px-4 hover:bg-neon-orange hover:text-text-light transition-colors whitespace-nowrap"
-                  >
-                    실시간 예약 현황
-                  </button>
-                </div>
+                <select
+                  id="schedule"
+                  className="w-full font-share-tech-mono text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0 appearance-none bg-no-repeat bg-right pr-10"
+                  style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%23FF4F00\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E")' }}
+                >
+                  <option value="2026-02-07">2026-02-07</option>
+                  <option value="2026-02-14">2026-02-14</option>
+                  <option value="2026-02-21">2026-02-21</option>
+                </select>
               </div>
 
               {/* 크레딧 사용 + 잔여 크레딧 확인하기 */}
@@ -468,13 +624,35 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 참가 신청 완료 */}
+            {/* 참가 신청 완료 — 클릭 시 완료 화면으로 */}
             <button
               type="button"
+              onClick={() => setShowComplete(true)}
               className="mt-10 inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
             >
               참가 신청 완료
             </button>
+          </motion.section>
+        )}
+
+        {/* ========== 신청 완료 화면 ========== */}
+        {showSignUp && showForm && showSchedule && showComplete && (
+          <motion.section
+            key="complete"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="relative w-full max-w-2xl mx-auto px-6 py-12 md:py-16 z-10 text-center"
+          >
+            <p className="font-orbitron text-sm md:text-base font-bold tracking-[0.3em] text-neon-orange uppercase mb-6">
+              DO:LAB · NEON PROJECT
+            </p>
+            <h2 className="font-orbitron text-2xl md:text-3xl font-black text-text-main tracking-tight mb-4">
+              신청이 완료되었습니다.
+            </h2>
+            <p className="font-body text-xl md:text-2xl text-text-main font-medium">
+              환영합니다, 테스터 님.
+            </p>
           </motion.section>
         )}
       </AnimatePresence>
