@@ -1,0 +1,453 @@
+/* 게임 진행용 페이지 스타일 */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --key-color: #FF4F00;
+  --key-hover: #e04800;
+  --bg-color: #F5F7FA;
+  --card-bg: #FFFFFF;
+  --text-dark: #222222;
+  --text-gray: #666666;
+  --border-color: #E0E0E0;
+  --main-font: 'Noto Sans KR', sans-serif;
+  --head-font: 'Montserrat', sans-serif;
+  --tech-font: 'Share Tech Mono', monospace;
+}
+
+/* === DASHBOARD === */
+.admin-dashboard {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-color);
+}
+
+.admin-header {
+  background-color: #1a1a1a;
+  color: #fff;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 0 40px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  flex-shrink: 0;
+  justify-content: space-between;
+}
+
+.logo-area {
+  font-family: var(--head-font);
+  font-weight: 800;
+  font-size: 20px;
+}
+.logo-area span {
+  color: var(--key-color);
+}
+
+.admin-body {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 50px 20px;
+  overflow-y: auto;
+}
+
+.container {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  padding: 40px;
+  border-top: 5px solid var(--key-color);
+}
+
+.card-header {
+  margin-bottom: 30px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 15px;
+}
+
+.card-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card-title i {
+  color: var(--key-color);
+}
+
+.form-group {
+  margin-bottom: 25px;
+}
+
+.form-label {
+  display: block;
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.form-control {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: var(--main-font);
+  transition: 0.2s;
+}
+.form-control:focus {
+  outline: none;
+  border-color: var(--key-color);
+  box-shadow: 0 0 0 3px rgba(255,79,0,0.1);
+}
+
+.chips-container {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.chip {
+  flex: 1;
+  padding: 10px;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.chip:hover {
+  background: #e0e0e0;
+}
+.chip.active {
+  background: var(--key-color);
+  color: #fff;
+  border-color: var(--key-color);
+  box-shadow: 0 2px 5px rgba(255,79,0,0.3);
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 18px;
+  background: var(--key-color);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-top: 10px;
+}
+.btn-submit:hover {
+  background: var(--key-hover);
+}
+.btn-submit:active {
+  transform: scale(0.98);
+}
+
+.list-header {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  color: #444;
+}
+
+.session-item {
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.session-item:hover {
+  border-color: var(--key-color);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.session-info h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.session-meta {
+  font-size: 13px;
+  color: #888;
+  font-family: var(--tech-font);
+}
+.session-meta span {
+  margin-right: 15px;
+}
+
+.status-badge {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #e6f7e6;
+  color: #00c853;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+  font-size: 14px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px dashed #ccc;
+}
+
+/* === GAME INTERFACE === */
+.game-interface {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.game-header {
+  height: 80px;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30px;
+  flex-shrink: 0;
+}
+
+.gh-left, .gh-right {
+  width: 150px;
+  display: flex;
+  gap: 15px;
+}
+
+.gh-center {
+  font-weight: 800;
+  font-size: 20px;
+  color: #333;
+  text-align: center;
+}
+
+.btn-icon {
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  width: 60px;
+  height: 60px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #555;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: 0.2s;
+}
+.btn-icon:hover {
+  color: var(--key-color);
+  border-color: var(--key-color);
+  background: #fff5f0;
+  transform: scale(1.05);
+}
+
+.game-body {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.step-container {
+  width: 100%;
+  max-width: 900px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 60px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+.step-title {
+  font-size: 36px;
+  font-weight: 900;
+  margin-bottom: 30px;
+  color: #222;
+}
+
+.step-info {
+  font-size: 20px;
+  color: #666;
+  margin-bottom: 30px;
+  font-weight: 500;
+}
+
+.info-text {
+  font-size: 16px;
+  color: #888;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f5f7fa;
+  border-radius: 8px;
+}
+
+.timer-display {
+  font-family: var(--tech-font);
+  font-size: 72px;
+  font-weight: 900;
+  color: var(--key-color);
+  margin: 30px 0;
+}
+
+.btn-action-lg {
+  width: 100%;
+  padding: 25px;
+  border-radius: 15px;
+  border: none;
+  background: var(--key-color);
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(255,79,0,0.3);
+  transition: 0.2s;
+  margin-top: 20px;
+}
+.btn-action-lg:hover {
+  background: var(--key-hover);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 25px rgba(255,79,0,0.4);
+}
+.btn-action-lg:disabled {
+  background: #e0e0e0;
+  color: #aaa;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.grid-container {
+  display: grid;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+.grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.select-btn {
+  aspect-ratio: 1;
+  border: 3px solid #eee;
+  background: #fff;
+  border-radius: 12px;
+  font-size: 32px;
+  font-weight: 800;
+  color: #555;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.select-btn:hover {
+  border-color: var(--key-color);
+  color: var(--key-color);
+  background-color: #fff5f0;
+}
+.select-btn.selected {
+  background: var(--key-color);
+  color: #fff;
+  border-color: var(--key-color);
+  box-shadow: 0 5px 15px rgba(255,79,0,0.4);
+  transform: scale(1.05);
+}
+
+/* 플레이어 그리드 */
+.player-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.player-card {
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+}
+
+.player-card-num {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--key-color);
+  margin-bottom: 15px;
+}
+
+.status-display {
+  font-size: 18px;
+  font-weight: 700;
+  padding: 10px;
+  border-radius: 8px;
+}
+.status-display.run {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.status-display.giveup {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-small {
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-small.btn-run {
+  background: var(--key-color);
+  color: #fff;
+}
+.btn-small.btn-run:hover {
+  background: var(--key-hover);
+}
+
+.btn-small.btn-giveup {
+  background: #555;
+  color: #fff;
+}
+.btn-small.btn-giveup:hover {
+  background: #333;
+}
