@@ -1,0 +1,401 @@
+/* 어드민 페이지 스타일 */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+
+:root {
+  --primary: #FF4F00;
+  --primary-dark: #e04800;
+  --bg-main: #f5f7fa;
+  --bg-card: #ffffff;
+  --text-dark: #1a1a1a;
+  --text-gray: #666666;
+  --border: #e0e0e0;
+  --success: #4CAF50;
+  --danger: #ff4444;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.admin-page {
+  min-height: 100vh;
+  background: var(--bg-main);
+  display: flex;
+  flex-direction: column;
+}
+
+/* === 헤더 === */
+.admin-header {
+  background: var(--text-dark);
+  color: white;
+  height: 70px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 40px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.logo-area {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.logo-area span {
+  color: var(--primary);
+}
+
+.user-area {
+  font-size: 14px;
+  color: #aaa;
+}
+
+/* === 메인 컨테이너 === */
+.admin-container {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 30px;
+  padding: 30px;
+  max-width: 1800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* === 카드 === */
+.admin-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
+}
+
+.card-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid var(--border);
+}
+
+.card-title i {
+  color: var(--primary);
+}
+
+/* === 폼 === */
+.form-section {
+  margin-bottom: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: all 0.3s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.session-id-preview {
+  background: #f0f0f0;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 25px 0;
+  text-align: center;
+}
+
+.session-id-preview strong {
+  display: block;
+  font-size: 13px;
+  color: var(--text-gray);
+  margin-bottom: 8px;
+}
+
+.session-id-value {
+  font-family: 'Montserrat', monospace;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: 2px;
+}
+
+.btn-create {
+  width: 100%;
+  padding: 15px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-create:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255,79,0,0.3);
+}
+
+/* === 세션 목록 === */
+.session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.session-card {
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.session-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 15px rgba(255,79,0,0.1);
+}
+
+.session-card.active {
+  border-color: var(--primary);
+  background: #fff5f0;
+}
+
+.session-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.session-id {
+  font-family: 'Montserrat', monospace;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-dark);
+  letter-spacing: 1px;
+}
+
+.status-badge {
+  padding: 5px 15px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-badge.open {
+  background: #e8f5e9;
+  color: var(--success);
+}
+
+.status-badge.closed {
+  background: #ffebee;
+  color: var(--danger);
+}
+
+.session-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.session-info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-gray);
+}
+
+.session-info-row i {
+  width: 20px;
+  color: var(--primary);
+}
+
+/* === 상세 정보 === */
+.detail-section {
+  margin-bottom: 30px;
+}
+
+.detail-section h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: var(--text-gray);
+  font-weight: 600;
+}
+
+.detail-value {
+  font-size: 15px;
+  color: var(--text-dark);
+  font-weight: 700;
+}
+
+/* === 테이블 === */
+.apply-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.apply-table thead {
+  background: #f5f5f5;
+}
+
+.apply-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--text-dark);
+  border-bottom: 2px solid var(--border);
+}
+
+.apply-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.apply-status {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.apply-status.확정 {
+  background: #e8f5e9;
+  color: var(--success);
+}
+
+.apply-status.대기 {
+  background: #fff3e0;
+  color: #ff9800;
+}
+
+.apply-status.취소 {
+  background: #ffebee;
+  color: var(--danger);
+}
+
+/* === 액션 버튼 === */
+.detail-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-action {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #cc0000;
+}
+
+/* === Empty State === */
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-gray);
+  font-size: 14px;
+}
+
+/* === 스크롤바 === */
+.session-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.session-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.session-list::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
+}
+
+.session-list::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}

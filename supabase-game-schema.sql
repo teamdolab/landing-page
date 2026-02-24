@@ -23,6 +23,7 @@ CREATE TABLE game_sessions (
 
 -- ============================================
 -- 2. game_state (게임 상태 - 실시간 동기화)
+-- 오프라인 게임: 커뮤니티 카드는 송출용, deck_remaining은 미사용
 -- ============================================
 CREATE TABLE game_state (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -34,20 +35,20 @@ CREATE TABLE game_state (
     current_player INTEGER CHECK (current_player >= 1 AND current_player <= 12),
     timer_seconds INTEGER DEFAULT 0,
     timer_active BOOLEAN DEFAULT FALSE,
-    community_cards JSONB DEFAULT '[]'::jsonb, -- ['S2', 'D5', 'H9', 'C10', 'S8']
-    deck_remaining JSONB DEFAULT '[]'::jsonb, -- 남은 카드 덱
+    community_cards JSONB DEFAULT '[]'::jsonb, -- 송출 화면 표시용만
+    deck_remaining JSONB DEFAULT '[]'::jsonb, -- 미사용 (오프라인 딜링)
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ============================================
 -- 3. game_players (플레이어 상태)
+-- 오프라인 게임: hand_cards 제거, revealed_cards는 주장 카드
 -- ============================================
 CREATE TABLE game_players (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id UUID NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
     player_number INTEGER NOT NULL CHECK (player_number >= 1 AND player_number <= 12),
-    hand_cards JSONB DEFAULT '[]'::jsonb, -- 손패 2장: ['S7', 'H10']
-    revealed_cards JSONB DEFAULT '[]'::jsonb, -- 공개한 카드 2장 (후보자 연설)
+    revealed_cards JSONB DEFAULT '[]'::jsonb, -- 후보자가 주장한 카드 2장 (실제와 다를 수 있음)
     status VARCHAR(20), -- 'run', 'giveup', null (아직 선언 안함)
     vote_to INTEGER, -- 투표한 후보 번호 (기권은 0)
     total_score INTEGER DEFAULT 0, -- 전체 점수
@@ -87,74 +88,20 @@ CREATE TRIGGER update_game_players_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
--- 6. 유틸리티 함수
+-- 6. 유틸리티 함수 (오프라인 게임용으로 간소화)
 -- ============================================
 
--- 6-1. 카드 덱 생성 함수
-CREATE OR REPLACE FUNCTION create_card_deck()
-RETURNS JSONB AS $$
-DECLARE
-    deck JSONB := '[]'::jsonb;
-    suits TEXT[] := ARRAY['S', 'D', 'H', 'C']; -- Spade, Diamond, Heart, Club
-    ranks TEXT[] := ARRAY['2', '3', '4', '5', '6', '7', '8', '9', '10'];
-    suit TEXT;
-    rank TEXT;
-BEGIN
-    FOREACH suit IN ARRAY suits LOOP
-        FOREACH rank IN ARRAY ranks LOOP
-            deck := deck || jsonb_build_array(suit || rank);
-        END LOOP;
-    END LOOP;
-    RETURN deck;
-END;
-$$ LANGUAGE plpgsql;
-
--- 6-2. 카드 덱 셔플 함수
-CREATE OR REPLACE FUNCTION shuffle_deck(deck JSONB)
-RETURNS JSONB AS $$
-DECLARE
-    shuffled JSONB := '[]'::jsonb;
-    deck_array TEXT[];
-    i INTEGER;
-    j INTEGER;
-    temp TEXT;
-BEGIN
-    -- JSONB를 배열로 변환
-    SELECT ARRAY_AGG(value::text) INTO deck_array
-    FROM jsonb_array_elements_text(deck);
-    
-    -- Fisher-Yates shuffle
-    FOR i IN REVERSE array_length(deck_array, 1)..2 LOOP
-        j := floor(random() * i + 1)::integer;
-        temp := deck_array[i];
-        deck_array[i] := deck_array[j];
-        deck_array[j] := temp;
-    END LOOP;
-    
-    -- 배열을 JSONB로 변환
-    SELECT jsonb_agg(card) INTO shuffled
-    FROM unnest(deck_array) AS card;
-    
-    RETURN shuffled;
-END;
-$$ LANGUAGE plpgsql;
-
--- 6-3. 게임 초기화 함수
+-- 게임 초기화 함수 (카드 덱 관련 로직 제거)
 CREATE OR REPLACE FUNCTION initialize_game(p_session_id UUID, p_player_count INTEGER)
 RETURNS VOID AS $$
-DECLARE
-    shuffled_deck JSONB;
 BEGIN
-    -- 카드 덱 생성 및 셔플
-    shuffled_deck := shuffle_deck(create_card_deck());
-    
-    -- game_state 생성
+    -- game_state 생성 (덱은 사용하지 않음)
     INSERT INTO game_state (
         session_id, round, step, phase, 
-        deck_remaining, timer_seconds, timer_active
+        timer_seconds, timer_active
     ) VALUES (
         p_session_id, 1, 1, '선 정하기',
-        shuffled_deck, 0, FALSE
+        0, FALSE
     );
     
     -- game_players 생성 (1~player_count)
@@ -180,7 +127,8 @@ ALTER TABLE game_players DISABLE ROW LEVEL SECURITY;
 -- ============================================
 DO $$
 BEGIN
-    RAISE NOTICE '✅ 대선포커 게임 스키마 생성 완료!';
+    RAISE NOTICE '✅ 대선포커 게임 스키마 생성 완료! (오프라인 게임 버전)';
     RAISE NOTICE '테이블: game_sessions, game_state, game_players';
-    RAISE NOTICE '함수: create_card_deck(), shuffle_deck(), initialize_game()';
+    RAISE NOTICE '함수: initialize_game()';
+    RAISE NOTICE '💡 오프라인 게임: 카드 딜링은 딜러가 직접, 족보 계산도 딜러가 수동 선택';
 END $$;

@@ -15,6 +15,38 @@
   --tech-font: 'Share Tech Mono', monospace;
 }
 
+/* 타이머 디스플레이 */
+.timer-display {
+  font-family: var(--tech-font);
+  font-size: 72px;
+  font-weight: 900;
+  color: var(--key-color);
+  text-align: center;
+  text-shadow: 0 0 20px rgba(255,79,0,0.3);
+  letter-spacing: 5px;
+  padding: 30px;
+  background: rgba(255,79,0,0.05);
+  border-radius: 16px;
+  border: 3px solid var(--key-color);
+}
+
+/* 버튼 스타일 확장 */
+.btn-run {
+  background: #4CAF50 !important;
+  border-color: #4CAF50 !important;
+}
+.btn-run:hover {
+  background: #45a049 !important;
+}
+
+.btn-giveup {
+  background: #666 !important;
+  border-color: #666 !important;
+}
+.btn-giveup:hover {
+  background: #555 !important;
+}
+
 /* === DASHBOARD === */
 .admin-dashboard {
   height: 100vh;

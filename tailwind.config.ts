@@ -18,10 +18,9 @@ const config: Config = {
         "text-light": "#FFFFFF",
       },
       fontFamily: {
-        orbitron: ["var(--font-orbitron)", "sans-serif"],
-        "share-tech-mono": ["var(--font-share-tech-mono)", "monospace"],
-        "noto-sans-kr": ["var(--font-body)", "sans-serif"],
-        body: ["var(--font-body)", "sans-serif"],
+        orbitron: ["'Orbitron'", "sans-serif"],
+        "share-tech-mono": ["'Share Tech Mono'", "monospace"],
+        body: ["'Pretendard Variable'", "Pretendard", "-apple-system", "BlinkMacSystemFont", "system-ui", "sans-serif"],
       },
       backgroundImage: {
         "grid-pattern":
