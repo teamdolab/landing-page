@@ -21,7 +21,7 @@ const ibmPlexSansKR = IBM_Plex_Sans_KR({
 });
 
 export const metadata: Metadata = {
-  title: "DO:LAB — Presidential Poker",
+  title: "DO:LAB - 소셜전략게임 연구소",
   description: "당신의 두뇌 ON. DO:NEON PROJECT 참가자 모집",
 };
 
