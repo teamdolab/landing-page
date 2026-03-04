@@ -301,7 +301,7 @@ export default function LoginPage() {
               >
                 <option value="">-- 닉네임 선택 --</option>
                 {users.map((u) => (
-                  <option key={u.id} value={u.nickname}>
+                     <option key={u.id} value={u.nickname ?? ''}>
                     {u.nickname}
                   </option>
                 ))}
