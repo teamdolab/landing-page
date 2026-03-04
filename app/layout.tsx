@@ -22,7 +22,20 @@ const ibmPlexSansKR = IBM_Plex_Sans_KR({
 
 export const metadata: Metadata = {
   title: "DO:LAB - 소셜전략게임 연구소",
-  description: "당신의 두뇌 ON. DO:NEON PROJECT 참가자 모집",
+  description: "당신의 두뇌 ON. 대선포커 참가 신청",
+  openGraph: {
+    title: "DO:LAB - 소셜전략게임 연구소",
+    description: "당신의 두뇌 ON. 대선포커 참가 신청",
+    url: "https://do-lab.co.kr",
+    siteName: "DO:LAB",
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DO:LAB - 소셜전략게임 연구소",
+    description: "당신의 두뇌 ON. 대선포커 참가 신청",
+  },
 };
 
 export default function RootLayout({
