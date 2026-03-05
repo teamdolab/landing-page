@@ -15,47 +15,94 @@ import {
 const PRIVACY_TERMS = `개인정보 수집 및 이용 동의 (필수)
 
 제1조 (수집 및 이용 목적)
-DO:LAB(이하 '회사')은 멤버십 가입 및 행사 진행을 위해 아래와 같이 개인정보를 수집·이용합니다.
+TEAM DO:LAB 대표자 김석원(이하 'DO:LAB')은 NEON PROJECT 테스터 가입 및 오프라인 행사 진행을 위해 아래와 같이 개인정보를 수집·이용합니다.
 
-• 멤버십 관리: 본인 확인, 멤버십 서비스(크레딧 등) 제공, 불량 회원의 부정이용 방지
-• 행사 운영: 참가 신청 접수, 예약 확정 및 취소 안내, 입장 확인
-• 고객 지원: 문의 사항 처리 및 공지사항 전달
+• 테스터 관리: 본인 확인, 크레딧 서비스 제공, 불량 테스터의 부정이용 방지
+• 행사 운영: 참가 신청 접수, 예약 확정 및 취소 안내, 현장 입장 확인
+• 고객 지원: 문의 사항 처리
 
 제2조 (수집하는 항목)
-필수항목: 성명, 휴대전화번호, (입금 확인 시) 은행명/입금자명
+• 필수 항목: 성명, 휴대전화번호
 
 제3조 (보유 및 이용 기간)
-회원 탈퇴 시까지 (단, 관계 법령에 의하여 보존할 필요가 있는 경우 해당 기간 동안 보관합니다.)
-• 소비자의 불만 또는 분쟁처리에 관한 기록: 3년 (전자상거래법)
-• 대금결제 및 재화 등의 공급에 관한 기록: 5년 (전자상거래법)
+수집된 개인정보는 테스터 탈퇴 시까지 보관 및 이용됩니다. 단, 관계 법령 및 내부 방침에 의하여 보존할 필요가 있는 경우 아래의 기간 동안 보관합니다.
+
+• 소비자의 불만 또는 분쟁 처리에 관한 기록: 3년
+• 대금 결제 및 행사 참가(재화 등의 공급)에 관한 기록: 5년
 
 제4조 (동의 거부 권리 및 불이익)
-귀하는 개인정보 수집 및 이용에 거부할 권리가 있습니다. 단, 동의를 거부할 경우 멤버십 가입 및 행사 참가 신청이 불가능합니다.
+귀하는 개인정보 수집 및 이용에 대한 동의를 거부할 권리가 있습니다. 단, 필수 항목 동의를 거부할 경우 테스터 가입 및 오프라인 행사(게임) 참가 신청이 불가능합니다.
 
 [유의사항 : 크레딧 및 환불 정책]
-• 크레딧 성격: 적립된 '크레딧'은 DO:LAB 서비스 내에서만 사용 가능한 비현금성 포인트이며, 현금으로 환급되지 않습니다.
+• 크레딧 성격: 적립된 '크레딧'은 DO:LAB 서비스 내에서만 사용 가능한 비현금성 포인트이며, 어떠한 경우에도 현금으로 환급되지 않습니다.
 • 소멸: 회원 탈퇴 시 보유 크레딧은 즉시 소멸되며 복구되지 않습니다.
-• 회수: 부정한 방법(중복 가입, 허위 추천 등)으로 획득한 크레딧은 사전 통보 없이 회수될 수 있습니다.
+• 회수: 부정한 방법(중복 가입, 허위 추천 등)으로 획득한 크레딧은 사전 통보 없이 전액 회수될 수 있습니다.
 
-회원 탈퇴 및 마케팅 동의 거부는 두랩 카카오톡 플러스 친구를 통해 하실 수 있습니다.`;
+※ 회원 탈퇴 및 마케팅 수신 동의 철회는 DO:LAB 카카오톡 채널을 통해 요청하실 수 있습니다.`;
 
 const MARKETING_TERMS = `마케팅 정보 수신 및 혜택 알림 동의 (선택)
 
 제1조 (수집 및 이용 목적)
-• DO:LAB의 신규 이벤트, 파티, 프로모션 안내 (SMS/알림톡)
-• 멤버십 혜택(크레딧, 쿠폰) 지급 및 관리
-• 맞춤형 광고 전송 및 이벤트 참여 기회 제공
+TEAM DO:LAB 대표자 김석원은 수집한 개인정보를 다음의 마케팅 및 프로모션 목적을 위해 활용합니다.
+
+• DO:LAB의 신규 프로젝트(시즌), 이벤트 안내 (SMS/알림톡 등)
+• 테스터 혜택(크레딧, 할인 쿠폰, 우선 예약권 등) 지급 및 관리
+• 맞춤형 정보 전송 및 신규 테스트(게임) 참여 기회 우선 제공
 
 제2조 (수집 항목)
-성명, 휴대전화번호, 마케팅 수신 동의 여부
+성명, 휴대전화번호
 
 제3조 (보유 및 이용 기간)
-회원 탈퇴 또는 마케팅 동의 철회 시까지
+테스터 탈퇴 또는 마케팅 수신 동의 철회 시까지
 
 제4조 (동의 거부 권리 및 불이익)
-귀하는 마케팅 정보 수신에 대한 동의를 거부할 수 있습니다. 동의하지 않더라도 기본 서비스(행사 예약) 이용에는 제한이 없으나, 마케팅 수신 동의자에게 제공되는 혜택(크레딧 적립, 할인 쿠폰 등)은 제공되지 않습니다.
+귀하는 마케팅 정보 수신에 대한 동의를 거부할 권리가 있습니다. 동의하지 않더라도 기본 서비스(게임 예약 및 참가) 이용에는 전혀 제한이 없으나, 마케팅 수신 동의자에게만 제공되는 특별 혜택(크레딧 적립, 할인 쿠폰, 게임 우선 초대 등)은 제공 받으실 수 없습니다.
 
-회원 탈퇴 및 마케팅 동의 거부는 두랩 카카오톡 플러스 친구를 통해 하실 수 있습니다.`;
+※ 회원 탈퇴 및 마케팅 수신 동의 철회는 DO:LAB 카카오톡 채널을 통해 언제든지 요청하실 수 있습니다.`;
+
+const REFUND_TERMS = `환불 규정
+
+제1조 (환불의 원칙)
+DO:LAB의 모든 프로젝트(오프라인 게임)는 다수의 테스터가 정해진 시간에 함께 참여하는 구조이므로, 원활한 진행을 위해 취소 시점에 따라 아래와 같이 위약금이 발생합니다.
+
+• 게임 진행일 5일 전까지: 참가비 전액 환불 (100%)
+• 게임 진행일 2~4일 전까지: 참가비 결제 금액의 50% 환불
+• 게임 진행일 1일 전 및 당일 취소: 환불 불가 (0%)
+
+(※ 자정을 기준으로 합니다. 예를 들어 토요일 게임을 취소할 경우, 해당 주의 월요일 23:59까지 취소한 건에 대해 참가비를 전액 환불해드립니다.)
+
+제2조 (지각 및 노쇼(No-Show) 규정)
+• 게임 정시에 시작되며, 룰 설명 및 게임의 완벽한 몰입도를 위해 시작 시간 기준 10분 후 부터는 입장이 절대 불가합니다.
+• 지각으로 인해 입장이 제한되거나, 사전 연락 없이 불참(노쇼)하는 경우 참가비는 전액 환불되지 않습니다.
+
+제3조 (참가권의 양도)
+• 부득이한 사정으로 본인이 참석할 수 없는 경우, 타인에게 참가권을 양도할 수 있습니다.
+• 단, 참가권 양도 시 반드시 게임 시작 최소 12시간 전까지 DO:LAB 카카오톡 채널을 통해 양수자의 정보(성명, 연락처)를 전달하여 사전 승인을 받아야 합니다.
+
+제4조 (DO:LAB 사정에 의한 취소 및 환불)
+• 각 게임 별 최소 진행 인원(8명)이 모이지 않을 경우, 게임은 취소됩니다.
+• 인원 미달, 천재지변, 운영자 측의 불가피한 사정으로 인해 게임이 취소되는 경우, 참가비 전액(100%)을 환불해드립니다.
+
+제5조 (크레딧 환불 불가)
+• 이전 약관에 명시된 바와 같이, 현금 결제가 아닌 '크레딧(DO:LAB 자체 포인트)'으로 참가비를 결제한 경우, 취소 시 현금으로 환불되지 않으며 규정에 따른 비율만큼 크레딧으로 반환됩니다.`;
+
+const DAESUN_POKER_INTRO = `대선 포커
+
+8~12명이 참가하는 소셜 실험 게임입니다.
+포커 족보를 활용해 라운드마다 출마·연설·투표를 진행하며, 최종 점수가 가장 높은 플레이어가 우승합니다.
+
+[기본 규칙]
+• 총 4라운드 진행
+• 카드: 2~10 (스페이드/다이아/하트/클로버) 총 36장
+• 족보: 스트레이트플러쉬 > 포카드 > 플러쉬 > 풀하우스 > 스트레이트 > 트리플 > 투페어 > 원페어
+• 커뮤니티 카드: 플랍(3장) → 턴(1장) → 리버(1장)
+
+[진행 순서]
+각 라운드: 출마 선언 → 후보자 연설 → 전략 회의 → 유권자 투표 → 점수 계산
+
+[특별 규칙]
+단독 우승 시, 공동 우승자 1명을 지목할 수 있습니다.
+(지목당한 플레이어는 최하위 점수가 아니어야 함)`;
 
 export default function Home() {
   const [isPowerOn, setIsPowerOn] = useState(false);
@@ -91,7 +138,11 @@ export default function Home() {
   const [refundConsent, setRefundConsent] = useState(false);
   
   // 약관 모달
-  const [termsModal, setTermsModal] = useState<'privacy' | 'marketing' | null>(null);
+  const [termsModal, setTermsModal] = useState<'privacy' | 'marketing' | 'refund' | null>(null);
+  // 게임 소개 모달
+  const [showGameIntro, setShowGameIntro] = useState<string | null>(null);
+  // 이벤트 모달
+  const [showEventModal, setShowEventModal] = useState<'newuser' | 'referrer' | null>(null);
   
   // 로딩 및 에러
   const [loading, setLoading] = useState(false);
@@ -403,11 +454,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-grid-pattern flex flex-col items-center justify-center relative overflow-hidden font-body">
-      {/* HUD 코너 장식 */}
-      <div className="absolute top-6 left-6 w-12 h-12 border-l-2 border-t-2 border-neon-orange pointer-events-none" />
-      <div className="absolute top-6 right-6 w-12 h-12 border-r-2 border-t-2 border-neon-orange pointer-events-none" />
-      <div className="absolute bottom-6 left-6 w-12 h-12 border-l-2 border-b-2 border-neon-orange pointer-events-none" />
-      <div className="absolute bottom-6 right-6 w-12 h-12 border-r-2 border-b-2 border-neon-orange pointer-events-none" />
 
       {/* 약관 모달 */}
       <AnimatePresence>
@@ -428,11 +474,11 @@ export default function Home() {
             >
               <div className="p-4 border-b-2 border-neon-orange/30 flex-shrink-0">
                 <h3 className="font-orbitron text-sm font-bold text-neon-orange uppercase tracking-widest">
-                  {termsModal === 'privacy' ? '개인정보 수집 및 이용 동의' : '마케팅 정보 수신 동의'}
+                  {termsModal === 'privacy' ? '개인정보 수집 및 이용 동의' : termsModal === 'marketing' ? '마케팅 정보 수신 동의' : '환불 규정'}
                 </h3>
               </div>
               <div className="p-4 overflow-y-auto flex-1 text-text-main text-sm leading-relaxed whitespace-pre-line">
-                {termsModal === 'privacy' ? PRIVACY_TERMS : MARKETING_TERMS}
+                {termsModal === 'privacy' ? PRIVACY_TERMS : termsModal === 'marketing' ? MARKETING_TERMS : REFUND_TERMS}
               </div>
               <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30">
                 <button
@@ -487,9 +533,6 @@ export default function Home() {
                             <h4 className="font-orbitron text-base font-bold text-text-main">
                               {session.game_name}
                             </h4>
-                            <p className="font-body text-sm text-text-sub">
-                              {session.session_id}
-                            </p>
                           </div>
                           <span
                             className={`font-orbitron text-xs font-bold px-2 py-1 border clip-cut-corner ${
@@ -503,7 +546,15 @@ export default function Home() {
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <p className="font-body text-text-sub">
-                            일시: {session.session_date} {session.session_time}
+                            일시: {session.session_date} {(() => {
+                              const start = session.session_time?.slice(0, 5) || '';
+                              if (!start) return '';
+                              const [h, m] = start.split(':').map(Number);
+                              const endMin = h * 60 + m + 150;
+                              const endH = String(Math.floor(endMin / 60)).padStart(2, '0');
+                              const endM = String(endMin % 60).padStart(2, '0');
+                              return `${start}-${endH}:${endM}`;
+                            })()}
                           </p>
                           <p className="font-body text-text-sub">
                             참가비: {session.base_price.toLocaleString()}원
@@ -527,6 +578,99 @@ export default function Home() {
                   className="w-full font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
                 >
                   닫기
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 게임 소개 모달 */}
+      <AnimatePresence>
+        {showGameIntro && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60"
+            onClick={() => setShowGameIntro(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-phantom-white border-2 border-neon-orange clip-cut-corner max-h-[85vh] w-full max-w-lg flex flex-col"
+            >
+              <div className="p-4 border-b-2 border-neon-orange/30 flex-shrink-0">
+                <h3 className="font-orbitron text-sm font-bold text-neon-orange uppercase tracking-widest">
+                  {showGameIntro}
+                </h3>
+              </div>
+              <div className="p-4 overflow-y-auto flex-1 text-text-main text-sm leading-relaxed whitespace-pre-line">
+                {showGameIntro === '대선 포커' ? DAESUN_POKER_INTRO : ''}
+              </div>
+              <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30">
+                <button
+                  type="button"
+                  onClick={() => setShowGameIntro(null)}
+                  className="w-full font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
+                >
+                  확인
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 이벤트 모달 */}
+      <AnimatePresence>
+        {showEventModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60"
+            onClick={() => setShowEventModal(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-phantom-white border-2 border-neon-orange clip-cut-corner max-h-[85vh] w-full max-w-lg flex flex-col"
+            >
+              <div className="p-4 border-b-2 border-neon-orange/30 flex-shrink-0">
+                <h3 className="font-orbitron text-sm font-bold text-neon-orange uppercase tracking-widest">
+                  EVENT!
+                </h3>
+              </div>
+              <div className="p-4 overflow-y-auto flex-1 text-text-main text-sm leading-relaxed">
+                {showEventModal === 'newuser' && (
+                  <p>
+                    신규 테스터 등록 시 마케팅 정보 동의할 경우, 3,000 크레딧을 적립해드립니다!
+                    <br />
+                    적립된 크레딧은 즉시 사용 가능합니다.
+                  </p>
+                )}
+                {showEventModal === 'referrer' && (
+                  <p>
+                    신규 테스터 등록 시 추천인을 입력할 경우, 추천인과 신규 테스터 모두 2,000 크레딧을 적립해드립니다!
+                    <br />
+                    (추천인 코드는 기존 테스터의 전화번호 입니다.)
+                    <br />
+                    적립된 크레딧은 즉시 사용 가능합니다.
+                  </p>
+                )}
+              </div>
+              <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30">
+                <button
+                  type="button"
+                  onClick={() => setShowEventModal(null)}
+                  className="w-full font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
+                >
+                  확인
                 </button>
               </div>
             </motion.div>
@@ -716,25 +860,43 @@ export default function Home() {
               DO:LAB
             </p>
             {/* NEON PROJECT */}
-            <h1 className="font-orbitron text-2xl md:text-3xl lg:text-4xl font-black text-text-main tracking-tight mb-10 md:mb-12">
+            <h1 className="font-orbitron text-2xl md:text-3xl lg:text-4xl font-black text-text-main tracking-tight mb-1">
               NEON PROJECT
             </h1>
+            <p className="font-body text-sm text-text-sub uppercase tracking-widest mb-10 md:mb-12">
+              SEASON: 0
+            </p>
 
-            {/* 소개 글 영역 — 6줄 정도 배치용 */}
+            {/* 소개 글 + 시즌 0 게임 영역 */}
             <div className="bg-deep-dark/5 border-2 border-neon-orange clip-cut-corner p-6 md:p-8 mb-8">
-              <p className="font-body text-xs text-text-sub uppercase tracking-widest mb-3">
-                INTRODUCTION
+              <p className="text-text-main text-base md:text-lg leading-relaxed mb-6">
+                <span className="font-orbitron font-bold text-neon-orange text-lg md:text-xl">
+                  최첨단 두뇌 연구소 DO:LAB
+                </span>
+                <br />
+                신인류 프로젝트, <span className="font-bold">DO:NEON PROJECT(두뇌온 프로젝트)</span>가 시작된다.
+                <br />
+                협력, 배신, 전략.
+                <br />
+                당신의 두뇌, 테스트 해보시겠습니까?
               </p>
-              <p className="text-text-main text-base md:text-lg leading-relaxed">
-                소개 글
-                <br />
-                (여기에 소개 글이 6줄 정도 들어갈 예정입니다.)
-                <br />
-                <br />
-                <br />
-                <br />
-                <br />
-              </p>
+              {/* 시즌 0 게임 구획 */}
+              <div className="border-t-2 border-neon-orange/40 pt-6">
+                <p className="font-orbitron text-xs font-bold text-neon-orange uppercase tracking-widest mb-4">
+                  시즌 0 게임
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowGameIntro('대선 포커')}
+                    className="w-28 h-28 border-2 border-neon-orange clip-cut-corner flex items-center justify-center bg-white/30 flex-shrink-0 cursor-pointer hover:bg-neon-orange/10 hover:border-neon-orange transition-colors"
+                  >
+                    <span className="font-orbitron text-sm font-bold text-text-main">
+                      대선 포커
+                    </span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* 금액 — 35,000 → 25,000 (28% 할인) */}
@@ -749,17 +911,8 @@ export default function Home() {
                 28% 할인
               </span>
             </div>
-            {/* 게임 참가하기 버튼 — 클릭 시 참가자 정보 폼 화면으로 */}
+            {/* 실시간 예약 확인 / 게임 참가하기 버튼 */}
             <div className="flex flex-col gap-4">
-              <button
-                type="button"
-                onClick={() => setShowForm(true)}
-                className="inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
-              >
-                게임 참가하기
-              </button>
-              
-              {/* 실시간 예약 확인 버튼 */}
               <button
                 type="button"
                 onClick={() => {
@@ -769,6 +922,13 @@ export default function Home() {
                 className="inline-flex font-orbitron text-base md:text-lg font-bold uppercase tracking-[0.2em] py-2.5 px-5 border-2 border-neon-orange bg-transparent text-neon-orange clip-cut-corner transition-all duration-300 hover:bg-neon-orange hover:text-text-light focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
               >
                 실시간 예약 확인
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowForm(true)}
+                className="inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
+              >
+                게임 참가하기
               </button>
             </div>
           </motion.section>
@@ -800,7 +960,7 @@ export default function Home() {
               NEON PROJECT
             </h1>
             <p className="font-body text-sm text-text-sub uppercase tracking-widest mb-8 md:mb-10">
-              SEASON:0 베타 테스터 가입
+              SEASON: 0
             </p>
 
             <div className="space-y-6">
@@ -876,7 +1036,7 @@ export default function Home() {
               NEON PROJECT
             </h1>
             <p className="font-body text-sm text-text-sub uppercase tracking-widest mb-8 md:mb-10">
-              {isExistingUser ? '로그인' : 'SEASON:0 베타 테스터 가입'}
+              {isExistingUser ? '로그인' : 'SEASON: 0'}
             </p>
 
             <div className="space-y-6">
@@ -971,28 +1131,34 @@ export default function Home() {
                     >
                       약관확인
                     </button>
-                    <span className="font-body text-xs">
-                      <span className="text-neon-orange font-bold">신규 유저 이벤트!</span>
-                      <span className="text-black"> 최초 마케팅 동의 시 3천 크레딧 적립</span>
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowEventModal('newuser')}
+                      className="font-body text-xs text-neon-orange font-bold cursor-pointer hover:underline"
+                    >
+                      EVENT!
+                    </button>
                   </div>
 
-                  {/* 추천인 — 전화번호(하이픈 제외) + 동료 테스터 이벤트 */}
+                  {/* 추천인 — 전화번호(하이픈 제외) */}
                   <div>
-                    <div className="flex flex-wrap items-center gap-3 mb-2">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                       <label htmlFor="referrer" className="font-body text-xs text-text-sub uppercase tracking-widest">
                         추천인
                       </label>
-                      <span className="font-body text-xs">
-                        <span className="text-neon-orange font-bold">동료 테스터 초대 이벤트!</span>
-                        <span className="text-black"> 신규 테스터가 가입할 경우, 추천인과 신규 테스터 모두 2천 크레딧 적립(추천인 코드는 추천인의 전화번호 입니다.)</span>
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowEventModal('referrer')}
+                        className="font-body text-xs text-neon-orange font-bold cursor-pointer hover:underline"
+                      >
+                        EVENT!
+                      </button>
                     </div>
                     <input
                       id="referrer"
                       type="text"
                       inputMode="numeric"
-                      placeholder="전화번호(하이픈 제외)"
+                      placeholder="추천인 전화번호"
                       value={referrer}
                       onChange={(e) => setReferrer(e.target.value.replace(/\D/g, ''))}
                       className="w-full font-body text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
@@ -1043,7 +1209,7 @@ export default function Home() {
               NEON PROJECT
             </h1>
             <p className="font-body text-sm text-text-sub uppercase tracking-widest mb-8 md:mb-10">
-              SEASON:0 베타 테스터 가입
+              SEASON: 0
             </p>
 
             <div className="space-y-6">
@@ -1063,11 +1229,19 @@ export default function Home() {
                     style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%23FF4F00\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E")' }}
                   >
                     <option value="">-- 일정 선택 --</option>
-                    {sessions.map((session) => (
-                      <option key={session.session_id} value={session.session_id}>
-                        {session.game_name} | {session.session_date} {session.session_time} | 잔여: {session.available_slots}석
-                      </option>
-                    ))}
+                    {sessions.map((session) => {
+                      const start = session.session_time?.slice(0, 5) || '';
+                      const timeStr = start ? (() => {
+                        const [h, m] = start.split(':').map(Number);
+                        const endMin = h * 60 + m + 150;
+                        return `${start}-${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`;
+                      })() : session.session_time || '';
+                      return (
+                        <option key={session.session_id} value={session.session_id}>
+                          {session.game_name} | {session.session_date} {timeStr} | 잔여: {session.available_slots}석
+                        </option>
+                      );
+                    })}
                   </select>
                 )}
               </div>
@@ -1138,21 +1312,28 @@ export default function Home() {
                 </label>
                 <button
                   type="button"
+                  onClick={() => setTermsModal('refund')}
                   className="font-body text-xs text-neon-orange border border-neon-orange clip-cut-corner py-1.5 px-3 hover:bg-neon-orange hover:text-text-light transition-colors"
                 >
                   약관확인
                 </button>
               </div>
 
-              {/* 설명 칸 — 입금 조건, 입금 등 3줄 배치 */}
+              {/* 입금 안내 */}
               <div className="bg-deep-dark/5 border-2 border-neon-orange clip-cut-corner p-4 md:p-5">
                 <p className="font-body text-xs text-text-sub uppercase tracking-widest mb-2">
                   입금 안내
                 </p>
                 <p className="text-text-main text-sm leading-relaxed">
-                  참가비는 아래 계좌로 입금해주세요.<br />
-                  은행: 카카오뱅크 | 예금주: DO:LAB<br />
-                  입금 확인 후 참가가 최종 확정됩니다.
+                  <span className="font-bold">환불 규정 약관을 꼭 확인해주세요.</span>
+                  <br />
+                  참가비는 아래 계좌로 입금해주세요.
+                  <br />
+                  참가 신청 하시면 문자로 입금 계좌를 발송해드립니다.
+                  <br />
+                  참가 신청 이후에 12시간 내에 입금이 확인되지 않을 경우, 자동으로 신청이 취소됩니다.
+                  <hr className="my-3 border-t border-neon-orange/30 w-full" />
+                  <span className="font-bold">카카오뱅크 3333-16-760925 예금주: 김석원</span>
                 </p>
               </div>
               
@@ -1182,15 +1363,6 @@ export default function Home() {
             transition={{ duration: 0.5 }}
             className="relative w-full max-w-2xl mx-auto px-6 py-12 md:py-16 z-10 text-center"
           >
-            {/* 뒤로가기 버튼 - 완료 화면에서는 처음으로 */}
-            <button
-              type="button"
-              onClick={handleGoBack}
-              className="mb-4 font-orbitron text-sm text-neon-orange hover:text-neon-orange/80 uppercase tracking-widest flex items-center gap-2 transition-colors mx-auto"
-            >
-              ← 처음으로
-            </button>
-
             <p className="font-orbitron text-sm md:text-base font-bold tracking-[0.3em] text-neon-orange uppercase mb-6">
               DO:LAB · NEON PROJECT
             </p>
