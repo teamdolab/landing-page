@@ -378,7 +378,8 @@ export default function Home() {
 
       if (applyError) {
         console.error('신청 실패:', applyError);
-        setError('신청에 실패했습니다: ' + applyError.message);
+        const isDuplicate = applyError.code === '23505' || applyError.message?.includes('apply_user_id_session_id_key');
+        setError(isDuplicate ? '이미 신청한 게임입니다.' : '신청에 실패했습니다: ' + applyError.message);
         return;
       }
 
