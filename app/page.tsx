@@ -373,7 +373,7 @@ export default function Home() {
           final_price: finalPrice,
           refund_policy_consent: refundConsent,
           refund_policy_consent_at: new Date().toISOString(),
-          status: '확정',
+          status: '신청중',
         });
 
       if (applyError) {

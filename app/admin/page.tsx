@@ -17,11 +17,13 @@ type Session = {
 };
 
 type ApplyInfo = {
+  id: string;
   user_name: string;
   phone: string;
   used_credits: number;
   final_price: number;
   status: string;
+  deposit_confirmed: boolean;
 };
 
 export default function AdminPage() {
@@ -150,21 +152,25 @@ export default function AdminPage() {
     const { data } = await supabase
       .from('apply')
       .select(`
+        id,
         user_id,
         used_credits,
         final_price,
         status,
+        deposit_confirmed,
         user_info!inner(name, phone)
       `)
       .eq('session_id', session.session_id);
 
     if (data) {
       const formattedData = data.map((item: any) => ({
+        id: item.id,
         user_name: item.user_info.name,
         phone: item.user_info.phone,
         used_credits: item.used_credits,
         final_price: item.final_price,
         status: item.status,
+        deposit_confirmed: item.deposit_confirmed ?? false,
       }));
       setApplyList(formattedData);
     }
@@ -193,6 +199,24 @@ export default function AdminPage() {
     } catch (err) {
       console.error('세션 삭제 오류:', err);
       alert('게임 삭제 중 오류가 발생했습니다.');
+    }
+  }
+
+  async function toggleDeposit(applyId: string, checked: boolean) {
+    try {
+      const { error } = await supabase
+        .from('apply')
+        .update({
+          deposit_confirmed: checked,
+          status: checked ? '확정' : '신청중',
+        })
+        .eq('id', applyId);
+
+      if (error) throw error;
+      if (selectedSession) await viewSessionDetail(selectedSession);
+    } catch (err) {
+      console.error('입금 확인 오류:', err);
+      alert('입금 확인 처리 중 오류가 발생했습니다.');
     }
   }
 
@@ -430,11 +454,12 @@ export default function AdminPage() {
                         <th>크레딧 사용</th>
                         <th>최종 금액</th>
                         <th>상태</th>
+                        <th>입금</th>
                       </tr>
                     </thead>
                     <tbody>
                       {applyList.map((apply, idx) => (
-                        <tr key={idx}>
+                        <tr key={apply.id}>
                           <td>{apply.user_name}</td>
                           <td>{apply.phone}</td>
                           <td>{(apply.used_credits || 0).toLocaleString()}원</td>
@@ -443,6 +468,17 @@ export default function AdminPage() {
                             <span className={`apply-status ${apply.status}`}>
                               {apply.status}
                             </span>
+                          </td>
+                          <td>
+                            {apply.status === '신청중' || apply.status === '확정' ? (
+                              <input
+                                type="checkbox"
+                                checked={apply.deposit_confirmed}
+                                onChange={(e) => toggleDeposit(apply.id, e.target.checked)}
+                              />
+                            ) : (
+                              '-'
+                            )}
                           </td>
                         </tr>
                       ))}

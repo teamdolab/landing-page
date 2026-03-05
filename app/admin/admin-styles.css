@@ -332,7 +332,13 @@ body {
   color: #ff9800;
 }
 
-.apply-status.취소 {
+.apply-status.신청중 {
+  background: #fff3e0;
+  color: #ff9800;
+}
+
+.apply-status.취소,
+.apply-status.미입금\ 취소 {
   background: #ffebee;
   color: var(--danger);
 }
