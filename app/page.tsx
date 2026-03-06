@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Power } from 'lucide-react';
 import { 
   supabase, 
-  checkUserExists, 
+  checkUserExists,
+  verifyUserPassword,
+  verifyReferrerExists, 
   getSessionAvailability, 
   getUserCredits,
   type UserInfo,
@@ -86,24 +88,6 @@ DO:LAB의 모든 프로젝트(오프라인 게임)는 다수의 테스터가 정
 제5조 (크레딧 환불 불가)
 • 이전 약관에 명시된 바와 같이, 현금 결제가 아닌 '크레딧(DO:LAB 자체 포인트)'으로 참가비를 결제한 경우, 취소 시 현금으로 환불되지 않으며 규정에 따른 비율만큼 크레딧으로 반환됩니다.`;
 
-const DAESUN_POKER_INTRO = `대선 포커
-
-8~12명이 참가하는 소셜 실험 게임입니다.
-포커 족보를 활용해 라운드마다 출마·연설·투표를 진행하며, 최종 점수가 가장 높은 플레이어가 우승합니다.
-
-[기본 규칙]
-• 총 4라운드 진행
-• 카드: 2~10 (스페이드/다이아/하트/클로버) 총 36장
-• 족보: 스트레이트플러쉬 > 포카드 > 플러쉬 > 풀하우스 > 스트레이트 > 트리플 > 투페어 > 원페어
-• 커뮤니티 카드: 플랍(3장) → 턴(1장) → 리버(1장)
-
-[진행 순서]
-각 라운드: 출마 선언 → 후보자 연설 → 전략 회의 → 유권자 투표 → 점수 계산
-
-[특별 규칙]
-단독 우승 시, 공동 우승자 1명을 지목할 수 있습니다.
-(지목당한 플레이어는 최하위 점수가 아니어야 함)`;
-
 export default function Home() {
   const [isPowerOn, setIsPowerOn] = useState(false);
   const [sweepDone, setSweepDone] = useState(false);
@@ -143,10 +127,15 @@ export default function Home() {
   const [showGameIntro, setShowGameIntro] = useState<string | null>(null);
   // 이벤트 모달
   const [showEventModal, setShowEventModal] = useState<'newuser' | 'referrer' | null>(null);
+  // 가입 확인 모달 (신규 회원)
+  const [showSignupConfirm, setShowSignupConfirm] = useState(false);
   
   // 로딩 및 에러
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // 전화번호: 하이픈/공백 제거, 숫자만
+  const normalizePhone = (p: string) => p.replace(/\D/g, '');
 
   const handlePowerClick = () => {
     if (isPowerOn) return;
@@ -190,12 +179,17 @@ export default function Home() {
       setError('성명과 전화번호를 입력해주세요.');
       return;
     }
+    const phoneNum = normalizePhone(phone);
+    if (phoneNum.length < 10) {
+      setError('올바른 전화번호를 입력해주세요. (10~11자리)');
+      return;
+    }
 
     setLoading(true);
     setError('');
     
     try {
-      const result = await checkUserExists(name, phone);
+      const result = await checkUserExists(name, phoneNum);
       
       if (result.user_exists) {
         // 기존 유저 - Step 2로 이동 (패스워드 입력)
@@ -221,6 +215,10 @@ export default function Home() {
   const handleStep2Continue = async () => {
     // 기존 유저인 경우: 패스워드 확인
     if (isExistingUser) {
+      if (!userId) {
+        setError('유저 정보를 다시 확인해주세요.');
+        return;
+      }
       if (!password || password.length !== 4) {
         setError('4자리 패스워드를 입력해주세요.');
         return;
@@ -230,15 +228,10 @@ export default function Home() {
       setError('');
 
       try {
-        // 패스워드 확인
-        const { data: user, error: loginError } = await supabase
-          .from('user_info')
-          .select('id, credits')
-          .eq('id', userId)
-          .eq('password', password)
-          .single();
+        // 패스워드 확인 (RPC 사용 - RLS 적용 시 user_info 직접 조회 불가)
+        const user = await verifyUserPassword(userId, password);
 
-        if (loginError || !user) {
+        if (!user) {
           setError('패스워드가 일치하지 않습니다.');
           setLoading(false);
           return;
@@ -258,7 +251,7 @@ export default function Home() {
       return;
     }
 
-    // 신규 유저인 경우: 가입 처리
+    // 신규 유저인 경우: 유효성 검사 후 확인 모달 표시
     if (!nickname.trim() || !password || password.length !== 4) {
       setError('닉네임과 4자리 패스워드를 입력해주세요.');
       return;
@@ -269,55 +262,61 @@ export default function Home() {
       return;
     }
 
+    // 추천인 입력 시 유효성 검사 (기존 회원 전화번호인지 확인, RPC 사용)
+    if (referrer.trim()) {
+      const referrerNum = normalizePhone(referrer);
+      if (referrerNum.length < 10) {
+        setError('올바른 추천인 번호가 아닙니다.');
+        return;
+      }
+      if (referrerNum === normalizePhone(phone)) {
+        setError('본인 전화번호는 추천인으로 입력할 수 없습니다.');
+        return;
+      }
+      const refExists = await verifyReferrerExists(referrerNum);
+      if (!refExists) {
+        setError('올바른 추천인 번호가 아닙니다.');
+        return;
+      }
+    }
+
+    // 가입 확인 모달 표시
+    setShowSignupConfirm(true);
+  };
+
+  // 신규 회원 가입 실행 (확인 모달에서 예 클릭 시)
+  const handleSignupConfirm = async () => {
+    setShowSignupConfirm(false);
     setLoading(true);
     setError('');
 
     try {
-      // 신규 유저 등록
-      const { data, error: insertError } = await supabase
-        .from('user_info')
-        .insert({
+      const res = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           name,
-          phone,
+          phone: normalizePhone(phone),
           nickname,
           password,
           privacy_consent: privacyConsent,
-          privacy_consent_at: new Date().toISOString(),
           marketing_consent: marketingConsent,
-          marketing_consent_at: marketingConsent ? new Date().toISOString() : null,
-          referrer_phone: referrer || null,
-        })
-        .select()
-        .single();
+          referrer_phone: referrer ? normalizePhone(referrer) : null,
+        }),
+      });
 
-      if (insertError) {
-        console.error('가입 실패:', insertError);
-        
-        // 중복 전화번호 에러 처리
-        if (insertError.code === '23505' && insertError.message.includes('user_info_phone_key')) {
-          setError('이미 가입한 계정이 있습니다. 처음 화면에서 이름과 전화번호로 로그인해주세요.');
-        } else {
-          setError('가입에 실패했습니다: ' + insertError.message);
-        }
+      const result = await res.json();
+
+      if (!res.ok) {
+        setError(result.error || '가입에 실패했습니다.');
         return;
       }
 
-      if (data) {
-        setUserId(data.id);
-        // 크레딧은 DB 트리거에서 자동 충전됨
-        // 다시 조회해서 크레딧 확인
-        const { data: userData } = await supabase
-          .from('user_info')
-          .select('credits')
-          .eq('id', data.id)
-          .single();
-        
-        if (userData) {
-          setUserCredits(userData.credits);
-        }
+      if (result.id) {
+        setUserId(result.id);
+        setUserCredits(result.credits ?? 0);
       }
 
-      // 참가 신청 페이지로 이동
       await loadSessionsForSchedule();
       setShowForm(true);
       setShowSchedule(true);
@@ -347,6 +346,10 @@ export default function Home() {
     }
 
     const usedCreditsNum = Number(creditUsed) || 0;
+    if (usedCreditsNum % 1000 !== 0) {
+      setError('크레딧은 1,000 단위로만 사용 가능합니다.');
+      return;
+    }
     if (usedCreditsNum > userCredits) {
       setError('사용 가능한 크레딧을 초과했습니다.');
       return;
@@ -379,7 +382,7 @@ export default function Home() {
       if (applyError) {
         console.error('신청 실패:', applyError);
         const isDuplicate = applyError.code === '23505' || applyError.message?.includes('apply_user_id_session_id_key');
-        setError(isDuplicate ? '이미 신청한 게임입니다.' : '신청에 실패했습니다: ' + applyError.message);
+        setError(isDuplicate ? '이미 신청한 게임입니다.' : '죄송합니다. 신청에 실패했습니다. 잠시 후 다시 시도해주시거나, DO:LAB 카카오톡 채널로 문의주시기 바랍니다.');
         return;
       }
 
@@ -387,7 +390,7 @@ export default function Home() {
       setShowComplete(true);
     } catch (err) {
       console.error('신청 중 에러:', err);
-      setError('신청 처리 중 오류가 발생했습니다.');
+      setError('죄송합니다. 신청에 실패했습니다. 잠시 후 다시 시도해주시거나, DO:LAB 카카오톡 채널로 문의주시기 바랍니다.');
     } finally {
       setLoading(false);
     }
@@ -402,9 +405,9 @@ export default function Home() {
 
     setLoading(true);
     try {
-      const credits = await getUserCredits(phone);
+      const credits = await getUserCredits(normalizePhone(phone));
       setUserCredits(credits);
-      alert(`현재 잔여 크레딧: ${credits.toLocaleString()}원`);
+      alert(`현재 잔여 크레딧: ${credits.toLocaleString()}`);
     } catch (err) {
       console.error('크레딧 조회 실패:', err);
       setError('크레딧 조회에 실패했습니다.');
@@ -609,7 +612,16 @@ export default function Home() {
                 </h3>
               </div>
               <div className="p-4 overflow-y-auto flex-1 text-text-main text-sm leading-relaxed whitespace-pre-line">
-                {showGameIntro === '대선 포커' ? DAESUN_POKER_INTRO : ''}
+                {showGameIntro === '대선 포커' ? (
+                  <>
+                    유권자가 되어 판을 움직일 것인가,{'\n'}
+                    후보가 되어 승리를 쟁취할 것인가.{'\n'}
+                    당신은 상대의 말을 믿을 수 있습니까?{'\n\n'}
+                    <span className="font-bold">&quot;출마, 하겠습니다.&quot;</span>{'\n\n'}
+                    플레이 타임: 150분{'\n'}
+                    장르: 정치, 전략, 포커
+                  </>
+                ) : ''}
               </div>
               <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30">
                 <button
@@ -672,6 +684,58 @@ export default function Home() {
                   className="w-full font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
                 >
                   확인
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 가입 확인 모달 (신규 회원) */}
+      <AnimatePresence>
+        {showSignupConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60"
+            onClick={() => setShowSignupConfirm(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-phantom-white border-2 border-neon-orange clip-cut-corner max-w-lg w-full flex flex-col"
+            >
+              <div className="p-4 border-b-2 border-neon-orange/30 flex-shrink-0">
+                <h3 className="font-orbitron text-sm font-bold text-neon-orange uppercase tracking-widest">
+                  가입 확인
+                </h3>
+              </div>
+              <div className="p-4 flex-1 text-text-main text-sm leading-relaxed">
+                <p>
+                  <span className="font-bold">{nickname}#{normalizePhone(phone).slice(-4) || '****'}</span>
+                  으로 등록하시겠습니까?
+                </p>
+                <p className="mt-2 text-xs text-text-sub/80">
+                  (#은 PIN 번호이며, 전화번호 뒷자리로 자동 설정됩니다.)
+                </p>
+              </div>
+              <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowSignupConfirm(false)}
+                  className="flex-1 font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-transparent text-neon-orange clip-cut-corner hover:bg-neon-orange/10 transition-colors"
+                >
+                  아니오
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSignupConfirm}
+                  className="flex-1 font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
+                >
+                  예
                 </button>
               </div>
             </motion.div>
@@ -871,15 +935,16 @@ export default function Home() {
             {/* 소개 글 + 시즌 0 게임 영역 */}
             <div className="bg-deep-dark/5 border-2 border-neon-orange clip-cut-corner p-6 md:p-8 mb-8">
               <p className="text-text-main text-base md:text-lg leading-relaxed mb-6">
-                <span className="font-orbitron font-bold text-neon-orange text-lg md:text-xl">
-                  최첨단 두뇌 연구소 DO:LAB
-                </span>
+                신인류 프로젝트, <span className="font-bold">DO:NEON PROJECT(두뇌ON 프로젝트)</span>가 시작됩니다.
                 <br />
-                신인류 프로젝트, <span className="font-bold">DO:NEON PROJECT(두뇌온 프로젝트)</span>가 시작된다.
+                신뢰를 쌓고 함께 승리를 만들어낼 것인지,
                 <br />
-                협력, 배신, 전략.
+                마지막 순간 배신으로 판을 뒤집을 것인지,
                 <br />
-                당신의 두뇌, 테스트 해보시겠습니까?
+                혹은 누구의 도움도 없이 끝까지 살아남을 것인지.
+                <br />
+                <br />
+                당신은 어떤 선택을 하시겠습니까?
               </p>
               {/* 시즌 0 게임 구획 */}
               <div className="border-t-2 border-neon-orange/40 pt-6">
@@ -887,15 +952,30 @@ export default function Home() {
                   시즌 0 게임
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowGameIntro('대선 포커')}
-                    className="w-28 h-28 border-2 border-neon-orange clip-cut-corner flex items-center justify-center bg-white/30 flex-shrink-0 cursor-pointer hover:bg-neon-orange/10 hover:border-neon-orange transition-colors"
-                  >
-                    <span className="font-orbitron text-sm font-bold text-text-main">
+                  <figure className="flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setShowGameIntro('대선 포커')}
+                      className="relative w-24 h-36 border-2 border-neon-orange clip-cut-corner cursor-pointer overflow-hidden hover:border-neon-orange/80 transition-colors bg-white/30 block"
+                    >
+                      <img
+                        src="/daesun-poker-poster.png"
+                        alt="대선 포커"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                      <span className="absolute inset-0 hidden items-center justify-center bg-white/80 font-orbitron text-xs font-bold text-text-main">
+                        대선 포커
+                      </span>
+                    </button>
+                    <figcaption className="mt-1.5 font-orbitron text-xs font-bold text-neon-orange uppercase tracking-wider text-center">
                       대선 포커
-                    </span>
-                  </button>
+                    </figcaption>
+                  </figure>
                 </div>
               </div>
             </div>
@@ -973,7 +1053,7 @@ export default function Home() {
                 <input
                   id="name"
                   type="text"
-                  placeholder="000"
+                  placeholder="김네온"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full font-body text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
@@ -988,9 +1068,10 @@ export default function Home() {
                 <input
                   id="phone"
                   type="tel"
-                  placeholder="010-0000-0000"
+                  inputMode="numeric"
+                  placeholder="01012345678"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                   className="w-full font-body text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
                 />
               </div>
@@ -1062,7 +1143,7 @@ export default function Home() {
                   <input
                     id="nickname"
                     type="text"
-                    placeholder="000"
+                    placeholder="(한글 2-6자)"
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
                     className="w-full font-body text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
@@ -1159,7 +1240,7 @@ export default function Home() {
                       id="referrer"
                       type="text"
                       inputMode="numeric"
-                      placeholder="추천인 전화번호"
+                      placeholder="01012345678"
                       value={referrer}
                       onChange={(e) => setReferrer(e.target.value.replace(/\D/g, ''))}
                       className="w-full font-body text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
@@ -1256,7 +1337,7 @@ export default function Home() {
                   <input
                     id="credit"
                     type="text"
-                    placeholder="0000"
+                    placeholder="0"
                     value={creditUsed}
                     onChange={(e) => setCreditUsed(e.target.value.replace(/\D/g, ''))}
                     className="w-32 font-body text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
@@ -1272,7 +1353,7 @@ export default function Home() {
                   </button>
                 </div>
                 <p className="font-body text-sm text-text-sub">
-                  현재 크레딧: {userCredits.toLocaleString()}원
+                  현재 크레딧: {userCredits.toLocaleString()}
                 </p>
               </div>
 

@@ -1,8 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import './admin-styles.css';
+
+const ADMIN_STORAGE_KEY = 'admin_authenticated';
+
+async function adminFetch(url: string, options?: RequestInit) {
+  const res = await fetch(url, { credentials: 'include', ...options });
+  if (res.status === 401) {
+    sessionStorage.removeItem(ADMIN_STORAGE_KEY);
+    window.location.reload();
+    throw new Error('Unauthorized');
+  }
+  return res;
+}
 
 type Session = {
   session_id: string;
@@ -27,6 +38,10 @@ type ApplyInfo = {
 };
 
 export default function AdminPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [authError, setAuthError] = useState('');
+
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [applyList, setApplyList] = useState<ApplyInfo[]>([]);
@@ -43,17 +58,41 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
-    loadSessions();
+    if (typeof window !== 'undefined' && sessionStorage.getItem(ADMIN_STORAGE_KEY) === '1') {
+      setIsAuthenticated(true);
+    }
   }, []);
 
+  useEffect(() => {
+    if (isAuthenticated) loadSessions();
+  }, [isAuthenticated]);
+
+  async function handlePasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setAuthError('');
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: passwordInput }),
+        credentials: 'include',
+      });
+      if (res.ok) {
+        sessionStorage.setItem(ADMIN_STORAGE_KEY, '1');
+        setIsAuthenticated(true);
+        setPasswordInput('');
+      } else {
+        setAuthError('비밀번호가 올바르지 않습니다.');
+      }
+    } catch {
+      setAuthError('로그인에 실패했습니다.');
+    }
+  }
+
   async function loadSessions() {
-    const { data } = await supabase
-      .from('sessions')
-      .select('*')
-      .order('session_date', { ascending: false })
-      .order('session_time', { ascending: false });
-    
-    if (data) setSessions(data);
+    const res = await adminFetch('/api/admin/sessions');
+    const data = await res.json();
+    if (Array.isArray(data)) setSessions(data);
   }
 
   // session_id 자동 생성 함수
@@ -101,21 +140,19 @@ export default function AdminPage() {
         formData.gameType
       );
 
-      // 중복 체크
-      const { data: existing } = await supabase
-        .from('sessions')
-        .select('session_id')
-        .eq('session_id', sessionId)
-        .single();
+      const sessionsRes = await adminFetch('/api/admin/sessions');
+      const sessionsData = await sessionsRes.json();
+      const existing = Array.isArray(sessionsData) && sessionsData.some((s: Session) => s.session_id === sessionId);
 
       if (existing) {
         alert('이미 동일한 세션 ID가 존재합니다. 시간이나 매장을 변경해주세요.');
         return;
       }
 
-      const { error } = await supabase
-        .from('sessions')
-        .insert({
+      const res = await adminFetch('/api/admin/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           session_id: sessionId,
           game_name: formData.gameName,
           session_date: formData.date,
@@ -124,17 +161,18 @@ export default function AdminPage() {
           current_capacity: 0,
           base_price: formData.price,
           status: '모집중',
-        });
+        }),
+      });
 
-      if (error) {
-        alert('게임 생성 실패: ' + error.message);
+      if (!res.ok) {
+        const err = await res.json();
+        alert('게임 생성 실패: ' + (err.error || res.statusText));
         return;
       }
 
       alert(`게임 생성 완료!\nSession ID: ${sessionId}`);
       await loadSessions();
       
-      // 폼 초기화
       setFormData({
         ...formData,
         date: new Date().toISOString().split('T')[0],
@@ -147,51 +185,22 @@ export default function AdminPage() {
 
   async function viewSessionDetail(session: Session) {
     setSelectedSession(session);
-
-    // 신청자 목록 조회
-    const { data } = await supabase
-      .from('apply')
-      .select(`
-        id,
-        user_id,
-        used_credits,
-        final_price,
-        status,
-        deposit_confirmed,
-        user_info!inner(name, phone)
-      `)
-      .eq('session_id', session.session_id);
-
-    if (data) {
-      const formattedData = data.map((item: any) => ({
-        id: item.id,
-        user_name: item.user_info.name,
-        phone: item.user_info.phone,
-        used_credits: item.used_credits,
-        final_price: item.final_price,
-        status: item.status,
-        deposit_confirmed: item.deposit_confirmed ?? false,
-      }));
-      setApplyList(formattedData);
-    }
+    const res = await adminFetch(`/api/admin/apply?session_id=${encodeURIComponent(session.session_id)}`);
+    const data = await res.json();
+    if (Array.isArray(data)) setApplyList(data);
   }
 
   async function deleteSession(sessionId: string) {
     if (!confirm('정말 이 게임을 삭제하시겠습니까?\n관련된 신청 내역도 모두 삭제됩니다.')) {
       return;
     }
-
     try {
-      const { error } = await supabase
-        .from('sessions')
-        .delete()
-        .eq('session_id', sessionId);
-
-      if (error) {
-        alert('삭제 실패: ' + error.message);
+      const res = await adminFetch(`/api/admin/sessions/${sessionId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json();
+        alert('삭제 실패: ' + (err.error || res.statusText));
         return;
       }
-
       alert('삭제 완료!');
       await loadSessions();
       setSelectedSession(null);
@@ -204,15 +213,15 @@ export default function AdminPage() {
 
   async function toggleDeposit(applyId: string, checked: boolean) {
     try {
-      const { error } = await supabase
-        .from('apply')
-        .update({
+      const res = await adminFetch(`/api/admin/apply/${applyId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           deposit_confirmed: checked,
           status: checked ? '확정' : '신청중',
-        })
-        .eq('id', applyId);
-
-      if (error) throw error;
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
       if (selectedSession) await viewSessionDetail(selectedSession);
     } catch (err) {
       console.error('입금 확인 오류:', err);
@@ -222,16 +231,16 @@ export default function AdminPage() {
 
   async function updateSessionStatus(sessionId: string, newStatus: string) {
     try {
-      const { error } = await supabase
-        .from('sessions')
-        .update({ status: newStatus })
-        .eq('session_id', sessionId);
-
-      if (error) {
-        alert('상태 변경 실패: ' + error.message);
+      const res = await adminFetch(`/api/admin/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert('상태 변경 실패: ' + (err.error || res.statusText));
         return;
       }
-
       await loadSessions();
       if (selectedSession?.session_id === sessionId) {
         setSelectedSession({ ...selectedSession, status: newStatus });
@@ -242,11 +251,48 @@ export default function AdminPage() {
     }
   }
 
+  if (!isAuthenticated) {
+    return (
+      <div className="admin-page" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
+        <div style={{ width: '100%', maxWidth: 320, padding: 24 }}>
+          <h1 style={{ color: '#fff', fontSize: 18, marginBottom: 24, textAlign: 'center' }}>DO:LAB ADMIN</h1>
+          <form onSubmit={handlePasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <input
+              type="password"
+              placeholder="비밀번호"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              autoFocus
+              className="form-input"
+              style={{ padding: 12, border: '2px solid #ff4f00', background: 'transparent', color: '#fff' }}
+            />
+            {authError && <p style={{ color: '#ef4444', fontSize: 14 }}>{authError}</p>}
+            <button type="submit" className="form-input" style={{ padding: 12, background: '#ff4f00', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+              로그인
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-page">
       <header className="admin-header">
         <div className="logo-area">DO:LAB <span>ADMIN</span></div>
-        <div className="user-area">관리자</div>
+        <div className="user-area">
+          <button
+            type="button"
+            onClick={async () => {
+              await fetch('/api/admin/login', { method: 'DELETE', credentials: 'include' });
+              sessionStorage.removeItem(ADMIN_STORAGE_KEY);
+              window.location.reload();
+            }}
+            style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 12 }}
+          >
+            로그아웃
+          </button>
+        </div>
       </header>
 
       <div className="admin-container">

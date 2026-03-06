@@ -80,24 +80,23 @@ export type UserExistsResult = {
 // 유틸리티 함수
 // ============================================
 
-// 유저 존재 여부 확인
+// 유저 존재 여부 확인 (RPC 사용 - RLS 적용 시 user_info 직접 조회 불가)
 export async function checkUserExists(name: string, phone: string): Promise<UserExistsResult> {
-  const { data, error } = await supabase
-    .from('user_info')
-    .select('id, nickname, credits')
-    .eq('name', name)
-    .eq('phone', phone)
-    .single();
+  const { data, error } = await supabase.rpc('check_user_exists', {
+    p_name: name,
+    p_phone: phone,
+  });
 
-  if (error || !data) {
+  if (error || !data || !Array.isArray(data) || data.length === 0) {
     return { user_exists: false, user_id: null, nickname: null, credits: 0 };
   }
 
+  const row = data[0] as { user_exists: boolean; user_id: string | null; nickname: string | null; credits: number };
   return {
-    user_exists: true,
-    user_id: data.id,
-    nickname: data.nickname,
-    credits: data.credits,
+    user_exists: row.user_exists ?? false,
+    user_id: row.user_id ?? null,
+    nickname: row.nickname ?? null,
+    credits: row.credits ?? 0,
   };
 }
 
@@ -111,6 +110,30 @@ export async function getSessionAvailability(): Promise<SessionAvailability[]> {
   }
 
   return data || [];
+}
+
+// 추천인 존재 여부 확인 (RLS 적용 시 user_info 직접 조회 불가)
+export async function verifyReferrerExists(phone: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('verify_referrer_exists', {
+    p_phone: phone,
+  });
+  if (error) return false;
+  return data === true || (Array.isArray(data) && data[0] === true);
+}
+
+// 기존 회원 패스워드 검증 (RLS 적용 시 user_info 직접 조회 불가)
+export async function verifyUserPassword(userId: string, password: string): Promise<{ id: string; credits: number } | null> {
+  const { data, error } = await supabase.rpc('verify_user_password', {
+    p_user_id: userId,
+    p_password: password,
+  });
+
+  if (error || !data || !Array.isArray(data) || data.length === 0) {
+    return null;
+  }
+
+  const row = data[0] as { user_id: string; credits: number };
+  return { id: row.user_id, credits: row.credits };
 }
 
 // 유저 크레딧 조회
