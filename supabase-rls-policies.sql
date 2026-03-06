@@ -33,20 +33,28 @@ CREATE POLICY "anon_insert_user_info" ON user_info
 CREATE POLICY "anon_insert_apply" ON apply
     FOR INSERT TO anon WITH CHECK (true);
 
--- 4. 트리거 함수: add_signup_credits가 user_info SELECT하므로 SECURITY DEFINER 필요
+-- 4. 트리거 함수: add_signup_credits가 user_info SELECT/UPDATE하므로 SECURITY DEFINER 필요
 CREATE OR REPLACE FUNCTION add_signup_credits()
 RETURNS TRIGGER AS $$
+DECLARE
+    ref_phone_norm TEXT;
 BEGIN
     IF NEW.marketing_consent = TRUE THEN
         NEW.credits = NEW.credits + 3000;
     END IF;
     
     IF NEW.referrer_phone IS NOT NULL THEN
-        IF EXISTS (
+        ref_phone_norm := regexp_replace(NEW.referrer_phone, '[^0-9]', '', 'g');
+        IF ref_phone_norm != '' AND EXISTS (
             SELECT 1 FROM user_info 
-            WHERE REPLACE(phone, '-', '') = REPLACE(NEW.referrer_phone, '-', '')
+            WHERE regexp_replace(phone, '[^0-9]', '', 'g') = ref_phone_norm
         ) THEN
+            -- 추천받는 사람(신규): +2,000
             NEW.credits = NEW.credits + 2000;
+            -- 추천인: +2,000
+            UPDATE user_info 
+            SET credits = credits + 2000 
+            WHERE regexp_replace(phone, '[^0-9]', '', 'g') = ref_phone_norm;
         END IF;
     END IF;
     

@@ -110,19 +110,24 @@ CREATE TRIGGER update_apply_updated_at
 -- 4-1. 신규 가입 시 크레딧 자동 충전 함수
 CREATE OR REPLACE FUNCTION add_signup_credits()
 RETURNS TRIGGER AS $$
+DECLARE
+    ref_phone_norm TEXT;
 BEGIN
     -- 마케팅 동의 시 3,000 크레딧
     IF NEW.marketing_consent = TRUE THEN
         NEW.credits = NEW.credits + 3000;
     END IF;
     
-    -- 추천인이 존재하고 유효한 경우 2,000 크레딧 (하이픈 제거 후 비교)
+    -- 추천인이 존재하고 유효한 경우: 추천받는 사람 +2,000, 추천인 +2,000
     IF NEW.referrer_phone IS NOT NULL THEN
-        IF EXISTS (
+        ref_phone_norm := regexp_replace(NEW.referrer_phone, '[^0-9]', '', 'g');
+        IF ref_phone_norm != '' AND EXISTS (
             SELECT 1 FROM user_info 
-            WHERE REPLACE(phone, '-', '') = REPLACE(NEW.referrer_phone, '-', '')
+            WHERE regexp_replace(phone, '[^0-9]', '', 'g') = ref_phone_norm
         ) THEN
             NEW.credits = NEW.credits + 2000;
+            UPDATE user_info SET credits = credits + 2000 
+            WHERE regexp_replace(phone, '[^0-9]', '', 'g') = ref_phone_norm;
         END IF;
     END IF;
     
