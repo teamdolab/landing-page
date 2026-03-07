@@ -527,51 +527,61 @@ export default function Home() {
                   <p className="text-center text-text-sub font-body">예약 가능한 세션이 없습니다.</p>
                 ) : (
                   <div className="space-y-3">
-                    {sessions.map((session) => (
-                      <div
-                        key={session.session_id}
-                        className="border-2 border-neon-orange/30 clip-cut-corner p-4 bg-white/50"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-orbitron text-base font-bold text-text-main">
-                              {session.game_name}
-                            </h4>
+                    {sessions.map((session) => {
+                      const isClosed = session.status === '마감' || session.available_slots === 0;
+                      const displayStatus = isClosed ? '마감' : (session.current_capacity >= 8 ? '진행확정' : '모집중');
+                      return (
+                        <div
+                          key={session.session_id}
+                          className={`clip-cut-corner p-4 border-2 transition-all ${
+                            isClosed
+                              ? 'border-gray-300 bg-white/30 opacity-60'
+                              : 'border-neon-orange/40 bg-white/60'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h4 className={`font-orbitron text-base font-bold ${isClosed ? 'text-gray-500' : 'text-text-main'}`}>
+                                {session.game_name}
+                              </h4>
+                            </div>
+                            <span
+                              className={`font-orbitron text-xs font-bold px-2 py-1 border clip-cut-corner ${
+                                displayStatus === '진행확정'
+                                  ? 'bg-neon-orange text-white border-neon-orange'
+                                  : displayStatus === '모집중'
+                                  ? 'bg-green-500 text-white border-green-500'
+                                  : 'bg-gray-400 text-white border-gray-400'
+                              }`}
+                            >
+                              {displayStatus}
+                            </span>
                           </div>
-                          <span
-                            className={`font-orbitron text-xs font-bold px-2 py-1 border clip-cut-corner ${
-                              session.status === '모집중'
-                                ? 'bg-neon-orange text-white border-neon-orange'
-                                : 'bg-gray-400 text-white border-gray-400'
-                            }`}
-                          >
-                            {session.status}
-                          </span>
+                          <div className={`grid grid-cols-2 gap-2 text-sm ${isClosed ? 'text-gray-400' : 'text-text-sub'}`}>
+                            <p className="font-body">
+                              일시: {session.session_date} {(() => {
+                                const start = session.session_time?.slice(0, 5) || '';
+                                if (!start) return '';
+                                const [h, m] = start.split(':').map(Number);
+                                const endMin = h * 60 + m + 150;
+                                const endH = String(Math.floor(endMin / 60)).padStart(2, '0');
+                                const endM = String(endMin % 60).padStart(2, '0');
+                                return `${start}-${endH}:${endM}`;
+                              })()}
+                            </p>
+                            <p className="font-body">
+                              참가비: {session.base_price.toLocaleString()}원
+                            </p>
+                            <p className="font-body">
+                              현재 인원: {session.current_capacity} / {session.max_capacity}
+                            </p>
+                            <p className="font-body">
+                              잔여 석: <span className={`font-bold ${isClosed ? 'text-gray-400' : 'text-text-main'}`}>{session.available_slots}</span>석
+                            </p>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <p className="font-body text-text-sub">
-                            일시: {session.session_date} {(() => {
-                              const start = session.session_time?.slice(0, 5) || '';
-                              if (!start) return '';
-                              const [h, m] = start.split(':').map(Number);
-                              const endMin = h * 60 + m + 150;
-                              const endH = String(Math.floor(endMin / 60)).padStart(2, '0');
-                              const endM = String(endMin % 60).padStart(2, '0');
-                              return `${start}-${endH}:${endM}`;
-                            })()}
-                          </p>
-                          <p className="font-body text-text-sub">
-                            참가비: {session.base_price.toLocaleString()}원
-                          </p>
-                          <p className="font-body text-text-sub">
-                            현재 인원: {session.current_capacity} / {session.max_capacity}
-                          </p>
-                          <p className="font-body text-text-sub">
-                            잔여 석: {session.available_slots}석
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
