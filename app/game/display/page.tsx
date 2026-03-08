@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { formatCard, getCardColor } from '@/lib/poker-utils';
@@ -107,7 +107,7 @@ const HAND_RANKINGS = [
 ];
 
 function getVotersForCandidate(
-  votes: GameState['votes'],
+  votes: Record<string, Array<{ voter: number; voted_for: number | null }>> | undefined,
   round: number,
   candidateNum: number
 ): number[] {
@@ -119,7 +119,7 @@ function getVotersForCandidate(
     .map((v) => v.voter);
 }
 
-export default function DisplayPage() {
+function DisplayPageContent() {
   const searchParams = useSearchParams();
   const sessionParam = searchParams.get('session') || '';
   const [sessionId, setSessionId] = useState(sessionParam);
@@ -454,5 +454,17 @@ export default function DisplayPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function DisplayPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-white animate-pulse">로딩 중...</div>
+      </div>
+    }>
+      <DisplayPageContent />
+    </Suspense>
   );
 }

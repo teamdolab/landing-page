@@ -1031,7 +1031,7 @@ export default function GameControlPage() {
   const players = game.players || [];
   const activeCount = Math.min(game.player_count || 8, 12);
   const gridCols = GRID_COLS[activeCount] ?? 6;
-  const phaseText = game.info_text || STEP_LABELS[game.current_step] ?? `Step ${game.current_step}`;
+  const phaseText = game.info_text || (STEP_LABELS[game.current_step] ?? `Step ${game.current_step}`);
   const actionGuide = ACTION_GUIDE[game.current_step] ?? '';
 
   return (
