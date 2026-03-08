@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import './control-styles.css';
 
@@ -278,14 +279,22 @@ export default function ControlPage() {
             ) : (
               <div className="control-create-section">
                 <p style={{ color: '#2e7d32', fontWeight: 600, marginBottom: 12 }}>게임 진행 중</p>
-                <a
-                  href={displayUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="control-btn-secondary"
-                >
-                  <i className="fa-solid fa-external-link-alt" /> 송출 화면 열기
-                </a>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <Link
+                    href={`/game/control/${game.game_id}`}
+                    className="control-btn-primary"
+                  >
+                    <i className="fa-solid fa-gamepad" /> 게임 컨트롤
+                  </Link>
+                  <a
+                    href={displayUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="control-btn-secondary"
+                  >
+                    <i className="fa-solid fa-external-link-alt" /> 송출 화면 열기
+                  </a>
+                </div>
               </div>
             )}
           </div>
