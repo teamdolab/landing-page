@@ -455,6 +455,11 @@ $$ LANGUAGE plpgsql;
 ALTER TABLE game_0a DISABLE ROW LEVEL SECURITY;
 
 -- ============================================
+-- Realtime 활성화
+-- ============================================
+ALTER PUBLICATION supabase_realtime ADD TABLE game_0a;
+
+-- ============================================
 -- Realtime 활성화 안내
 -- ============================================
 DO $$

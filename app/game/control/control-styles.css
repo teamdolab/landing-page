@@ -1,0 +1,347 @@
+/* ============================================
+   DO:LAB Game Control - 게임 진행용 페이지
+   송출용 화면과 유사한 디자인 베이스
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+
+.control-root {
+  --key-color: #FF4F00;
+  --bg-light: #F2F4F6;
+  --text-dark: #222222;
+  --text-gray: #666666;
+  --title-font: 'Orbitron', sans-serif;
+  --main-font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+}
+
+.control-root {
+  min-height: 100vh;
+  font-family: var(--main-font);
+  background-color: var(--bg-light);
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* === 헤더 === */
+.control-header {
+  flex: 0 0 72px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 32px;
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 2px solid var(--key-color);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.control-brand {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--title-font);
+  line-height: 1.1;
+}
+.control-brand-main { font-size: 22px; font-weight: 900; color: var(--text-dark); letter-spacing: 2px; }
+.control-brand-sub { font-size: 13px; font-weight: 600; color: var(--key-color); letter-spacing: 2px; }
+
+.control-title {
+  font-family: var(--main-font);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.control-logout {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--text-gray);
+  color: var(--text-gray);
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.control-logout:hover {
+  border-color: var(--text-dark);
+  color: var(--text-dark);
+}
+
+/* === 메인 컨테이너 === */
+.control-main {
+  flex: 1;
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* === 카드 === */
+.control-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: 24px;
+}
+
+.control-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--key-color);
+}
+
+.control-card-title i {
+  color: var(--key-color);
+}
+
+/* === 세션 목록 === */
+.control-session-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.control-session-card {
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+}
+
+.control-session-card:hover {
+  border-color: var(--key-color);
+  box-shadow: 0 4px 12px rgba(255, 79, 0, 0.12);
+}
+
+.control-session-card.active {
+  border-color: var(--key-color);
+  background: #fff8f5;
+}
+
+.control-session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.control-session-id {
+  font-family: var(--title-font);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-dark);
+  letter-spacing: 1px;
+}
+
+.control-status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.control-status-badge.open {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.control-status-badge.closed {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.control-session-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-gray);
+}
+
+.control-session-info span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-session-info i {
+  width: 18px;
+  color: var(--key-color);
+}
+
+/* === 게임 생성 영역 === */
+.control-create-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.control-form-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.control-form-group select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: var(--main-font);
+  transition: border-color 0.2s;
+}
+
+.control-form-group select:focus {
+  outline: none;
+  border-color: var(--key-color);
+}
+
+.control-btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: var(--key-color);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-btn-primary:hover:not(:disabled) {
+  background: #e64800;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 79, 0, 0.3);
+}
+
+.control-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.control-btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: #f5f5f5;
+  color: var(--text-dark);
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-btn-secondary:hover {
+  background: #eee;
+  border-color: var(--key-color);
+  color: var(--key-color);
+}
+
+/* === 로그인 화면 === */
+.control-login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: var(--bg-light);
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+.control-login-card {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.control-login-title {
+  font-family: var(--title-font);
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--text-dark);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.control-login-sub {
+  font-size: 14px;
+  color: var(--text-gray);
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.control-login-form input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 15px;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+
+.control-login-form input:focus {
+  outline: none;
+  border-color: var(--key-color);
+}
+
+.control-login-form button {
+  width: 100%;
+  padding: 14px;
+  background: var(--key-color);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-login-form button:hover {
+  background: #e64800;
+}
+
+.control-login-error {
+  font-size: 14px;
+  color: #c62828;
+  margin-bottom: 12px;
+}
+
+/* === 빈 상태 === */
+.control-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-gray);
+  font-size: 15px;
+}

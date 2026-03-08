@@ -1,0 +1,756 @@
+/* ============================================
+   컨트롤 데모 - 송출용과 동일 구조
+   display/styles.css 구조 기반
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+
+.control-demo-root {
+  --key-color: #FF4F00;
+  --bg-light: #F2F4F6;
+  --text-dark: #222222;
+  --text-gray: #666666;
+  --tech-font: 'Share Tech Mono', monospace;
+  --title-font: 'Orbitron', sans-serif;
+  --main-font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  --node-size: 76px;
+  --first-badge-size: 34px;
+  --grid-gap-row: 8px;
+  --grid-gap-col: 14px;
+
+  font-family: var(--main-font);
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  margin: 0;
+  background-color: var(--bg-light);
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* === 상단바 (송출용 display-header와 동일 구조) === */
+.control-demo-root .demo-header {
+  flex: 0 0 72px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 28px;
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 2px solid var(--key-color);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  z-index: 50;
+  backdrop-filter: blur(5px);
+}
+
+.control-demo-root .demo-game-code {
+  font-family: var(--title-font);
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--text-dark);
+  letter-spacing: 2px;
+}
+
+.control-demo-root .demo-round-box {
+  background: var(--text-dark);
+  color: #fff;
+  padding: 8px 24px;
+  font-family: var(--title-font);
+  font-size: 20px;
+  font-weight: 700;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+
+.control-demo-root .demo-tabs {
+  font-size: 13px;
+  color: var(--text-gray);
+}
+
+/* === 중단 (송출용 info-section과 동일 구조) === */
+.control-demo-root .demo-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 24px 12px 52px;
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.control-demo-root .demo-info-section {
+  flex: 0 0 80px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.control-demo-root .demo-phase-container {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  height: 100%;
+  padding-left: 16px;
+  border-left: 4px solid var(--key-color);
+}
+
+.control-demo-root .demo-phase-current {
+  font-family: var(--main-font);
+  font-size: 38px;
+  font-weight: 900;
+  color: var(--text-dark);
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
+  letter-spacing: -1px;
+}
+
+.control-demo-root .demo-phase-current::before {
+  content: '●';
+  color: var(--key-color);
+  font-size: 24px;
+  vertical-align: middle;
+  margin-right: 12px;
+  animation: demo-blink 1.5s infinite;
+}
+
+@keyframes demo-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.control-demo-root .demo-timer-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.control-demo-root .demo-timer-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 300px;
+  height: 72px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid var(--key-color);
+  box-shadow: 0 0 12px rgba(255, 79, 0, 0.12);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+}
+
+.control-demo-root .demo-timer-value {
+  font-family: var(--tech-font);
+  font-size: 54px;
+  font-weight: 700;
+  color: var(--key-color);
+  line-height: 1;
+  text-shadow: 0 0 8px rgba(255, 79, 0, 0.15);
+  letter-spacing: 3px;
+}
+.control-demo-root .demo-timer-value.timer-end {
+  font-family: var(--main-font);
+  font-weight: 900;
+  letter-spacing: -1px;
+}
+
+.control-demo-root .demo-pause-btn {
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 2px solid var(--key-color);
+  background: #fff;
+  color: var(--key-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-demo-root .demo-pause-btn:hover {
+  background: var(--key-color);
+  color: #fff;
+}
+
+.control-demo-root .demo-skip-btn {
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 2px solid var(--text-gray);
+  background: #fff;
+  color: var(--text-gray);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-demo-root .demo-skip-btn:hover {
+  background: var(--text-gray);
+  color: #fff;
+  border-color: var(--text-gray);
+}
+
+.control-demo-root .demo-action-guide {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  height: 100%;
+}
+
+.control-demo-root .demo-action-text {
+  font-family: var(--main-font);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-dark);
+  text-align: right;
+}
+
+/* === 하단 플레이어 그리드 (송출용 detail-section과 동일) === */
+.control-demo-root .demo-detail-section {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols, 6), 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: var(--grid-gap-row) var(--grid-gap-col);
+  justify-items: stretch;
+  align-items: start;
+  padding-top: 12px;
+  padding-left: 64px;
+  padding-right: 36px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+  overflow: visible;
+}
+
+.control-demo-root .demo-player-col {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  position: relative;
+  width: 100%;
+  overflow: visible;
+  cursor: pointer;
+}
+
+.control-demo-root .demo-player-col:hover .demo-node-box {
+  border-color: var(--key-color);
+  box-shadow: 0 4px 12px rgba(255, 79, 0, 0.2);
+}
+
+.control-demo-root .demo-player-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: var(--node-size);
+  flex-shrink: 0;
+}
+
+.control-demo-root .demo-avatar-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  overflow: visible;
+}
+
+.control-demo-root .demo-node-box {
+  position: relative;
+  width: var(--node-size);
+  height: var(--node-size);
+  background: #fff;
+  border: 2px solid var(--text-dark);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  transition: all 0.2s;
+}
+
+.control-demo-root .demo-node-box .demo-player-num {
+  color: var(--key-color);
+  font-family: var(--title-font);
+  font-weight: 900;
+  font-size: 30px;
+  text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
+}
+
+.control-demo-root .demo-first-player-badge {
+  position: absolute;
+  top: -6px;
+  left: -42px;
+  width: var(--first-badge-size);
+  height: var(--first-badge-size);
+  background: #FFC107;
+  border: 2px solid var(--text-dark);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: var(--main-font);
+  font-weight: 900;
+  font-size: 16px;
+  color: var(--text-dark);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  z-index: 30;
+}
+
+.control-demo-root .demo-score-box {
+  background: var(--text-dark);
+  color: #fff;
+  width: var(--node-size);
+  padding: 6px 0;
+  text-align: center;
+  font-family: var(--tech-font);
+  font-weight: 700;
+  font-size: 20px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.control-demo-root .demo-player-col.demo-player-active .demo-node-box {
+  animation: demo-active-pulse 0.6s infinite alternate ease-in-out;
+}
+
+@keyframes demo-active-pulse {
+  0% {
+    box-shadow: 0 0 12px rgba(255, 193, 7, 0.7);
+    border-color: #FFC107;
+    background-color: #fff;
+  }
+  100% {
+    box-shadow: 0 0 28px rgba(255, 79, 0, 0.9);
+    border-color: #FF4F00;
+    background-color: #FFF8E1;
+  }
+}
+
+.control-demo-root .demo-player-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.control-demo-root .demo-candidate-badge {
+  background: #E53935;
+  color: #fff;
+  padding: 5px 12px;
+  font-weight: 800;
+  font-size: 15px;
+  border-radius: 4px;
+}
+
+.control-demo-root .demo-btn-large {
+  padding: 20px 48px;
+  font-size: 20px;
+}
+
+.control-demo-root .demo-declaration-modal {
+  background: #fff;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+}
+
+.control-demo-root .demo-declaration-player {
+  font-size: 28px;
+  font-weight: 900;
+  margin-bottom: 16px;
+  color: var(--text-dark);
+}
+
+.control-demo-root .demo-declaration-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  justify-content: center;
+}
+.control-demo-root .demo-declaration-timer {
+  font-family: var(--tech-font);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--key-color);
+}
+
+.control-demo-root .demo-declaration-buttons {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.control-demo-root .demo-declaration-btn {
+  flex: 1;
+  min-width: 140px;
+  padding: 28px 40px;
+  font-size: 24px;
+  font-weight: 900;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-demo-root .demo-declaration-btn-enter {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.control-demo-root .demo-declaration-btn-enter:hover {
+  background: #1b5e20;
+  transform: scale(1.02);
+}
+
+.control-demo-root .demo-declaration-btn-pass {
+  background: #757575;
+  color: #fff;
+}
+
+.control-demo-root .demo-declaration-btn-pass:hover {
+  background: #424242;
+  transform: scale(1.02);
+}
+
+/* 투표 모달 */
+.control-demo-root .demo-vote-modal {
+  background: #fff;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 520px;
+  width: 90%;
+  text-align: center;
+}
+.control-demo-root .demo-vote-player {
+  font-size: 28px;
+  font-weight: 900;
+  margin-bottom: 16px;
+  color: var(--text-dark);
+}
+.control-demo-root .demo-vote-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  justify-content: center;
+}
+.control-demo-root .demo-vote-timer {
+  font-family: var(--tech-font);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--key-color);
+}
+.control-demo-root .demo-vote-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-gray);
+  margin-bottom: 12px;
+}
+.control-demo-root .demo-vote-candidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.control-demo-root .demo-vote-candidate-btn {
+  padding: 16px 28px;
+  font-size: 20px;
+  font-weight: 800;
+  border: 2px solid var(--key-color);
+  background: #fff;
+  color: var(--key-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.control-demo-root .demo-vote-candidate-btn:hover {
+  background: var(--key-color);
+  color: #fff;
+  transform: scale(1.02);
+}
+.control-demo-root .demo-vote-abstain-btn {
+  padding: 14px 32px;
+  font-size: 18px;
+  font-weight: 700;
+  border: 2px solid #757575;
+  background: #fff;
+  color: #757575;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.control-demo-root .demo-vote-abstain-btn:hover {
+  background: #757575;
+  color: #fff;
+  transform: scale(1.02);
+}
+
+/* 점수 집계 모달 */
+.control-demo-root .demo-score-modal {
+  max-width: 480px;
+}
+.control-demo-root .demo-score-candidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin: 20px 0 8px;
+}
+.control-demo-root .demo-score-candidate-btn {
+  padding: 16px 28px;
+  font-size: 20px;
+  font-weight: 800;
+  border: 2px solid #ccc;
+  background: #fff;
+  color: var(--text-dark);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.control-demo-root .demo-score-candidate-btn.selected {
+  border-color: var(--key-color);
+  background: var(--key-color);
+  color: #fff;
+}
+.control-demo-root .demo-score-candidate-btn:hover {
+  transform: scale(1.02);
+}
+.control-demo-root .demo-score-hint {
+  font-size: 13px;
+  color: var(--text-gray);
+  margin-bottom: 20px;
+}
+.control-demo-root .demo-next-round-btn {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  border: 2px solid var(--key-color);
+  background: var(--key-color);
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.control-demo-root .demo-next-round-btn:hover {
+  background: #e64800;
+  border-color: #e64800;
+  transform: scale(1.02);
+}
+.control-demo-root .demo-crown-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 24px;
+  z-index: 2;
+}
+.control-demo-root .demo-player-col.demo-player-winner .demo-player-box {
+  border-color: #FFD700;
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.4);
+  background: linear-gradient(135deg, #fffef5 0%, #fff9e6 100%);
+}
+
+/* 후보자 연설 카드 선택 모달 */
+.control-demo-root .demo-card-modal-overlay {
+  padding: 24px;
+  align-items: flex-start;
+}
+
+.control-demo-root .demo-card-modal {
+  background: #fff;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.control-demo-root .demo-card-modal-title {
+  font-size: 24px;
+  font-weight: 900;
+  margin-bottom: 16px;
+  color: var(--text-dark);
+}
+
+.control-demo-root .demo-card-modal-header-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.control-demo-root .demo-card-modal-timer {
+  font-family: var(--tech-font);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--key-color);
+}
+.control-demo-root .demo-card-declare-btn {
+  margin-left: auto;
+}
+
+.control-demo-root .demo-card-grid {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+/* 4행 9열: 행당 같은 문양, S2,S3,S4... 순서 */
+.control-demo-root .demo-card-grid.demo-card-grid-by-suit {
+  grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(4, auto);
+}
+
+.control-demo-root .demo-card-btn {
+  aspect-ratio: 2/3;
+  min-height: 56px;
+  font-size: 18px;
+  font-weight: 800;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.control-demo-root .demo-card-btn.red {
+  color: #E53935;
+  border-color: #ffcdd2;
+}
+
+.control-demo-root .demo-card-btn.black {
+  color: #333;
+  border-color: #cfd8dc;
+}
+
+.control-demo-root .demo-card-btn:hover {
+  transform: scale(1.05);
+  border-width: 3px;
+}
+
+.control-demo-root .demo-card-btn.selected {
+  border-color: var(--key-color);
+  border-width: 3px;
+  box-shadow: 0 0 0 2px var(--key-color);
+}
+
+/* 데모 배너 */
+.control-demo-root .demo-banner {
+  flex: 0 0 auto;
+  background: #FF4F00;
+  color: #fff;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.control-demo-root .demo-banner a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.control-demo-root .demo-banner a:hover {
+  text-decoration: none;
+}
+
+/* 모달 */
+.control-demo-root .demo-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.control-demo-root .demo-modal {
+  background: #fff;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+
+.control-demo-root .demo-modal-text {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--text-dark);
+}
+.control-demo-root .demo-modal-text.demo-modal-sub {
+  margin-bottom: 16px;
+  font-size: 16px;
+  color: var(--text-gray);
+}
+
+.control-demo-root .demo-modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.control-demo-root .demo-btn-primary {
+  flex: 1;
+  max-width: 120px;
+  padding: 14px;
+  background: var(--key-color);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.control-demo-root .demo-btn-primary:hover {
+  background: #e64800;
+}
+
+.control-demo-root .demo-btn-secondary {
+  flex: 1;
+  max-width: 120px;
+  padding: 14px;
+  background: #f5f5f5;
+  color: var(--text-dark);
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.control-demo-root .demo-btn-secondary:hover {
+  background: #eee;
+  border-color: var(--key-color);
+  color: var(--key-color);
+}

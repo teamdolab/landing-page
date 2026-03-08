@@ -1,0 +1,28 @@
+/* 결과 화면 미리보기 - display styles 상속 */
+@import '../styles.css';
+
+.result-preview-root {
+  min-height: 100vh;
+  background: #0a0a0a;
+  position: relative;
+}
+.result-preview-back {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 9999;
+}
+.result-preview-back a {
+  color: #fff;
+  font-size: 14px;
+  text-decoration: none;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 6px;
+}
+.result-preview-back a:hover {
+  background: rgba(255, 79, 0, 0.4);
+}
+.result-preview-wrap {
+  margin: 0;
+}

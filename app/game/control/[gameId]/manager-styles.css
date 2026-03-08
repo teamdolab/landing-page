@@ -1,0 +1,775 @@
+/* ============================================
+   게임 컨트롤 페이지 - 선 선택 등 진행 화면
+   송출용과 동일 구조 (상단바/중단/플레이어 그리드)
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+.manager-root {
+  --key-color: #FF4F00;
+  --bg-light: #F2F4F6;
+  --text-dark: #222222;
+  --text-gray: #666666;
+  --title-font: 'Orbitron', sans-serif;
+  --tech-font: 'Share Tech Mono', monospace;
+  --main-font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  --node-size: 72px;
+
+  min-height: 100vh;
+  font-family: var(--main-font);
+  background-color: var(--bg-light);
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* === 상단바 === */
+.manager-header {
+  flex: 0 0 64px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 28px;
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 2px solid var(--key-color);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.manager-header-left .manager-game-code {
+  font-family: var(--title-font);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-dark);
+  letter-spacing: 1px;
+}
+
+.manager-header-center .manager-round {
+  font-family: var(--title-font);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dark);
+  background: var(--text-dark);
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 4px;
+}
+
+.manager-header-right .manager-tabs-placeholder {
+  font-size: 13px;
+  color: var(--text-gray);
+}
+.manager-display-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--key-color);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.manager-display-link:hover {
+  background: #e64800;
+  color: #fff;
+}
+
+/* === 중단: 라운드 진행상황 | 타이머 | 액션 가이드 === */
+.manager-mid {
+  flex: 0 0 80px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
+}
+
+.manager-phase {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-dark);
+  padding-left: 16px;
+  border-left: 4px solid var(--key-color);
+}
+
+.manager-phase-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background: var(--key-color);
+  border-radius: 50%;
+  margin-right: 12px;
+  animation: manager-blink 1.5s infinite;
+}
+
+@keyframes manager-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.manager-timer-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.manager-timer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: var(--tech-font);
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--key-color);
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid var(--key-color);
+  padding: 12px 32px;
+  border-radius: 8px;
+}
+.manager-timer.timer-end {
+  font-family: var(--main-font);
+  font-weight: 900;
+  letter-spacing: -1px;
+}
+
+.manager-pause-btn {
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 2px solid var(--key-color);
+  background: #fff;
+  color: var(--key-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.manager-pause-btn:hover:not(:disabled) {
+  background: var(--key-color);
+  color: #fff;
+}
+
+.manager-pause-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.manager-skip-btn {
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 2px solid var(--text-gray);
+  background: #fff;
+  color: var(--text-gray);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.manager-skip-btn:hover:not(:disabled) {
+  background: var(--text-gray);
+  color: #fff;
+  border-color: var(--text-gray);
+}
+
+.manager-skip-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.manager-player-box.manager-player-active {
+  animation: manager-active-pulse 0.6s infinite alternate ease-in-out;
+}
+
+@keyframes manager-active-pulse {
+  0% {
+    box-shadow: 0 0 12px rgba(255, 193, 7, 0.7);
+    border-color: #FFC107;
+    background: #fffef5;
+  }
+  100% {
+    box-shadow: 0 0 28px rgba(255, 79, 0, 0.9);
+    border-color: #FF4F00;
+    background: #FFF8E1;
+  }
+}
+
+.manager-candidate-badge {
+  margin-top: 4px;
+  padding: 4px 10px;
+  background: #E53935;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  border-radius: 4px;
+}
+
+.manager-btn-large {
+  padding: 20px 48px;
+  font-size: 20px;
+}
+
+.manager-declaration-modal {
+  background: #fff;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+}
+
+.manager-declaration-player {
+  font-size: 28px;
+  font-weight: 900;
+  margin-bottom: 16px;
+  color: var(--text-dark);
+}
+
+.manager-declaration-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  justify-content: center;
+}
+.manager-declaration-timer {
+  font-family: var(--tech-font);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--key-color);
+}
+
+.manager-declaration-buttons {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.manager-declaration-btn {
+  flex: 1;
+  min-width: 140px;
+  padding: 28px 40px;
+  font-size: 24px;
+  font-weight: 900;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.manager-declaration-btn-enter {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.manager-declaration-btn-enter:hover:not(:disabled) {
+  background: #1b5e20;
+  transform: scale(1.02);
+}
+
+.manager-declaration-btn-pass {
+  background: #757575;
+  color: #fff;
+}
+
+.manager-declaration-btn-pass:hover:not(:disabled) {
+  background: #424242;
+  transform: scale(1.02);
+}
+
+.manager-declaration-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 투표 모달 */
+.manager-vote-modal {
+  background: #fff;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 520px;
+  width: 90%;
+  text-align: center;
+}
+.manager-vote-player {
+  font-size: 28px;
+  font-weight: 900;
+  margin-bottom: 16px;
+  color: var(--text-dark);
+}
+.manager-vote-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  justify-content: center;
+}
+.manager-vote-timer {
+  font-family: var(--tech-font);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--key-color);
+}
+.manager-vote-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-gray);
+  margin-bottom: 12px;
+}
+.manager-vote-candidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.manager-vote-candidate-btn {
+  padding: 16px 28px;
+  font-size: 20px;
+  font-weight: 800;
+  border: 2px solid var(--key-color);
+  background: #fff;
+  color: var(--key-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.manager-vote-candidate-btn:hover:not(:disabled) {
+  background: var(--key-color);
+  color: #fff;
+  transform: scale(1.02);
+}
+.manager-vote-candidate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.manager-vote-abstain-btn {
+  padding: 14px 32px;
+  font-size: 18px;
+  font-weight: 700;
+  border: 2px solid #757575;
+  background: #fff;
+  color: #757575;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.manager-vote-abstain-btn:hover:not(:disabled) {
+  background: #757575;
+  color: #fff;
+  transform: scale(1.02);
+}
+.manager-vote-abstain-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 점수 집계 모달 */
+.manager-score-modal {
+  max-width: 480px;
+}
+.manager-score-candidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin: 20px 0 8px;
+}
+.manager-score-candidate-btn {
+  padding: 16px 28px;
+  font-size: 20px;
+  font-weight: 800;
+  border: 2px solid #ccc;
+  background: #fff;
+  color: var(--text-dark);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.manager-score-candidate-btn.selected {
+  border-color: var(--key-color);
+  background: var(--key-color);
+  color: #fff;
+}
+.manager-score-candidate-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+}
+.manager-score-candidate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.manager-score-hint {
+  font-size: 13px;
+  color: var(--text-gray);
+  margin-bottom: 20px;
+}
+.manager-next-round-btn {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  border: 2px solid var(--key-color);
+  background: var(--key-color);
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.manager-next-round-btn:hover:not(:disabled) {
+  background: #e64800;
+  border-color: #e64800;
+  transform: scale(1.02);
+}
+.manager-next-round-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.manager-crown-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 24px;
+  z-index: 2;
+}
+.manager-player-box.manager-player-winner {
+  border-color: #FFD700;
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.4);
+  background: linear-gradient(135deg, #fffef5 0%, #fff9e6 100%);
+}
+
+/* 후보자 연설 카드 선택 모달 */
+.manager-card-modal-overlay {
+  padding: 24px;
+  align-items: flex-start;
+}
+
+.manager-card-modal {
+  background: #fff;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.manager-card-modal-title {
+  font-size: 24px;
+  font-weight: 900;
+  margin-bottom: 16px;
+  color: var(--text-dark);
+}
+
+.manager-card-modal-header-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.manager-card-modal-timer {
+  font-family: var(--tech-font);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--key-color);
+}
+.manager-card-declare-btn {
+  margin-left: auto;
+}
+
+.manager-card-grid {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+/* 4행 9열: 행당 같은 문양, S2,S3,S4... 순서 */
+.manager-card-grid.manager-card-grid-by-suit {
+  grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(4, auto);
+}
+
+.manager-card-btn {
+  aspect-ratio: 2/3;
+  min-height: 56px;
+  font-size: 18px;
+  font-weight: 800;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.manager-card-btn.red {
+  color: #E53935;
+  border-color: #ffcdd2;
+}
+
+.manager-card-btn.black {
+  color: #333;
+  border-color: #cfd8dc;
+}
+
+.manager-card-btn:hover {
+  transform: scale(1.05);
+  border-width: 3px;
+}
+
+.manager-card-btn.selected {
+  border-color: var(--key-color);
+  border-width: 3px;
+  box-shadow: 0 0 0 2px var(--key-color);
+}
+
+.manager-action-guide {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dark);
+  padding-right: 16px;
+}
+
+/* === 하단: 플레이어 그리드 === */
+.manager-players {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols, 6), 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 16px 20px;
+  padding: 24px 48px;
+  align-content: start;
+  min-height: 0;
+}
+
+.manager-player-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: var(--node-size);
+  min-width: var(--node-size);
+  padding: 12px;
+  background: #fff;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  justify-self: start;
+}
+
+.manager-player-box:hover {
+  border-color: var(--key-color);
+  box-shadow: 0 4px 12px rgba(255, 79, 0, 0.15);
+}
+
+.manager-player-box.is-first {
+  border-color: #FFC107;
+  background: #fffef5;
+}
+
+.manager-first-badge {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 28px;
+  height: 28px;
+  background: #FFC107;
+  border: 2px solid var(--text-dark);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--text-dark);
+}
+
+.manager-player-num {
+  font-family: var(--title-font);
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--key-color);
+}
+
+.manager-player-score {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dark);
+  background: var(--text-dark);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 4px;
+  min-width: 40px;
+  text-align: center;
+}
+
+.manager-card-display {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.manager-card-item {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.manager-card-item.red {
+  color: #E53935;
+  background: #ffebee;
+}
+
+.manager-card-item.black {
+  color: #333;
+  background: #f5f5f5;
+}
+
+.manager-card-item span {
+  margin-right: 2px;
+}
+
+/* === 모달 === */
+.manager-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.manager-modal {
+  background: #fff;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+
+.manager-modal-text {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--text-dark);
+}
+.manager-modal-text.manager-modal-sub {
+  margin-bottom: 16px;
+  font-size: 16px;
+  color: var(--text-gray);
+}
+.manager-score-modal {
+  max-width: 480px;
+}
+.manager-score-candidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.manager-score-candidate-btn {
+  padding: 16px 28px;
+  font-size: 20px;
+  font-weight: 800;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.manager-score-candidate-btn.selected {
+  border-color: var(--key-color);
+  background: var(--key-color);
+  color: #fff;
+}
+.manager-score-candidate-btn:hover {
+  transform: scale(1.02);
+}
+
+.manager-modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.manager-btn-primary {
+  flex: 1;
+  max-width: 120px;
+  padding: 14px;
+  background: var(--key-color);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.manager-btn-primary:hover:not(:disabled) {
+  background: #e64800;
+}
+
+.manager-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.manager-btn-secondary {
+  flex: 1;
+  max-width: 120px;
+  padding: 14px;
+  background: #f5f5f5;
+  color: var(--text-dark);
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.manager-btn-secondary:hover {
+  background: #eee;
+  border-color: var(--key-color);
+  color: var(--key-color);
+}
+
+.manager-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text-gray);
+}
