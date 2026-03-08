@@ -5,8 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { formatCard, getCardColor } from '@/lib/poker-utils';
 import { calculateRoundScores } from '@/lib/score-utils';
-import '../control-styles.css';
-import './manager-styles.css';
+import '../demo/demo-styles.css';
 
 const ADMIN_STORAGE_KEY = 'admin_authenticated';
 const supabase = createClient(
@@ -1020,8 +1019,8 @@ export default function GameControlPage() {
 
   if (loading || !game) {
     return (
-      <div className="manager-root">
-        <div className="manager-loading">
+      <div className="control-demo-root">
+        <div className="demo-loading">
           {loading ? '로딩 중...' : '게임을 찾을 수 없습니다.'}
         </div>
       </div>
@@ -1035,172 +1034,180 @@ export default function GameControlPage() {
   const actionGuide = ACTION_GUIDE[game.current_step] ?? '';
 
   return (
-    <div className="manager-root">
+    <div className="control-demo-root">
+      {/* 송출 화면 링크 배너 */}
+      <div className="demo-banner">
+        <span>게임 진행</span>
+        <a
+          href={`/game/display?session=${encodeURIComponent(game.session_id)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          송출 화면 열기
+        </a>
+      </div>
+
       {/* 상단바 */}
-      <header className="manager-header">
-        <div className="manager-header-left">
-          <span className="manager-game-code">{game.session_id}</span>
-        </div>
-        <div className="manager-header-center">
-          <span className="manager-round">{game.current_round} ROUND</span>
-        </div>
-        <div className="manager-header-right">
-          <a
-            href={`/game/display?session=${encodeURIComponent(game.session_id)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="manager-display-link"
-          >
-            <i className="fa-solid fa-external-link-alt" /> 송출 화면
-          </a>
-        </div>
+      <header className="demo-header">
+        <div className="demo-game-code">{game.session_id}</div>
+        <div className="demo-round-box">{game.current_round} ROUND</div>
+        <div className="demo-tabs">—</div>
       </header>
 
       {/* 중단: 라운드 진행상황 | 타이머 | 액션 가이드 */}
-      <section className="manager-mid">
-        <div className="manager-phase">
-          <span className="manager-phase-dot" />
-          {phaseText}
-        </div>
-        <div className="manager-timer-wrapper">
-          <div className={`manager-timer ${game.timer_end ? 'timer-end' : ''}`}>
-            {game.timer_end
-              ? '종료'
-              : game.timer_seconds > 0
+      <main className="demo-main">
+        <section className="demo-info-section">
+          <div className="demo-phase-container">
+            <div className="demo-phase-current">{phaseText}</div>
+          </div>
+          <div className="demo-timer-wrapper">
+            <div className="demo-timer-container">
+              <div className={`demo-timer-value ${game.timer_end ? 'timer-end' : ''}`}>
+                {game.timer_end
+                  ? (game.current_step === 10 ? '라운드 종료' : '종료')
+                  : game.timer_seconds > 0
                 ? `${Math.floor(game.timer_seconds / 60).toString().padStart(2, '0')}:${(game.timer_seconds % 60).toString().padStart(2, '0')}`
                 : '--:--'}
-          </div>
-          {(((game.current_step === 3 || game.current_step === 4 || game.current_step === 5 || game.current_step === 7 || game.current_step === 8) && game.timer_seconds > 0) || (game.current_step === 10 && scoresCalculated)) && (
-            <>
-              {(game.current_step === 3 || game.current_step === 7) && (
-                <>
+              </div>
+            </div>
+            {(((game.current_step === 3 || game.current_step === 4 || game.current_step === 5 || game.current_step === 7 || game.current_step === 8) && game.timer_seconds > 0) || (game.current_step === 10 && scoresCalculated)) && (
+              <>
+                {(game.current_step === 3 || game.current_step === 7) && (
+                  <>
+                    <button
+                      type="button"
+                      className="demo-pause-btn"
+                      onClick={toggleTimerPause}
+                      disabled={updating}
+                    >
+                      {game.timer_active ? '일시정지' : '재개'}
+                    </button>
+                    <button
+                      type="button"
+                      className="demo-skip-btn"
+                      onClick={() => (game.current_step === 3 ? setShowSkipConfirmPopup(true) : setShowSkipStrategy2ConfirmPopup(true))}
+                      disabled={updating}
+                    >
+                      스킵
+                    </button>
+                  </>
+                )}
+                {game.current_step === 8 && (
                   <button
                     type="button"
-                    className="manager-pause-btn"
+                    className="demo-pause-btn"
                     onClick={toggleTimerPause}
                     disabled={updating}
                   >
                     {game.timer_active ? '일시정지' : '재개'}
                   </button>
-                  <button
-                    type="button"
-                    className="manager-skip-btn"
-                    onClick={() => (game.current_step === 3 ? setShowSkipConfirmPopup(true) : setShowSkipStrategy2ConfirmPopup(true))}
-                    disabled={updating}
-                  >
-                    스킵
-                  </button>
-                </>
-              )}
-              {game.current_step === 8 && (
-                <button
-                  type="button"
-                  className="manager-pause-btn"
-                  onClick={toggleTimerPause}
-                  disabled={updating}
-                >
-                  {game.timer_active ? '일시정지' : '재개'}
-                </button>
-              )}
-              {game.current_step === 10 && scoresCalculated && (
-                game.current_round >= 4 ? (
-                  <button
-                    type="button"
-                    className="manager-next-round-btn"
-                    onClick={showGameEndPopup}
-                    disabled={updating}
-                  >
-                    게임 종료
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="manager-next-round-btn"
-                    onClick={startNextRound}
-                    disabled={updating}
-                  >
-                    다음 라운드 시작
-                  </button>
-                )
-              )}
-            </>
-          )}
-        </div>
-        <div className="manager-action-guide">
-          {actionGuide}
-        </div>
-      </section>
+                )}
+                {game.current_step === 10 && scoresCalculated && (
+                  game.current_round >= 4 ? (
+                    <button
+                      type="button"
+                      className="demo-next-round-btn"
+                      onClick={showGameEndPopup}
+                      disabled={updating}
+                    >
+                      게임 종료
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="demo-next-round-btn"
+                      onClick={startNextRound}
+                      disabled={updating}
+                    >
+                      다음 라운드 시작
+                    </button>
+                  )
+                )}
+              </>
+            )}
+          </div>
+          <div className="demo-action-guide">
+            <div className="demo-action-text">{actionGuide}</div>
+          </div>
+        </section>
 
-      {/* 하단: 플레이어 그리드 */}
-      <section
-        className="manager-players"
-        style={{ '--grid-cols': gridCols } as React.CSSProperties}
-      >
-        {Array.from({ length: activeCount }, (_, i) => i + 1).map((num) => {
-          const p = players.find((x) => x.player_number === num) || {
-            player_number: num,
-            is_first: false,
-            is_candidate: false,
-            revealed_cards: [] as string[],
-            total_score: 0,
-            round_scores: [0, 0, 0, 0],
-          };
-          const isActive = game.current_player === num;
-          const roundWinners = game.round_winners?.[String(game.current_round)] ?? [];
-          const isWinner = roundWinners.includes(num);
-          return (
-            <div
-              key={num}
-              className={`manager-player-box ${p.is_first ? 'is-first' : ''} ${isActive ? 'manager-player-active' : ''} ${isWinner ? 'manager-player-winner' : ''}`}
-              onClick={() => game.current_step === 1 && setConfirmPlayer(num)}
-            >
-              {isWinner && <div className="manager-crown-badge">👑</div>}
-              {p.is_first && <div className="manager-first-badge">先</div>}
-              <div className="manager-player-num">{num}</div>
-              <div className="manager-player-score">{p.total_score}</div>
-              {p.is_candidate && (
-                <>
-                  <div className="manager-candidate-badge">후보</div>
-                  {p.revealed_cards && p.revealed_cards.length >= 1 && (
-                    <div className="manager-card-display">
-                      {p.revealed_cards.map((c, i) => (
-                        <div key={i} className={`manager-card-item ${getCardColor(c)}`}>
-                          <span>{formatCard(c).slice(0, 1)}</span>
-                          {formatCard(c).slice(1)}
-                        </div>
-                      ))}
+        {/* 하단: 플레이어 그리드 */}
+        <section
+          className="demo-detail-section"
+          style={{ '--grid-cols': gridCols } as React.CSSProperties}
+        >
+          {Array.from({ length: activeCount }, (_, i) => i + 1).map((num) => {
+            const p = players.find((x) => x.player_number === num) || {
+              player_number: num,
+              is_first: false,
+              is_candidate: false,
+              revealed_cards: [] as string[],
+              total_score: 0,
+              round_scores: [0, 0, 0, 0],
+            };
+            const isActive = game.current_player === num;
+            const roundWinners = game.round_winners?.[String(game.current_round)] ?? [];
+            const isWinner = roundWinners.includes(num);
+            return (
+              <div
+                key={num}
+                className={`demo-player-col ${isActive ? 'demo-player-active' : ''} ${isWinner ? 'demo-player-winner' : ''}`}
+                onClick={() => game.current_step === 1 && setConfirmPlayer(num)}
+              >
+                <div className="demo-player-box">
+                  <div className="demo-avatar-wrapper">
+                    {isWinner && <div className="demo-crown-badge">👑</div>}
+                    {p.is_first && <div className="demo-first-player-badge">先</div>}
+                    <div className="demo-node-box">
+                      <span className="demo-player-num">{num}</span>
                     </div>
-                  )}
-                </>
-              )}
-            </div>
-          );
-        })}
-      </section>
+                  </div>
+                  <div className="demo-score-box">{p.total_score}</div>
+                </div>
+                {p.is_candidate && (
+                  <div className="demo-player-info">
+                    <div className="demo-candidate-badge">후보</div>
+                    {p.revealed_cards && p.revealed_cards.length >= 1 && (
+                      <div className="demo-card-display">
+                        {p.revealed_cards.map((c, i) => (
+                          <div key={i} className={`demo-card-item ${getCardColor(c)}`}>
+                            <span>{formatCard(c).slice(0, 1)}</span>
+                            {formatCard(c).slice(1)}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </section>
+      </main>
 
       {/* 선 플레이어 확인 팝업 */}
       {confirmPlayer !== null && (
         <div
-          className="manager-modal-overlay"
+          className="demo-modal-overlay"
           onClick={() => setConfirmPlayer(null)}
         >
           <div
-            className="manager-modal"
+            className="demo-modal"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="manager-modal-text">
+            <p className="demo-modal-text">
               1라운드 선 플레이어는 {confirmPlayer}번 플레이어입니다.
             </p>
-            <div className="manager-modal-buttons">
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={() => setFirstPlayer(confirmPlayer)}
                 disabled={updating}
               >
                 네
               </button>
               <button
-                className="manager-btn-secondary"
+                className="demo-btn-secondary"
                 onClick={() => setConfirmPlayer(null)}
               >
                 아니오
@@ -1212,12 +1219,12 @@ export default function GameControlPage() {
 
       {/* 카드 딜링 안내 팝업 */}
       {showDealingPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">카드를 딜링 후, 한 장의 카드를 공개하고, 3장의 공용 카드를 공개하세요.(플랍)</p>
-            <div className="manager-modal-buttons">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">카드를 딜링 후, 한 장의 카드를 공개하고, 3장의 공용 카드를 공개하세요.(플랍)</p>
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={completeDealing}
                 disabled={updating}
               >
@@ -1230,19 +1237,19 @@ export default function GameControlPage() {
 
       {/* 전략회의 I 진행 확인 팝업 */}
       {showStrategyConfirmPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">전략 회의 I을 진행하겠습니까?</p>
-            <div className="manager-modal-buttons">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">전략 회의 I을 진행하겠습니까?</p>
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={startStrategyMeeting}
                 disabled={updating}
               >
                 네
               </button>
               <button
-                className="manager-btn-secondary"
+                className="demo-btn-secondary"
                 onClick={() => setShowStrategyConfirmPopup(false)}
               >
                 아니오
@@ -1254,19 +1261,19 @@ export default function GameControlPage() {
 
       {/* 전략회의 I 스킵 확인 팝업 */}
       {showSkipConfirmPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">전략회의 I을 종료하시겠습니까?</p>
-            <div className="manager-modal-buttons">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">전략회의 I을 종료하시겠습니까?</p>
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={confirmSkipStrategyMeeting}
                 disabled={updating}
               >
                 예
               </button>
               <button
-                className="manager-btn-secondary"
+                className="demo-btn-secondary"
                 onClick={() => setShowSkipConfirmPopup(false)}
               >
                 아니오
@@ -1278,12 +1285,12 @@ export default function GameControlPage() {
 
       {/* 출마 선언 시작 팝업 */}
       {showStartDeclarationPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">출마 선언을 시작합니다.</p>
-            <div className="manager-modal-buttons">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">출마 선언을 시작합니다.</p>
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary manager-btn-large"
+                className="demo-btn-primary demo-btn-large"
                 onClick={startDeclaration}
                 disabled={updating}
               >
@@ -1296,16 +1303,16 @@ export default function GameControlPage() {
 
       {/* 후보자 연설 시작 팝업 */}
       {showStartCandidateSpeechPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">
               후보자 선언을 시작합니다.
               <br />
               첫 후보자 선언은 {getCandidateSpeechOrder()[0] ?? '?'}번 플레이어입니다.
             </p>
-            <div className="manager-modal-buttons">
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary manager-btn-large"
+                className="demo-btn-primary demo-btn-large"
                 onClick={startCandidateSpeech}
                 disabled={updating}
               >
@@ -1318,20 +1325,20 @@ export default function GameControlPage() {
 
       {/* 후보자 연설 카드 선택 팝업 */}
       {game.current_step === 5 && game.current_player !== null && (
-        <div className="manager-modal-overlay manager-card-modal-overlay">
-          <div className="manager-card-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-card-modal-title">
+        <div className="demo-modal-overlay demo-modal-overlay">
+          <div className="demo-card-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-card-modal-title">
               {game.current_player}번 플레이어 · 선언할 카드 2장을 선택하세요 ({selectedCards.length}/2)
             </p>
-            <div className="manager-card-modal-header-row">
-              <div className="manager-card-modal-timer">
+            <div className="demo-card-modal-header-row">
+              <div className="demo-card-modal-timer">
                 {game.timer_seconds > 0
                   ? `${Math.floor(game.timer_seconds / 60).toString().padStart(2, '0')}:${(game.timer_seconds % 60).toString().padStart(2, '0')}`
                   : '00:00'}
               </div>
               <button
                 type="button"
-                className="manager-pause-btn"
+                className="demo-pause-btn"
                 onClick={toggleTimerPause}
                 disabled={updating}
               >
@@ -1339,19 +1346,19 @@ export default function GameControlPage() {
               </button>
               <button
                 type="button"
-                className="manager-btn-primary manager-btn-large manager-card-declare-btn"
+                className="demo-btn-primary demo-btn-large demo-card-declare-btn"
                 onClick={completeCandidateCardDeclaration}
                 disabled={selectedCards.length !== 2 || updating}
               >
                 선언 완료
               </button>
             </div>
-            <div className="manager-card-grid manager-card-grid-by-suit">
+            <div className="demo-card-grid demo-card-grid-by-suit">
               {CARDS_BY_SUIT.map((card) => (
                 <button
                   key={card}
                   type="button"
-                  className={`manager-card-btn ${selectedCards.includes(card) ? 'selected' : ''} ${card[0] === 'D' || card[0] === 'H' ? 'red' : 'black'}`}
+                  className={`demo-card-btn ${selectedCards.includes(card) ? 'selected' : ''} ${card[0] === 'D' || card[0] === 'H' ? 'red' : 'black'}`}
                   onClick={() => toggleCandidateCard(card)}
                 >
                   {card[0] === 'S' && '♠'}
@@ -1368,12 +1375,12 @@ export default function GameControlPage() {
 
       {/* 후보자 연설 종료 팝업 */}
       {showCandidateSpeechEndPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">후보자 연설이 종료되었습니다.</p>
-            <div className="manager-modal-buttons">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">후보자 연설이 종료되었습니다.</p>
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={completeCandidateSpeechEnd}
                 disabled={updating}
               >
@@ -1386,23 +1393,23 @@ export default function GameControlPage() {
 
       {/* 턴 오픈 + 전략회의 II 시작 확인 팝업 */}
       {showTurnAndStrategy2ConfirmPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">
               1장의 카드를 공개하고 1장의 공용 카드를 공개해주세요(턴).
               <br />
               전략 회의 II를 시작하시겠습니까?
             </p>
-            <div className="manager-modal-buttons">
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={startStrategyMeeting2}
                 disabled={updating}
               >
                 네
               </button>
               <button
-                className="manager-btn-secondary"
+                className="demo-btn-secondary"
                 onClick={() => setShowTurnAndStrategy2ConfirmPopup(false)}
               >
                 아니오
@@ -1414,12 +1421,12 @@ export default function GameControlPage() {
 
       {/* 전략회의 II 스킵 확인 팝업 */}
       {showSkipStrategy2ConfirmPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">전략회의 II을 종료하시겠습니까?</p>
-            <div className="manager-modal-buttons">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">전략회의 II을 종료하시겠습니까?</p>
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={async () => {
                   if (!game) return;
                   setUpdating(true);
@@ -1446,7 +1453,7 @@ export default function GameControlPage() {
                 예
               </button>
               <button
-                className="manager-btn-secondary"
+                className="demo-btn-secondary"
                 onClick={() => setShowSkipStrategy2ConfirmPopup(false)}
               >
                 아니오
@@ -1458,12 +1465,12 @@ export default function GameControlPage() {
 
       {/* 전략회의 II 종료 팝업 */}
       {showStrategy2EndPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">전략 회의 II가 종료되었습니다.</p>
-            <div className="manager-modal-buttons">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">전략 회의 II가 종료되었습니다.</p>
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={completeStrategyMeeting2}
                 disabled={updating}
               >
@@ -1476,16 +1483,16 @@ export default function GameControlPage() {
 
       {/* 투표 시작 팝업 */}
       {showStartVotePopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">
               투표를 진행하시겠습니까?
               <br />
               첫 번째 투표할 플레이어는 {getVoterOrder()[0] ?? '?'}번 플레이어입니다.
             </p>
-            <div className="manager-modal-buttons">
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary manager-btn-large"
+                className="demo-btn-primary demo-btn-large"
                 onClick={startVote}
                 disabled={updating}
               >
@@ -1498,31 +1505,31 @@ export default function GameControlPage() {
 
       {/* 투표 플레이어 선택 팝업 */}
       {game.current_step === 8 && game.current_player !== null && (
-        <div className="manager-modal-overlay">
-          <div className="manager-vote-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-vote-player">{game.current_player}번 플레이어</p>
-            <div className="manager-vote-timer-row">
-              <div className="manager-vote-timer">
+        <div className="demo-modal-overlay">
+          <div className="demo-vote-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-vote-player">{game.current_player}번 플레이어</p>
+            <div className="demo-vote-timer-row">
+              <div className="demo-vote-timer">
                 {game.timer_seconds > 0
                   ? `${Math.floor(game.timer_seconds / 60).toString().padStart(2, '0')}:${(game.timer_seconds % 60).toString().padStart(2, '0')}`
                   : '00:00'}
               </div>
               <button
                 type="button"
-                className="manager-pause-btn"
+                className="demo-pause-btn"
                 onClick={toggleTimerPause}
                 disabled={updating}
               >
                 {game.timer_active ? '일시정지' : '재개'}
               </button>
             </div>
-            <p className="manager-vote-label">후보자 번호</p>
-            <div className="manager-vote-candidates">
+            <p className="demo-vote-label">후보자 번호</p>
+            <div className="demo-vote-candidates">
               {getCandidateSpeechOrder().map((num) => (
                 <button
                   key={num}
                   type="button"
-                  className="manager-vote-candidate-btn"
+                  className="demo-vote-candidate-btn"
                   onClick={() => handleVote(num)}
                   disabled={updating}
                 >
@@ -1532,7 +1539,7 @@ export default function GameControlPage() {
             </div>
             <button
               type="button"
-              className="manager-vote-abstain-btn"
+              className="demo-vote-abstain-btn"
               onClick={() => handleVote(null)}
               disabled={updating}
             >
@@ -1544,12 +1551,12 @@ export default function GameControlPage() {
 
       {/* 투표 종료 팝업 */}
       {showVoteEndPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">투표가 종료되었습니다.</p>
-            <div className="manager-modal-buttons">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">투표가 종료되었습니다.</p>
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={completeVoteEnd}
                 disabled={updating}
               >
@@ -1562,14 +1569,14 @@ export default function GameControlPage() {
 
       {/* 리버 오픈 팝업 */}
       {showRiverPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">
               1장의 카드를 공개하고, 1장의 공용 카드를 공개해주세요(리버).
             </p>
-            <div className="manager-modal-buttons">
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={completeRiverOpen}
                 disabled={updating}
               >
@@ -1582,15 +1589,15 @@ export default function GameControlPage() {
 
       {/* 점수 집계 - 승리자 선택 팝업 */}
       {showScoreSelectPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal manager-score-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">이번 라운드에 승리한 후보자를 선택해주세요.</p>
-            <div className="manager-score-candidates">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal demo-score-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">이번 라운드에 승리한 후보자를 선택해주세요.</p>
+            <div className="demo-score-candidates">
               {getCandidateSpeechOrder().map((num) => (
                 <button
                   key={num}
                   type="button"
-                  className={`manager-score-candidate-btn ${selectedWinners.includes(num) ? 'selected' : ''}`}
+                  className={`demo-score-candidate-btn ${selectedWinners.includes(num) ? 'selected' : ''}`}
                   onClick={() => toggleWinner(num)}
                   disabled={updating}
                 >
@@ -1598,10 +1605,10 @@ export default function GameControlPage() {
                 </button>
               ))}
             </div>
-            <p className="manager-score-hint">최소 1명 이상 선택 (공동 승리 가능)</p>
-            <div className="manager-modal-buttons">
+            <p className="demo-score-hint">최소 1명 이상 선택 (공동 승리 가능)</p>
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={completeScoreSelect}
                 disabled={selectedWinners.length < 1 || updating}
               >
@@ -1614,19 +1621,19 @@ export default function GameControlPage() {
 
       {/* 다음 라운드 확인 팝업 */}
       {showNextRoundConfirmPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">다음 라운드를 진행하시겠습니까?</p>
-            <div className="manager-modal-buttons">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">다음 라운드를 진행하시겠습니까?</p>
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={confirmNextRound}
                 disabled={updating}
               >
                 예
               </button>
               <button
-                className="manager-btn-secondary"
+                className="demo-btn-secondary"
                 onClick={() => setShowNextRoundConfirmPopup(false)}
               >
                 아니오
@@ -1638,19 +1645,19 @@ export default function GameControlPage() {
 
       {/* 게임 종료 확인 팝업 */}
       {showGameEndConfirmPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">게임이 종료되었습니다. 결과를 발표합니다.</p>
-            <div className="manager-modal-buttons">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">게임이 종료되었습니다. 결과를 발표합니다.</p>
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={confirmGameEnd}
                 disabled={updating}
               >
                 예
               </button>
               <button
-                className="manager-btn-secondary"
+                className="demo-btn-secondary"
                 onClick={() => setShowGameEndConfirmPopup(false)}
               >
                 아니오
@@ -1673,18 +1680,18 @@ export default function GameControlPage() {
           .map((p) => p.player_number)
           .filter((n) => !topScorers.includes(n));
         return (
-          <div className="manager-modal-overlay">
-            <div className="manager-modal manager-score-modal" onClick={(e) => e.stopPropagation()}>
-              <p className="manager-modal-text">{winnerText}</p>
+          <div className="demo-modal-overlay">
+            <div className="demo-modal demo-score-modal" onClick={(e) => e.stopPropagation()}>
+              <p className="demo-modal-text">{winnerText}</p>
               {isSoleWinner && (
                 <>
-                  <p className="manager-modal-text manager-modal-sub">단독 우승하여 공동 우승자를 지목합니다.</p>
-                  <div className="manager-score-candidates">
+                  <p className="demo-modal-text demo-modal-sub">단독 우승하여 공동 우승자를 지목합니다.</p>
+                  <div className="demo-score-candidates">
                     {otherPlayers.map((num) => (
                       <button
                         key={num}
                         type="button"
-                        className={`manager-score-candidate-btn ${selectedCoWinner === num ? 'selected' : ''}`}
+                        className={`demo-score-candidate-btn ${selectedCoWinner === num ? 'selected' : ''}`}
                         onClick={() => setSelectedCoWinner(selectedCoWinner === num ? null : num)}
                       >
                         {num}번
@@ -1693,9 +1700,9 @@ export default function GameControlPage() {
                   </div>
                 </>
               )}
-              <div className="manager-modal-buttons">
+              <div className="demo-modal-buttons">
                 <button
-                  className="manager-btn-primary"
+                  className="demo-btn-primary"
                   onClick={revealFinalResults}
                   disabled={!canReveal || updating}
                 >
@@ -1709,28 +1716,28 @@ export default function GameControlPage() {
 
       {/* 출마 선언 플레이어 선택 팝업 */}
       {game.current_step === 4 && game.current_player !== null && (
-        <div className="manager-modal-overlay">
-          <div className="manager-declaration-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-declaration-player">{game.current_player}번 플레이어</p>
-            <div className="manager-declaration-timer-row">
-              <div className="manager-declaration-timer">
+        <div className="demo-modal-overlay">
+          <div className="demo-declaration-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-declaration-player">{game.current_player}번 플레이어</p>
+            <div className="demo-declaration-timer-row">
+              <div className="demo-declaration-timer">
                 {game.timer_seconds > 0
                   ? `${Math.floor(game.timer_seconds / 60).toString().padStart(2, '0')}:${(game.timer_seconds % 60).toString().padStart(2, '0')}`
                   : '00:00'}
               </div>
               <button
                 type="button"
-                className="manager-pause-btn"
+                className="demo-pause-btn"
                 onClick={toggleTimerPause}
                 disabled={updating}
               >
                 {game.timer_active ? '일시정지' : '재개'}
               </button>
             </div>
-            <div className="manager-declaration-buttons">
+            <div className="demo-declaration-buttons">
               <button
                 type="button"
-                className="manager-declaration-btn manager-declaration-btn-enter"
+                className="demo-declaration-btn demo-declaration-btn-enter"
                 onClick={() => handleDeclarationChoice(true)}
                 disabled={updating}
               >
@@ -1738,7 +1745,7 @@ export default function GameControlPage() {
               </button>
               <button
                 type="button"
-                className="manager-declaration-btn manager-declaration-btn-pass"
+                className="demo-declaration-btn demo-declaration-btn-pass"
                 onClick={() => handleDeclarationChoice(false)}
                 disabled={updating}
               >
@@ -1751,12 +1758,12 @@ export default function GameControlPage() {
 
       {/* 출마 선언 종료 팝업 */}
       {showDeclarationEndPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">출마 선언이 종료되었습니다.</p>
-            <div className="manager-modal-buttons">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">출마 선언이 종료되었습니다.</p>
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={completeDeclaration}
                 disabled={updating}
               >
@@ -1769,12 +1776,12 @@ export default function GameControlPage() {
 
       {/* 전략회의 I 종료 팝업 */}
       {showStrategyEndPopup && (
-        <div className="manager-modal-overlay">
-          <div className="manager-modal" onClick={(e) => e.stopPropagation()}>
-            <p className="manager-modal-text">전략 회의 I이 종료되었습니다.</p>
-            <div className="manager-modal-buttons">
+        <div className="demo-modal-overlay">
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-text">전략 회의 I이 종료되었습니다.</p>
+            <div className="demo-modal-buttons">
               <button
-                className="manager-btn-primary"
+                className="demo-btn-primary"
                 onClick={completeStrategyMeeting}
                 disabled={updating}
               >

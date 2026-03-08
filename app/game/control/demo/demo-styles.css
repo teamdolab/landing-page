@@ -353,6 +353,39 @@
   border-radius: 4px;
 }
 
+.control-demo-root .demo-card-display {
+  display: flex;
+  gap: 6px;
+}
+.control-demo-root .demo-card-item {
+  width: 36px;
+  height: 50px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: var(--tech-font);
+  font-weight: 800;
+  font-size: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+.control-demo-root .demo-card-item.red {
+  color: #E53935;
+  border-color: #ffcdd2;
+}
+.control-demo-root .demo-card-item.black {
+  color: #333;
+  border-color: #cfd8dc;
+}
+.control-demo-root .demo-card-item span {
+  font-size: 12px;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
 .control-demo-root .demo-btn-large {
   padding: 20px 48px;
   font-size: 20px;
@@ -654,6 +687,17 @@
   border-color: var(--key-color);
   border-width: 3px;
   box-shadow: 0 0 0 2px var(--key-color);
+}
+
+/* 로딩 */
+.control-demo-root .demo-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-gray);
 }
 
 /* 데모 배너 */
