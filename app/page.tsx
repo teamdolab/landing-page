@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Power, MapPin, Info } from 'lucide-react';
+import { Power, MapPin, Info, MessageCircle } from 'lucide-react';
+
+const KAKAO_CHANNEL_URL = 'http://pf.kakao.com/_nVsZX'; // DO:LAB 카카오톡 채널
 import { 
   supabase, 
   checkUserExists,
@@ -1084,6 +1086,15 @@ export default function Home() {
                 <Info size={18} strokeWidth={2} />
                 <span className="font-body text-xs">콘텐츠 정보</span>
               </button>
+              <a
+                href={KAKAO_CHANNEL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-text-sub hover:text-neon-orange transition-colors px-2 py-1 rounded hover:bg-neon-orange/10"
+              >
+                <MessageCircle size={18} strokeWidth={2} />
+                <span className="font-body text-xs">카카오톡 채널 문의하기</span>
+              </a>
             </div>
             {/* 실시간 예약 확인 / 게임 참가하기 버튼 */}
             <div className="flex flex-col gap-4">
