@@ -165,6 +165,7 @@ function DisplayPageContent() {
     }
   }, [sessionParam, loadGame]);
 
+  // 데모: BroadcastChannel 구독
   useEffect(() => {
     if (sessionId === 'demo') {
       return subscribeDemoGame((data) => setGame(data as GameState));
@@ -186,6 +187,13 @@ function DisplayPageContent() {
     return () => {
       supabase.removeChannel(channel);
     };
+  }, [sessionId, loadGame]);
+
+  // 실제 게임: Realtime 미동작 시 대비 폴링 (2초마다)
+  useEffect(() => {
+    if (!sessionId || sessionId.startsWith('demo')) return;
+    const interval = setInterval(() => loadGame(sessionId), 2000);
+    return () => clearInterval(interval);
   }, [sessionId, loadGame]);
 
   const handleSessionSubmit = (e: React.FormEvent) => {
