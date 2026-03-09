@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Power } from 'lucide-react';
+import { Power, MapPin, Info } from 'lucide-react';
 import { 
   supabase, 
   checkUserExists,
@@ -127,6 +127,8 @@ export default function Home() {
   const [showGameIntro, setShowGameIntro] = useState<string | null>(null);
   // 이벤트 모달
   const [showEventModal, setShowEventModal] = useState<'newuser' | 'referrer' | null>(null);
+  // 장소 / 콘텐츠 소개 모달
+  const [showInfoModal, setShowInfoModal] = useState<'venue' | 'content' | null>(null);
   // 가입 확인 모달 (신규 회원)
   const [showSignupConfirm, setShowSignupConfirm] = useState(false);
   
@@ -647,6 +649,71 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      {/* 장소 / 콘텐츠 정보 모달 */}
+      <AnimatePresence>
+        {showInfoModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60"
+            onClick={() => setShowInfoModal(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-phantom-white border-2 border-neon-orange clip-cut-corner max-h-[85vh] w-full max-w-lg flex flex-col"
+            >
+              <div className="p-4 border-b-2 border-neon-orange/30 flex-shrink-0">
+                <h3 className="font-orbitron text-sm font-bold text-neon-orange uppercase tracking-widest">
+                  {showInfoModal === 'venue' ? '장소' : '콘텐츠 정보'}
+                </h3>
+              </div>
+              <div className="p-4 overflow-y-auto flex-1 text-text-main text-sm leading-relaxed">
+                {showInfoModal === 'venue' && (
+                  <>
+                    <p>우비공 문래(영등포구 도림로 147길 22, 2층)</p>
+                    <p className="text-xs text-text-sub mt-2">* 추후 변경 될 수 있습니다.</p>
+                  </>
+                )}
+                {showInfoModal === 'content' && (
+                  <>
+                    <p className="font-orbitron text-xs font-bold text-neon-orange uppercase tracking-widest mb-2">소개</p>
+                    <p className="mb-4">
+                      소셜전략게임 연구소 DO:LAB에서 진행하는 게임을 만나보세요!
+                      <br />
+                      예능에서만 보던 더지니어스, 데블스플랜 등의 게임을 실제로 플레이하실 수 있습니다.
+                      <br />
+                      마피아 게임, 보드 게임, 전략 게임, 방탈출을 좋아하는 모든 분들을 환영합니다.
+                      <br />
+                      <br />
+                      당신의 두뇌, ON 시킬 준비되셨습니까?
+                      <br />
+                      지금 바로 신청하세요! &quot;DO:NEON PROJECT&quot;
+                    </p>
+                    <p className="font-orbitron text-xs font-bold text-neon-orange uppercase tracking-widest mb-2">유의사항</p>
+                    <p>
+                      DO:LAB의 모든 게임은 최소 진행 인원이 8명입니다. 최소 진행 인원이 플레이 당일 자정(00시 00분)까지 8명 미만일 경우 게임은 취소되며, 전액 환불해드립니다.
+                    </p>
+                  </>
+                )}
+              </div>
+              <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30">
+                <button
+                  type="button"
+                  onClick={() => setShowInfoModal(null)}
+                  className="w-full font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
+                >
+                  확인
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* 이벤트 모달 */}
       <AnimatePresence>
         {showEventModal && (
@@ -1001,6 +1068,22 @@ export default function Home() {
               <span className="font-body text-neon-orange text-sm md:text-base font-bold uppercase">
                 28% 할인
               </span>
+              <button
+                type="button"
+                onClick={() => setShowInfoModal('venue')}
+                className="inline-flex items-center gap-1.5 text-text-sub hover:text-neon-orange transition-colors px-2 py-1 rounded hover:bg-neon-orange/10"
+              >
+                <MapPin size={18} strokeWidth={2} />
+                <span className="font-body text-xs">장소</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowInfoModal('content')}
+                className="inline-flex items-center gap-1.5 text-text-sub hover:text-neon-orange transition-colors px-2 py-1 rounded hover:bg-neon-orange/10"
+              >
+                <Info size={18} strokeWidth={2} />
+                <span className="font-body text-xs">콘텐츠 정보</span>
+              </button>
             </div>
             {/* 실시간 예약 확인 / 게임 참가하기 버튼 */}
             <div className="flex flex-col gap-4">
