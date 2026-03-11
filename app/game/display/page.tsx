@@ -286,10 +286,6 @@ function DisplayPageContent() {
   return (
     <div className="game-display-root">
       <div className="scanlines" aria-hidden />
-      <div className="hud-corner hud-tl" aria-hidden />
-      <div className="hud-corner hud-tr" aria-hidden />
-      <div className="hud-corner hud-bl" aria-hidden />
-      <div className="hud-corner hud-br" aria-hidden />
 
       <header className="display-header">
         <div className="brand-box">

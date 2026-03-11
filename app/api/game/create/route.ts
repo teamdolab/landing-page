@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { dbRowToApi } from '@/lib/game-transform';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+function buildInitialRoundScores(count: number): Record<string, number[]> {
+  const r: Record<string, number[]> = {};
+  for (let i = 1; i <= count; i++) r[String(i)] = [0, 0, 0, 0];
+  return r;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,7 +43,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // 생성된 게임 정보 조회
+    // 선 정하기 단계로 설정 + 새 칼럼 초기화
+    const { error: updateError } = await supabase
+      .from('game_0a')
+      .update({
+        current_step: 1,
+        info_text: '선 정하기',
+        status: '진행중',
+        first_player_number: null,
+        dealing_completed: false,
+        declaration_results: {},
+        candidate_revealed_cards: {},
+        round_scores: buildInitialRoundScores(count),
+      })
+      .eq('game_id', gameId);
+
+    if (updateError) {
+      console.error('게임 초기 설정 에러:', updateError);
+    }
+
     const { data: game, error: fetchError } = await supabase
       .from('game_0a')
       .select('*')
@@ -47,7 +72,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ game_id: gameId });
     }
 
-    return NextResponse.json(game);
+    return NextResponse.json(dbRowToApi(game as Record<string, unknown>));
   } catch (err) {
     console.error('게임 생성 오류:', err);
     return NextResponse.json(

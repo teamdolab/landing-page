@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { apiUpdateToDb, dbRowToApi } from '@/lib/game-transform';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,38 +17,23 @@ export async function PATCH(
   }
 
   try {
-    const body = await req.json();
-    const {
-      current_step,
-      current_round,
-      info_text,
-      timer_seconds,
-      timer_active,
-      timer_end,
-      current_player,
-      community_cards,
-      players,
-      votes,
-      round_winners,
-      final_winners,
-      status,
-    } = body;
+    const body = (await req.json()) as Record<string, unknown>;
+    const { action_type, action_player_number, action_data } = body;
 
-    const updates: Record<string, unknown> = {};
-    if (current_step !== undefined) updates.current_step = current_step;
-    if (current_round !== undefined) updates.current_round = current_round;
-    if (info_text !== undefined) updates.info_text = info_text;
-    if (timer_seconds !== undefined) updates.timer_seconds = timer_seconds;
-    if (timer_active !== undefined) updates.timer_active = timer_active;
-    if (timer_end !== undefined) updates.timer_end = timer_end;
-    if (current_player !== undefined) updates.current_player = current_player;
-    if (community_cards !== undefined) updates.community_cards = community_cards;
-    if (players !== undefined) updates.players = players;
-    if (votes !== undefined) updates.votes = votes;
-    if (round_winners !== undefined) updates.round_winners = round_winners;
-    if (final_winners !== undefined) updates.final_winners = final_winners;
-    if (status !== undefined) updates.status = status;
+    // Undo용 액션 로깅 (클라이언트가 action_type 전달 시)
+    if (action_type) {
+      const { error: actionError } = await supabase.rpc('add_poker_action', {
+        p_game_id: gameId,
+        p_action_type: action_type,
+        p_player_number: action_player_number ?? 0,
+        p_action_data: action_data ?? {},
+      });
+      if (actionError) {
+        console.error('add_poker_action 에러:', actionError);
+      }
+    }
 
+    const updates = apiUpdateToDb(body);
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: '업데이트할 필드 없음' }, { status: 400 });
     }
@@ -64,7 +50,7 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(dbRowToApi(data as Record<string, unknown>));
   } catch (err) {
     console.error('게임 업데이트 오류:', err);
     return NextResponse.json({ error: '서버 오류' }, { status: 500 });

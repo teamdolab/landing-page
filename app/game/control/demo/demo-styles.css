@@ -43,7 +43,7 @@
   background: rgba(255, 255, 255, 0.9);
   border-bottom: 2px solid var(--key-color);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-  z-index: 50;
+  z-index: 1100; /* 팝업 위에 표시되어 Undo 항상 클릭 가능 */
   backdrop-filter: blur(5px);
 }
 
@@ -70,6 +70,78 @@
 .control-demo-root .demo-tabs {
   font-size: 13px;
   color: var(--text-gray);
+}
+
+.control-demo-root .demo-header-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.control-demo-root .demo-undo-btn,
+.control-demo-root .demo-edit-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 2px solid var(--key-color);
+  background: transparent;
+  color: var(--key-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-demo-root .demo-undo-btn:hover:not(:disabled),
+.control-demo-root .demo-edit-btn:hover:not(:disabled) {
+  background: var(--key-color);
+  color: #fff;
+}
+
+.control-demo-root .demo-undo-btn:disabled,
+.control-demo-root .demo-edit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Edit 모달 */
+.control-demo-root .demo-edit-modal {
+  max-width: 480px;
+  width: 90%;
+}
+
+.control-demo-root .demo-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text-dark);
+}
+
+.control-demo-root .demo-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.control-demo-root .demo-edit-form label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-gray);
+  margin-bottom: 4px;
+}
+
+.control-demo-root .demo-edit-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.control-demo-root .demo-edit-input:focus {
+  outline: none;
+  border-color: var(--key-color);
 }
 
 /* === 중단 (송출용 info-section과 동일 구조) === */

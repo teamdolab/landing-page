@@ -28,11 +28,6 @@ export default function ResultPreviewPage() {
       </div>
       <div className="game-display-root result-preview-wrap">
         <div className="scanlines" aria-hidden />
-        <div className="hud-corner hud-tl" aria-hidden />
-        <div className="hud-corner hud-tr" aria-hidden />
-        <div className="hud-corner hud-bl" aria-hidden />
-        <div className="hud-corner hud-br" aria-hidden />
-
         <header className="display-header">
           <div className="brand-box">
             <span className="brand-main">DO:LAB</span>

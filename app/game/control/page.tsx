@@ -147,16 +147,6 @@ export default function ControlPage() {
       if (res.ok) {
         setGame(data);
         setDisplayUrl(`${window.location.origin}/game/display?session=${selectedSession.session_id}`);
-        // 선 정하기 단계로 설정 후 컨트롤 페이지로 이동
-        await fetch(`/api/game/${data.game_id}/update`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            current_step: 1,
-            info_text: '선 정하기',
-            status: '진행중',
-          }),
-        });
         router.push(`/game/control/${data.game_id}`);
       } else {
         alert(data.error || '게임 생성 실패');
@@ -294,6 +284,30 @@ export default function ControlPage() {
                   >
                     <i className="fa-solid fa-external-link-alt" /> 송출 화면 열기
                   </a>
+                  <button
+                    type="button"
+                    className="control-btn-secondary"
+                    style={{ color: '#c62828' }}
+                    onClick={async () => {
+                      if (!confirm('게임을 초기화하시겠습니까? 플레이어 수를 다시 선택하고 새로 시작합니다.')) return;
+                      try {
+                        const res = await fetch(`/api/game/${game.game_id}/reset`, { method: 'POST' });
+                        if (res.ok) {
+                          setGame(null);
+                          setDisplayUrl('');
+                          alert('게임이 초기화되었습니다. 플레이어 수를 선택하고 게임을 시작하세요.');
+                        } else {
+                          const data = await res.json();
+                          alert(data.error || '초기화 실패');
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        alert('초기화 중 오류가 발생했습니다.');
+                      }
+                    }}
+                  >
+                    <i className="fa-solid fa-rotate-left" /> 게임 초기화
+                  </button>
                 </div>
               </div>
             )}

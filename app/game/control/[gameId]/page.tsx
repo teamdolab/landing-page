@@ -162,6 +162,52 @@ export default function GameControlPage() {
     }
   }, [game?.status]);
 
+  function closeAllPopups() {
+    setShowDealingPopup(false);
+    setShowStrategyConfirmPopup(false);
+    setShowStrategyEndPopup(false);
+    setShowSkipConfirmPopup(false);
+    setShowStartDeclarationPopup(false);
+    setShowDeclarationEndPopup(false);
+    setShowStartCandidateSpeechPopup(false);
+    setShowCandidateSpeechEndPopup(false);
+    setShowTurnAndStrategy2ConfirmPopup(false);
+    setShowStrategy2EndPopup(false);
+    setShowSkipStrategy2ConfirmPopup(false);
+    setShowStartVotePopup(false);
+    setShowVoteEndPopup(false);
+    setShowRiverPopup(false);
+    setShowScoreSelectPopup(false);
+    setShowNextRoundConfirmPopup(false);
+    setShowGameEndConfirmPopup(false);
+    setShowFinalWinnerPopup(false);
+    setConfirmPlayer(null);
+    setSelectedCards([]);
+    setSelectedWinners([]);
+    setScoresCalculated(false);
+    setSelectedCoWinner(null);
+  }
+
+  async function handleUndo() {
+    if (!gameId || updating) return;
+    setUpdating(true);
+    try {
+      const res = await fetch(`/api/game/${gameId}/undo`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        closeAllPopups();
+        await loadGame();
+      } else {
+        alert(data.error || 'Undo 실패');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Undo 중 오류가 발생했습니다.');
+    } finally {
+      setUpdating(false);
+    }
+  }
+
   async function setFirstPlayer(playerNum: number) {
     if (!game) return;
     setUpdating(true);
@@ -177,6 +223,8 @@ export default function GameControlPage() {
           players,
           current_step: 2,
           info_text: '카드 딜링',
+          action_type: 'select_first',
+          action_player_number: playerNum,
         }),
       });
       const data = await res.json();
@@ -212,6 +260,7 @@ export default function GameControlPage() {
           info_text: '전략회의 I',
           timer_seconds: STRATEGY_MEETING_DURATION,
           timer_active: true,
+          action_type: 'dealing_complete',
         }),
       });
       const data = await res.json();
@@ -308,6 +357,7 @@ export default function GameControlPage() {
           current_player: firstPlayer,
           timer_seconds: DECLARATION_TIME_LIMIT,
           timer_active: true,
+          action_type: 'strategy_meeting_1_end',
         }),
       });
       const data = await res.json();
@@ -346,6 +396,8 @@ export default function GameControlPage() {
           timer_active: !!nextPlayer,
           timer_end: isLast,
           ...(isLast && { current_player: null }),
+          action_type: 'candidacy',
+          action_player_number: game.current_player!,
         }),
       });
       const data = await res.json();
@@ -453,6 +505,8 @@ export default function GameControlPage() {
           timer_seconds: nextCandidate ? CANDIDATE_SPEECH_TIME_LIMIT : 0,
           timer_active: !!nextCandidate,
           timer_end: isLast,
+          action_type: 'reveal_cards',
+          action_player_number: game.current_player!,
         }),
       });
       const data = await res.json();
@@ -482,6 +536,7 @@ export default function GameControlPage() {
           current_step: 6,
           info_text: '턴 오픈',
           timer_end: false,
+          action_type: 'turn_open',
         }),
       });
       if (res.ok) {
@@ -509,6 +564,7 @@ export default function GameControlPage() {
           info_text: '전략회의 II',
           timer_seconds: STRATEGY_MEETING_DURATION,
           timer_active: true,
+          action_type: 'strategy_meeting_2_start',
         }),
       });
       const data = await res.json();
@@ -533,7 +589,10 @@ export default function GameControlPage() {
       const res = await fetch(`/api/game/${gameId}/update`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ timer_end: false }),
+        body: JSON.stringify({
+          timer_end: false,
+          action_type: 'strategy_meeting_2_end',
+        }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -616,6 +675,8 @@ export default function GameControlPage() {
           timer_seconds: nextVoter ? VOTE_TIME_LIMIT : 0,
           timer_active: !!nextVoter,
           timer_end: isLast,
+          action_type: 'vote',
+          action_player_number: game.current_player!,
         }),
       });
       const data = await res.json();
@@ -715,7 +776,11 @@ export default function GameControlPage() {
       const res = await fetch(`/api/game/${gameId}/update`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ players, round_winners: roundWinners }),
+        body: JSON.stringify({
+          players,
+          round_winners: roundWinners,
+          action_type: 'calculate_scores',
+        }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -765,6 +830,7 @@ export default function GameControlPage() {
           timer_active: false,
           timer_end: false,
           players,
+          action_type: 'start_round',
         }),
       });
       const data = await res.json();
@@ -1051,7 +1117,25 @@ export default function GameControlPage() {
       <header className="demo-header">
         <div className="demo-game-code">{game.session_id}</div>
         <div className="demo-round-box">{game.current_round} ROUND</div>
-        <div className="demo-tabs">—</div>
+        <div className="demo-header-right flex items-center gap-2">
+          <button
+            type="button"
+            className="demo-undo-btn"
+            onClick={() => router.push(`/game/edit/${gameId}`)}
+            title="비상 시 상태 수정 (송출 레이아웃에서 인라인 편집)"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            className="demo-undo-btn"
+            onClick={handleUndo}
+            disabled={updating}
+            title="이전 액션 취소"
+          >
+            Undo
+          </button>
+        </div>
       </header>
 
       {/* 중단: 라운드 진행상황 | 타이머 | 액션 가이드 */}
@@ -1791,6 +1875,7 @@ export default function GameControlPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

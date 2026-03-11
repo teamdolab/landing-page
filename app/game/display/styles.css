@@ -54,20 +54,6 @@
   z-index: 9999;
 }
 
-.game-display-root .hud-corner {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--key-color);
-  pointer-events: none;
-  z-index: 100;
-  opacity: 0.8;
-}
-.game-display-root .hud-tl { top: 12px; left: 12px; border-right: none; border-bottom: none; }
-.game-display-root .hud-tr { top: 12px; right: 12px; border-left: none; border-bottom: none; }
-.game-display-root .hud-bl { bottom: 12px; left: 12px; border-right: none; border-top: none; }
-.game-display-root .hud-br { bottom: 12px; right: 12px; border-left: none; border-top: none; }
-
 /* Header - 고정 높이 */
 .game-display-root .display-header {
   flex: 0 0 72px;
