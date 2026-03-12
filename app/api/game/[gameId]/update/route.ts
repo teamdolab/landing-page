@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { apiUpdateToDb, dbRowToApi } from '@/lib/game-transform';
+import { apiUpdateToDb, dbRowToApi, type GameRow } from '@/lib/game-transform';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -52,7 +52,7 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(dbRowToApi(data as Record<string, unknown>));
+    return NextResponse.json(dbRowToApi(data as GameRow));
   } catch (err) {
     console.error('게임 업데이트 오류:', err);
     return NextResponse.json({ error: '서버 오류' }, { status: 500 });

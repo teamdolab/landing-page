@@ -97,7 +97,9 @@ export default function GameEditPage() {
         () => loadGame()
       )
       .subscribe();
-    return () => supabase.removeChannel(channel);
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, [gameId, game, loadGame]);
 
   async function applyEdit(payload: { op?: Record<string, unknown>; ops?: Record<string, unknown>[] }) {

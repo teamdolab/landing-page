@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { dbRowToApi } from '@/lib/game-transform';
+import { dbRowToApi, type GameRow } from '@/lib/game-transform';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -38,7 +38,7 @@ export async function GET(
     .maybeSingle();
 
   const gameName = (sessionRow as { game_name?: string } | null)?.game_name ?? sessionId;
-  const api = dbRowToApi(gameData as Record<string, unknown>) as Record<string, unknown>;
+  const api = dbRowToApi(gameData as GameRow) as Record<string, unknown>;
   api.game_name = gameName;
 
   return NextResponse.json(api);

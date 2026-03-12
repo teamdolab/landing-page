@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { dbRowToApi } from '@/lib/game-transform';
+import { dbRowToApi, type GameRow } from '@/lib/game-transform';
 import { applyEditOp, type EditOp } from '@/lib/edit-smart';
 
 const supabase = createClient(
@@ -59,7 +59,7 @@ export async function POST(
     }
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json(dbRowToApi(row as Record<string, unknown>));
+      return NextResponse.json(dbRowToApi(row as GameRow));
     }
 
     const { data: updated, error: updateError } = await supabase
@@ -74,7 +74,7 @@ export async function POST(
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    return NextResponse.json(dbRowToApi(updated as Record<string, unknown>));
+    return NextResponse.json(dbRowToApi(updated as GameRow));
   } catch (err) {
     console.error('Edit 오류:', err);
     return NextResponse.json({ error: '서버 오류' }, { status: 500 });

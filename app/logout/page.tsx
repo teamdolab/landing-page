@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import './logout-styles.css';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,7 +18,7 @@ type LogoutData = {
   creditGain: number;
 };
 
-export default function LogoutPage() {
+function LogoutContent() {
   const searchParams = useSearchParams();
   const gameId = searchParams.get('gameId') ?? '';
 
@@ -192,7 +192,7 @@ export default function LogoutPage() {
               autoComplete="off"
               autoFocus
               lang="en"
-              inputMode="latin"
+              inputMode="text"
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-12 opacity-0"
               aria-label="NFC 카드 ID 입력"
               onKeyDown={(e) => {
@@ -419,6 +419,14 @@ export default function LogoutPage() {
         )}
       </AnimatePresence>
     </main>
+  );
+}
+
+export default function LogoutPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-black text-white">로딩 중...</div>}>
+      <LogoutContent />
+    </Suspense>
   );
 }
 

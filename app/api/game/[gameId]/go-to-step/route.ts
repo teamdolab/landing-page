@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { dbRowToApi } from '@/lib/game-transform';
+import { dbRowToApi, type GameRow } from '@/lib/game-transform';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,7 +48,7 @@ export async function POST(
       return NextResponse.json({ error: '게임 없음' }, { status: 404 });
     }
 
-    const game = dbRowToApi(gameRow as Record<string, unknown>);
+    const game = dbRowToApi(gameRow as GameRow);
     return NextResponse.json({ success: true, game });
   } catch (err) {
     console.error('go-to-step 오류:', err);

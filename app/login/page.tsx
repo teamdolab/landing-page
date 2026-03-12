@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase, type UserInfo } from '@/lib/supabase';
 
 type Screen = 'intro' | 'pin' | 'nickname' | 'password' | 'nfc' | 'success';
 
-export default function LoginPage() {
+function LoginContent() {
   const searchParams = useSearchParams();
   const gameId = searchParams.get('gameId') ?? '';
   const [screen, setScreen] = useState<Screen>('intro');
@@ -447,7 +447,7 @@ export default function LoginPage() {
               autoComplete="off"
               autoFocus
               lang="en"
-              inputMode="latin"
+              inputMode="text"
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-12 opacity-0"
               aria-label="NFC 카드 ID 입력"
               onKeyDown={(e) => {
@@ -533,6 +533,14 @@ export default function LoginPage() {
       </AnimatePresence>
 
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#F2F4F6] text-[#222]">로딩 중...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
 

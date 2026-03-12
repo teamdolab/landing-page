@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { dbRowToApi } from '@/lib/game-transform';
+import { dbRowToApi, type GameRow } from '@/lib/game-transform';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ game_id: gameId });
     }
 
-    return NextResponse.json(dbRowToApi(game as Record<string, unknown>));
+    return NextResponse.json(dbRowToApi(game as GameRow));
   } catch (err) {
     console.error('게임 생성 오류:', err);
     return NextResponse.json(
