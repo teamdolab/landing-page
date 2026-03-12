@@ -20,16 +20,18 @@ export async function PATCH(
     const body = (await req.json()) as Record<string, unknown>;
     const { action_type, action_player_number, action_data } = body;
 
-    // Undo용 액션 로깅 (클라이언트가 action_type 전달 시)
+    // Undo용 액션 로깅 (실패해도 업데이트는 진행)
     if (action_type) {
-      const { error: actionError } = await supabase.rpc('add_poker_action', {
-        p_game_id: gameId,
-        p_action_type: action_type,
-        p_player_number: action_player_number ?? 0,
-        p_action_data: action_data ?? {},
-      });
-      if (actionError) {
-        console.error('add_poker_action 에러:', actionError);
+      try {
+        const { error: actionError } = await supabase.rpc('add_poker_action', {
+          p_game_id: gameId,
+          p_action_type: action_type,
+          p_player_number: action_player_number ?? 0,
+          p_action_data: action_data ?? {},
+        });
+        if (actionError) console.error('add_poker_action 에러:', actionError);
+      } catch {
+        // RPC 없음/오류 시에도 메인 업데이트는 진행
       }
     }
 

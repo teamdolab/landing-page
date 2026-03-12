@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase, type UserInfo } from '@/lib/supabase';
 
 type Screen = 'intro' | 'pin' | 'nickname' | 'password' | 'nfc' | 'success';
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const gameId = searchParams.get('gameId') ?? '';
   const [screen, setScreen] = useState<Screen>('intro');
   const [pin, setPin] = useState('');
   const [users, setUsers] = useState<UserInfo[]>([]);
@@ -16,20 +19,37 @@ export default function LoginPage() {
   const [pinError, setPinError] = useState(false);
   const [nicknameError, setNicknameError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
+  const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showTouchText, setShowTouchText] = useState(false);
+  const [nfcError, setNfcError] = useState('');
+  const nfcInputRef = useRef<HTMLInputElement>(null);
 
   const showScreen = useCallback((id: Screen) => {
     setScreen(id);
   }, []);
+
+  useEffect(() => {
+    if (screen === 'success') setShowTouchText(false);
+  }, [screen]);
+
+  useEffect(() => {
+    if (screen === 'nfc') {
+      setNfcError('');
+      nfcInputRef.current?.setAttribute('data-nfc-buffer', '');
+      const t = setTimeout(() => nfcInputRef.current?.focus(), 300);
+      return () => clearTimeout(t);
+    }
+  }, [screen]);
 
 
   const handleKeypadInput = (key: string, value: string, setter: (v: string) => void, maxLen: number) => {
     if (value.length < maxLen) setter(value + key);
   };
 
-  const handleKeypadDelete = (value: string, setter: (v: string) => void) => {
-    if (value.length > 0) setter(value.slice(0, -1));
+  const handleKeypadDelete = (_value: string, setter: (v: string) => void) => {
+    setter('');
   };
 
   const submitPin = async () => {
@@ -41,10 +61,9 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMessage('');
     try {
-      const { data, error } = await supabase
-        .from('user_info')
-        .select('*')
-        .eq('pin', pin);
+      const { data, error } = await supabase.rpc('get_users_by_pin', {
+        p_pin: pin,
+      });
 
       if (error) {
         console.error('Supabase error:', error);
@@ -52,9 +71,9 @@ export default function LoginPage() {
         setErrorMessage(error.message || '조회에 실패했습니다.');
         return;
       }
-      if (!data || data.length === 0) {
+      if (!data || (Array.isArray(data) && data.length === 0)) {
         setPinError(true);
-        setErrorMessage('일치하는 회원이 없습니다. (PIN 확인 또는 가입 필요)');
+        setErrorMessage('일치하는 회원이 없습니다.');
         return;
       }
       setUsers(data as UserInfo[]);
@@ -85,24 +104,59 @@ export default function LoginPage() {
   const submitPassword = () => {
     if (password.length !== 4) {
       setPasswordError(true);
+      setPasswordErrorMessage('패스워드가 틀렸습니다.');
       return;
     }
     if (!selectedUser) {
       setPasswordError(true);
+      setPasswordErrorMessage('패스워드가 틀렸습니다.');
       return;
     }
     // TODO: 실제 배포 시 bcrypt로 해시 비교. 테스트용 평문 비교
     if (selectedUser.password === password) {
       setPasswordError(false);
+      setPasswordErrorMessage('');
       showScreen('nfc');
     } else {
       setPasswordError(true);
+      setPasswordErrorMessage('패스워드가 틀렸습니다.');
     }
   };
 
-  const processNFC = () => {
-    showScreen('success');
-  };
+  const processNFC = useCallback(async (nfcIdRaw: string) => {
+    const nfcId = nfcIdRaw?.trim();
+    if (!nfcId) return;
+
+    if (!gameId) {
+      setNfcError('게임 정보가 없습니다. 컨트롤 페이지에서 로그인 화면을 열어주세요.');
+      return;
+    }
+    if (!selectedUser) return;
+
+    setNfcError('');
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/game/${encodeURIComponent(gameId)}/register-player`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: selectedUser.id,
+          nfc_id: nfcId,
+        }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        showScreen('success');
+      } else {
+        setNfcError(data.error || '등록에 실패했습니다.');
+      }
+    } catch (err) {
+      setNfcError('등록 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  }, [gameId, selectedUser]);
 
   const resetToStart = () => {
     setPin('');
@@ -113,7 +167,9 @@ export default function LoginPage() {
     setPinError(false);
     setNicknameError(false);
     setPasswordError(false);
+    setPasswordErrorMessage('');
     setErrorMessage('');
+    setNfcError('');
     showScreen('intro');
   };
 
@@ -121,13 +177,21 @@ export default function LoginPage() {
     setPinError(false);
     setNicknameError(false);
     setPasswordError(false);
+    setPasswordErrorMessage('');
     showScreen(target);
   };
 
   const handleNfcBack = () => goBack('password');
 
+  const keyCodeToHexChar = (e: React.KeyboardEvent): string | null => {
+    const code = e.code;
+    if (code?.startsWith('Digit')) return code.slice(-1);
+    const map: Record<string, string> = { KeyA: 'a', KeyB: 'b', KeyC: 'c', KeyD: 'd', KeyE: 'e', KeyF: 'f' };
+    return map[code ?? ''] ?? null;
+  };
+
   return (
-    <main className="min-h-screen w-screen overflow-hidden bg-[#F2F4F6] relative font-sans">
+    <main className="min-h-screen w-screen overflow-hidden bg-[#F2F4F6] relative font-body">
       {/* Grid Background */}
       <div
         className="fixed inset-0 pointer-events-none z-[9998] opacity-100"
@@ -153,10 +217,7 @@ export default function LoginPage() {
         <div className="absolute top-0 right-0 w-8 h-8 border-[3px] border-[#FF4F00] border-l-0 border-b-0" />
         <div className="absolute bottom-0 left-0 w-8 h-8 border-[3px] border-[#FF4F00] border-r-0 border-t-0" />
         <div className="absolute bottom-0 right-0 w-8 h-8 border-[3px] border-[#FF4F00] border-l-0 border-t-0" />
-        <div className="absolute top-3 left-12 font-mono text-sm font-extrabold tracking-wider text-[#222] opacity-60">
-          DO:LAB | REG_TERMINAL
-        </div>
-        <div className="absolute top-3 right-12 flex items-center gap-2 font-mono text-sm text-[#222] opacity-60">
+        <div className="absolute top-3 right-12 flex items-center gap-2 text-sm text-[#222] opacity-60">
           ONLINE <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_5px_#00ff00]" />
         </div>
       </div>
@@ -172,33 +233,27 @@ export default function LoginPage() {
             className="fixed inset-0 flex flex-col items-center justify-center z-10 cursor-pointer"
             onClick={() => showScreen('pin')}
           >
-            <div className="relative w-[220px] h-[220px] flex justify-center items-center mb-16">
-              <div
-                className="absolute inset-0 border-2 border-dashed border-black/10 rounded-full animate-spin"
-                style={{ animationDuration: '10s' }}
+            <div className="w-[880px] h-[880px] flex items-center justify-center mb-16">
+              <img
+                src="/login-logo.png"
+                alt="DO:LAB"
+                width={880}
+                height={880}
+                className="object-contain drop-shadow-md w-[880px] h-[880px]"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  const fallback = (e.target as HTMLImageElement).nextElementSibling;
+                  if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                }}
               />
-              <div className="relative z-10 w-[180px] h-[180px] flex items-center justify-center">
-                <img
-                  src="/dolab-logo.png"
-                  alt="DO:LAB"
-                  width={180}
-                  height={180}
-                  className="object-contain drop-shadow-md w-[180px] h-[180px]"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                    const fallback = (e.target as HTMLImageElement).nextElementSibling;
-                    if (fallback) (fallback as HTMLElement).style.display = 'flex';
-                  }}
-                />
-                <div
-                  className="hidden w-[180px] h-[180px] bg-[#FF4F00] items-center justify-center font-mono text-2xl font-extrabold text-[#222]"
-                  style={{
-                    clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-                    filter: 'drop-shadow(0 0 15px rgba(255, 79, 0, 0.4))',
-                  }}
-                >
-                  DO:LAB
-                </div>
+              <div
+                className="hidden w-[880px] h-[880px] bg-[#FF4F00] items-center justify-center text-2xl font-extrabold text-[#222]"
+                style={{
+                  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+                  filter: 'drop-shadow(0 0 15px rgba(255, 79, 0, 0.4))',
+                }}
+              >
+                DO:LAB
               </div>
             </div>
             <p className="absolute bottom-[15%] text-xl font-semibold tracking-[4px] uppercase bg-white px-5 py-2.5 border border-[#FF4F00] animate-pulse">
@@ -219,21 +274,18 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => goBack('intro')}
-              className="absolute top-20 left-10 z-[999] flex items-center gap-2 bg-transparent border-none font-mono text-xl font-semibold text-[#222] cursor-pointer opacity-60 hover:opacity-100 hover:text-[#FF4F00] transition-all"
+              className="absolute top-20 left-10 z-[999] flex items-center gap-2 bg-transparent border-none text-xl font-semibold text-[#222] cursor-pointer opacity-60 hover:opacity-100 hover:text-[#FF4F00] transition-all"
             >
               ← BACK
             </button>
             <div className="flex-[2] flex flex-col justify-center items-center border-r border-black/10">
               <div className="relative w-[500px] p-10 text-center mb-8 bg-white border border-[#ccc] shadow-[10px_10px_0_rgba(0,0,0,0.05)]">
                 <div className="absolute top-[-1px] left-5 w-10 h-0.5 bg-[#FF4F00]" />
-                <div className="absolute bottom-1.5 right-2.5 font-mono text-[10px] text-[#ccc]">
-                  INPUT_TYPE: INT
-                </div>
-                <div className="text-lg font-extrabold tracking-wider text-[#FF4F00] mb-2 flex justify-between font-mono">
-                  CODE NUMBER <span>[ 4-DIGIT ]</span>
+                <div className="text-lg font-extrabold tracking-wider text-[#FF4F00] mb-2 flex justify-between">
+                  PIN NUMBER <span>[전화번호 뒷 4자리]</span>
                 </div>
                 <div
-                  className={`text-5xl font-semibold tracking-[5px] min-h-[70px] pb-2.5 border-b-2 font-mono transition-colors ${
+                  className={`text-5xl font-semibold tracking-[5px] min-h-[70px] pb-2.5 border-b-2 transition-colors ${
                     pinError ? 'text-[#FF4F00] border-[#FF4F00] animate-login-shake' : 'text-[#222] border-[#ddd]'
                   }`}
                 >
@@ -243,16 +295,16 @@ export default function LoginPage() {
                   type="button"
                   onClick={submitPin}
                   disabled={loading}
-                  className="mt-6 py-3 px-12 bg-[#222] text-white font-mono text-lg cursor-pointer hover:bg-[#FF4F00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="mt-6 py-3 px-12 bg-[#222] text-white text-lg cursor-pointer hover:bg-[#FF4F00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
                 >
                   {loading ? '...' : 'ENTER'}
                 </button>
               </div>
               {errorMessage && (
-                <p className="font-mono text-sm text-[#FF4F00] mt-2">{errorMessage}</p>
+                <p className="text-sm text-[#FF4F00] mt-2">{errorMessage}</p>
               )}
-              <p className="font-mono text-base font-semibold tracking-wider text-[#666] animate-pulse mt-2">
+              <p className="text-base font-semibold tracking-wider text-[#666] animate-pulse mt-2">
                 ENTER YOUR PIN NUMBER
               </p>
             </div>
@@ -279,14 +331,14 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => goBack('pin')}
-              className="absolute top-20 left-10 z-[999] flex items-center gap-2 bg-transparent border-none font-mono text-xl font-semibold text-[#222] cursor-pointer opacity-60 hover:opacity-100 hover:text-[#FF4F00] transition-all"
+              className="absolute top-20 left-10 z-[999] flex items-center gap-2 bg-transparent border-none text-xl font-semibold text-[#222] cursor-pointer opacity-60 hover:opacity-100 hover:text-[#FF4F00] transition-all"
             >
               ← BACK
             </button>
             <div className="relative w-[500px] p-10 text-center mb-8 bg-white border border-[#ccc] shadow-[10px_10px_0_rgba(0,0,0,0.05)]">
               <div className="absolute top-[-1px] left-5 w-10 h-0.5 bg-[#FF4F00]" />
-              <div className="text-lg font-extrabold tracking-wider text-[#FF4F00] mb-4 font-mono">
-                NICKNAME <span className="text-[#222]">[ SELECT ]</span>
+              <div className="text-lg font-extrabold tracking-wider text-[#FF4F00] mb-4">
+                NICKNAME
               </div>
               <select
                 value={selectedNickname}
@@ -294,7 +346,7 @@ export default function LoginPage() {
                   setSelectedNickname(e.target.value);
                   setNicknameError(false);
                 }}
-                className={`w-full py-4 px-4 text-xl font-mono border-2 bg-transparent focus:outline-none focus:ring-2 focus:ring-[#FF4F00] ${
+                className={`w-full py-4 px-4 text-xl border-2 bg-transparent focus:outline-none focus:ring-2 focus:ring-[#FF4F00] ${
                   nicknameError ? 'border-[#FF4F00]' : 'border-[#ddd]'
                 }`}
                 style={{ clipPath: 'polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px)' }}
@@ -309,13 +361,13 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={submitNickname}
-                className="mt-6 py-3 px-12 bg-[#222] text-white font-mono text-lg cursor-pointer hover:bg-[#FF4F00] transition-colors"
+                className="mt-6 py-3 px-12 bg-[#222] text-white text-lg cursor-pointer hover:bg-[#FF4F00] transition-colors"
                 style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
               >
                 ENTER
               </button>
             </div>
-            <p className="font-mono text-base font-semibold tracking-wider text-[#666]">
+            <p className="text-base font-semibold tracking-wider text-[#666]">
               SELECT YOUR NICKNAME
             </p>
           </motion.div>
@@ -333,21 +385,18 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => goBack('nickname')}
-              className="absolute top-20 left-10 z-[999] flex items-center gap-2 bg-transparent border-none font-mono text-xl font-semibold text-[#222] cursor-pointer opacity-60 hover:opacity-100 hover:text-[#FF4F00] transition-all"
+              className="absolute top-20 left-10 z-[999] flex items-center gap-2 bg-transparent border-none text-xl font-semibold text-[#222] cursor-pointer opacity-60 hover:opacity-100 hover:text-[#FF4F00] transition-all"
             >
               ← BACK
             </button>
             <div className="flex-[2] flex flex-col justify-center items-center border-r border-black/10">
               <div className="relative w-[500px] p-10 text-center mb-8 bg-white border border-[#ccc] shadow-[10px_10px_0_rgba(0,0,0,0.05)]">
                 <div className="absolute top-[-1px] left-5 w-10 h-0.5 bg-[#FF4F00]" />
-                <div className="absolute bottom-1.5 right-2.5 font-mono text-[10px] text-[#ccc]">
-                  SECURE_LEVEL: HIGH
-                </div>
-                <div className="text-lg font-extrabold tracking-wider text-[#FF4F00] mb-2 flex justify-between font-mono">
-                  PASSWORD <span>[ 4-DIGIT ]</span>
+                <div className="text-lg font-extrabold tracking-wider text-[#FF4F00] mb-2">
+                  PASSWORD
                 </div>
                 <div
-                  className={`text-5xl font-semibold tracking-[5px] min-h-[70px] pb-2.5 border-b-2 font-mono ${
+                  className={`text-5xl font-semibold tracking-[5px] min-h-[70px] pb-2.5 border-b-2 ${
                     passwordError ? 'text-[#FF4F00] border-[#FF4F00]' : 'text-[#222] border-[#ddd]'
                   }`}
                 >
@@ -356,13 +405,16 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={submitPassword}
-                  className="mt-6 py-3 px-12 bg-[#222] text-white font-mono text-lg cursor-pointer hover:bg-[#FF4F00] transition-colors"
+                  className="mt-6 py-3 px-12 bg-[#222] text-white text-lg cursor-pointer hover:bg-[#FF4F00] transition-colors"
                   style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
                 >
                   ENTER
                 </button>
               </div>
-              <p className="font-mono text-base font-semibold tracking-wider text-[#666] animate-pulse">
+              {passwordErrorMessage && (
+                <p className="text-sm text-[#FF4F00] mt-2">{passwordErrorMessage}</p>
+              )}
+              <p className="text-base font-semibold tracking-wider text-[#666] animate-pulse">
                 ENTER YOUR PASSWORD
               </p>
             </div>
@@ -386,37 +438,78 @@ export default function LoginPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 flex flex-col justify-center items-center z-10 cursor-pointer"
-            onClick={processNFC}
+            onClick={() => nfcInputRef.current?.focus()}
           >
+            {/* NFC 리더기: keydown으로 물리 키 캡처 → 한영키 한글 입력 무시 */}
+            <input
+              ref={nfcInputRef}
+              type="text"
+              autoComplete="off"
+              autoFocus
+              lang="en"
+              inputMode="latin"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-12 opacity-0"
+              aria-label="NFC 카드 ID 입력"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const val = (nfcInputRef.current?.getAttribute('data-nfc-buffer') ?? (e.target as HTMLInputElement).value)?.trim();
+                  if (val) {
+                    processNFC(val);
+                    nfcInputRef.current?.setAttribute('data-nfc-buffer', '');
+                    (e.target as HTMLInputElement).value = '';
+                  }
+                } else if (e.key === 'Backspace') {
+                  const buf = (nfcInputRef.current?.getAttribute('data-nfc-buffer') ?? '').slice(0, -1);
+                  nfcInputRef.current?.setAttribute('data-nfc-buffer', buf);
+                  (e.target as HTMLInputElement).value = buf;
+                  e.preventDefault();
+                } else {
+                  const char = keyCodeToHexChar(e);
+                  if (char !== null) {
+                    e.preventDefault();
+                    const buf = (nfcInputRef.current?.getAttribute('data-nfc-buffer') ?? '') + char;
+                    nfcInputRef.current?.setAttribute('data-nfc-buffer', buf);
+                    (e.target as HTMLInputElement).value = buf;
+                  }
+                }
+              }}
+            />
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNfcBack();
-              }}
-              className="absolute top-20 left-10 z-[999] flex items-center gap-2 bg-transparent border-none font-mono text-xl font-semibold text-[#222] cursor-pointer opacity-60 hover:opacity-100 hover:text-[#FF4F00] transition-all"
+              onClick={handleNfcBack}
+              className="absolute top-20 left-10 z-[999] flex items-center gap-2 bg-transparent border-none text-xl font-semibold text-[#222] cursor-pointer opacity-60 hover:opacity-100 hover:text-[#FF4F00] transition-all"
             >
               ← BACK
             </button>
-            <div className="relative flex justify-center items-center mb-16">
-              <div
-                className="absolute w-[120px] h-[120px] rounded-full border-2 border-[#FF4F00] opacity-0 animate-login-pulse-wave"
-                style={{ animationDelay: '0s' }}
-              />
-              <div
-                className="absolute w-[120px] h-[120px] rounded-full border-2 border-[#FF4F00] opacity-0 animate-login-pulse-wave"
-                style={{ animationDelay: '0.5s' }}
-              />
-              <svg
-                className="w-[120px] h-[120px] text-[#FF4F00] rotate-90 z-10"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.7 2.06 7.3 2.06 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z" />
-              </svg>
+            <div className="relative flex flex-col items-center justify-center flex-1 w-full">
+              <div className="relative flex justify-center items-center">
+                <div
+                  className="absolute w-[120px] h-[120px] rounded-full border-2 border-[#FF4F00] opacity-0 animate-login-pulse-wave"
+                  style={{ animationDelay: '0s' }}
+                />
+                <div
+                  className="absolute w-[120px] h-[120px] rounded-full border-2 border-[#FF4F00] opacity-0 animate-login-pulse-wave"
+                  style={{ animationDelay: '0.5s' }}
+                />
+                <svg
+                  className="w-[120px] h-[120px] text-[#FF4F00] rotate-90 z-10"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.7 2.06 7.3 2.06 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z" />
+                </svg>
+              </div>
             </div>
-            <p className="text-xl font-semibold tracking-[4px] uppercase bg-white px-5 py-2.5 border border-[#FF4F00] animate-pulse">
+            {nfcError && (
+              <p className="absolute bottom-[28%] left-1/2 -translate-x-1/2 text-sm text-[#FF4F00] text-center max-w-[90%]">
+                {nfcError}
+              </p>
+            )}
+            <p className="absolute bottom-[20%] left-1/2 -translate-x-1/2 text-xl font-semibold tracking-[4px] uppercase bg-white px-5 py-2.5 border border-[#FF4F00] animate-pulse">
               TAG YOUR PLAYER CARD
+            </p>
+            <p className="absolute bottom-[14%] left-1/2 -translate-x-1/2 text-sm text-[#666]">
+              화면을 터치한 후 NFC 리더기에 카드를 태깅하세요
             </p>
           </motion.div>
         )}
@@ -428,10 +521,13 @@ export default function LoginPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black text-[#FF4F00] flex flex-col justify-center items-center z-10 cursor-pointer font-mono"
+            className="fixed inset-0 bg-black text-white flex flex-col justify-center items-center gap-8 z-10 cursor-pointer"
             onClick={resetToStart}
           >
-            <TypewriterText text="ACCESS GRANTED.\nWELCOME BACK, PLAYER." />
+            <TypewriterText text="ACCESS GRANTED. WELCOME, PLAYER." color="white" onComplete={() => setShowTouchText(true)} />
+            {showTouchText && (
+              <p className="text-sm tracking-wider text-white/75 animate-pulse">TOUCH THE SCREEN</p>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -461,7 +557,7 @@ function Keypad({
           key={n}
           type="button"
           onClick={() => onInput(n)}
-          className="aspect-[1/1.2] border border-[#ccc] bg-white font-mono text-2xl font-semibold text-[#222] cursor-pointer hover:bg-[#FF4F00] hover:text-white hover:border-[#FF4F00] transition-colors active:bg-[#FF4F00] active:text-white"
+          className="aspect-[1/1.2] border border-[#ccc] bg-white text-2xl font-semibold text-[#222] cursor-pointer hover:bg-[#FF4F00] hover:text-white hover:border-[#FF4F00] transition-colors active:bg-[#FF4F00] active:text-white"
           style={{ clipPath: 'polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px)' }}
         >
           {n}
@@ -470,7 +566,7 @@ function Keypad({
       <button
         type="button"
         onClick={onDelete}
-        className="aspect-[1/1.2] border border-[#ccc] bg-white font-mono text-lg cursor-pointer hover:bg-[#FF4F00] hover:text-white hover:border-[#FF4F00] transition-colors"
+        className="aspect-[1/1.2] border border-[#ccc] bg-white text-lg cursor-pointer hover:bg-[#FF4F00] hover:text-white hover:border-[#FF4F00] transition-colors"
         style={{ clipPath: 'polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px)' }}
       >
         DEL
@@ -478,7 +574,7 @@ function Keypad({
       <button
         type="button"
         onClick={() => onInput('0')}
-        className="aspect-[1/1.2] border border-[#ccc] bg-white font-mono text-2xl font-semibold text-[#222] cursor-pointer hover:bg-[#FF4F00] hover:text-white hover:border-[#FF4F00] transition-colors"
+        className="aspect-[1/1.2] border border-[#ccc] bg-white text-2xl font-semibold text-[#222] cursor-pointer hover:bg-[#FF4F00] hover:text-white hover:border-[#FF4F00] transition-colors"
         style={{ clipPath: 'polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px)' }}
       >
         0
@@ -486,7 +582,7 @@ function Keypad({
       <button
         type="button"
         onClick={onEnter}
-        className="aspect-[1/1.2] border border-[#FF4F00] bg-white font-mono text-2xl font-extrabold text-[#FF4F00] cursor-pointer hover:bg-[#FF4F00] hover:text-white transition-colors"
+        className="aspect-[1/1.2] border border-[#FF4F00] bg-white text-2xl font-extrabold text-[#FF4F00] cursor-pointer hover:bg-[#FF4F00] hover:text-white transition-colors"
         style={{ clipPath: 'polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px)' }}
       >
         OK
@@ -495,9 +591,12 @@ function Keypad({
   );
 }
 
-function TypewriterText({ text }: { text: string }) {
+function TypewriterText({ text, color = 'orange', onComplete }: { text: string; color?: 'orange' | 'white'; onComplete?: () => void }) {
   const [display, setDisplay] = useState('');
   const [done, setDone] = useState(false);
+  const isWhite = color === 'white';
+  const shadowColor = isWhite ? 'rgba(255,255,255,0.6)' : '#FF4F00';
+  const cursorColor = isWhite ? 'white' : '#FF4F00';
 
   useEffect(() => {
     let i = 0;
@@ -513,10 +612,14 @@ function TypewriterText({ text }: { text: string }) {
     return () => clearInterval(id);
   }, [text]);
 
+  useEffect(() => {
+    if (done && onComplete) onComplete();
+  }, [done, onComplete]);
+
   return (
-    <div className="text-4xl tracking-wider text-center leading-relaxed whitespace-pre-line" style={{ textShadow: '0 0 10px #FF4F00' }}>
+    <div className="text-4xl tracking-wider text-center leading-relaxed whitespace-pre-line" style={{ textShadow: `0 0 10px ${shadowColor}` }}>
       {display}
-      {!done && <span className="inline-block w-3 h-9 bg-[#FF4F00] ml-1 animate-pulse align-text-bottom" />}
+      {!done && <span className="inline-block w-3 h-9 ml-1 animate-pulse align-text-bottom" style={{ backgroundColor: cursorColor }} />}
     </div>
   );
 }

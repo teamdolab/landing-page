@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import { QRCodeCanvas } from 'qrcode.react';
 import { formatCard, getCardColor } from '@/lib/poker-utils';
 import { subscribeDemoGame } from '@/lib/demo-sync';
 import './styles.css';
@@ -24,6 +25,7 @@ type GamePlayer = {
 type GameState = {
   game_id: string;
   session_id: string;
+  game_name?: string;
   player_count: number;
   current_round: number;
   current_step: number;
@@ -81,6 +83,7 @@ function getDemoGame(playerCount: number, step: number = 8): GameState {
   return {
     game_id: 'demo',
     session_id: 'demo',
+    game_name: '대선 포커',
     player_count: playerCount,
     current_round: 1,
     current_step: step,
@@ -272,10 +275,13 @@ function DisplayPageContent() {
   const gridCols = GRID_COLS[activeCount] ?? 6;
   const isResultSelecting = game.status === '결과선택중';
   const isGameComplete = game.status === '완료' && game.final_winners && game.final_winners.length > 0;
+  const isClosing = game.status === '마무리';
   const phaseText =
-    isGameComplete
-      ? '게임 종료'
-      : game.info_text || (STEP_LABELS[game.current_step] ?? `Step ${game.current_step}`);
+    isClosing
+      ? '피드백 작성'
+      : isGameComplete
+        ? '게임 종료'
+        : game.info_text || (STEP_LABELS[game.current_step] ?? `Step ${game.current_step}`);
 
   /** 점수 순위 (1등부터, 동점 시 플레이어 번호 오름차순) */
   const rankedPlayers = [...players].sort((a, b) => {
@@ -295,7 +301,7 @@ function DisplayPageContent() {
         <div className="title-frame">
           <h1 className="game-title">대선 포커</h1>
         </div>
-        <div className="round-box">{game.current_round} ROUND</div>
+        {!isClosing && <div className="round-box">{game.current_round} ROUND</div>}
       </header>
 
       <main className="display-main">
@@ -305,17 +311,23 @@ function DisplayPageContent() {
           </div>
           <div className="timer-wrapper">
             <div className="timer-container">
-              <div className={`timer-value ${game.timer_end || isResultSelecting || isGameComplete ? 'timer-end' : ''}`}>
-                {isResultSelecting || isGameComplete
-                  ? '게임 종료'
-                  : game.timer_end
-                    ? (game.current_step === 10 ? '라운드 종료' : '종료')
-                    : game.timer_seconds > 0
-                      ? `${Math.floor(game.timer_seconds / 60).toString().padStart(2, '0')}:${(game.timer_seconds % 60).toString().padStart(2, '0')}`
-                      : '--:--'}
+              <div className={`timer-value ${game.timer_end || isResultSelecting || isGameComplete || isClosing ? 'timer-end' : ''}`}>
+                {isClosing
+                  ? '수고하셨습니다'
+                  : isResultSelecting || isGameComplete
+                    ? '게임 종료'
+                    : game.timer_end
+                      ? (game.current_step === 10 ? '라운드 종료' : '종료')
+                      : game.timer_seconds > 0
+                        ? `${Math.floor(game.timer_seconds / 60).toString().padStart(2, '0')}:${(game.timer_seconds % 60).toString().padStart(2, '0')}`
+                        : '--:--'}
               </div>
             </div>
+            {isClosing && (
+              <span className="timer-credit-text">피드백 작성 시 2,000 크레딧 적립</span>
+            )}
           </div>
+          {!isClosing && (
           <div className="ranking-container">
             <div className="ranking-header">HAND RANKINGS</div>
             <ul className="ranking-list">
@@ -326,10 +338,11 @@ function DisplayPageContent() {
               ))}
             </ul>
           </div>
+          )}
         </section>
 
-        {/* 최종 결과 집계중 오버레이 */}
-        {isResultSelecting && (
+        {/* 최종 결과 집계중 오버레이 (마무리 화면에서는 숨김) */}
+        {isResultSelecting && !isClosing && (
           <div className="final-result-overlay">
             <div className="final-result-loading">
               <span className="final-result-loading-text">최종 결과 집계중</span>
@@ -342,7 +355,7 @@ function DisplayPageContent() {
           </div>
         )}
 
-        {/* 최종 결과 화면 (우승자 + 순위) */}
+        {/* 최종 결과 화면 (우승자 + 순위) - QR 없음 */}
         {isGameComplete && game.final_winners && (() => {
           const nonWinnerCount = rankedPlayers.filter((p) => !game.final_winners!.includes(p.player_number)).length;
           const bottomWidth = nonWinnerCount * 76 + Math.max(0, nonWinnerCount - 1) * 16;
@@ -351,7 +364,6 @@ function DisplayPageContent() {
             className="final-result-section"
             style={{ '--bottom-content-width': `${bottomWidth}px` } as React.CSSProperties}
           >
-            {/* 단상: 우승자들 - 플레이어박스 + 점수박스 + WINNER */}
             <div className="final-result-podium">
               <div className="final-result-podium-inner">
                 {game.final_winners.map((num) => {
@@ -372,7 +384,6 @@ function DisplayPageContent() {
                 })}
               </div>
             </div>
-            {/* 하단: 우승자 제외, 등수는 우승자 다음부터 (2명 우승→3rd부터, 3명→4th부터) */}
             <div className="final-result-bottom">
               {rankedPlayers
                 .filter((p) => !game.final_winners!.includes(p.player_number))
@@ -396,8 +407,26 @@ function DisplayPageContent() {
           );
         })()}
 
+        {/* 마무리 화면 (피드백 QR만) */}
+        {game.status === '마무리' && (
+          <section className="closing-section">
+            <div className="closing-qr-wrap">
+              <QRCodeCanvas
+                value={
+                  typeof window !== 'undefined'
+                    ? `${(process.env.NEXT_PUBLIC_APP_URL || window.location.origin)}/feedback/deep?sessionId=${encodeURIComponent(game.session_id)}&gameName=${encodeURIComponent((game as { game_name?: string }).game_name ?? game.session_id)}`
+                    : ''
+                }
+                size={320}
+                level="L"
+                includeMargin
+              />
+            </div>
+          </section>
+        )}
+
         {/* 일반 플레이어 그리드 (게임 진행 중일 때만) */}
-        {!isGameComplete && (
+        {!isGameComplete && !isClosing && (
         <section className="detail-section" id="player-board" style={{ '--grid-cols': gridCols } as React.CSSProperties}>
           {Array.from({ length: activeCount }, (_, i) => i + 1).map((num) => {
             const p = players.find((x) => x.player_number === num) || {

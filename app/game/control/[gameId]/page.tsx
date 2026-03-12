@@ -119,6 +119,10 @@ export default function GameControlPage() {
   const [showFinalWinnerPopup, setShowFinalWinnerPopup] = useState(false);
   const [selectedCoWinner, setSelectedCoWinner] = useState<number | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [showGoToStepModal, setShowGoToStepModal] = useState(false);
+  const [goToStepTargetRound, setGoToStepTargetRound] = useState(1);
+  const [goToStepTargetStep, setGoToStepTargetStep] = useState(0);
+  const [showClosingConfirmModal, setShowClosingConfirmModal] = useState(false);
 
   const loadGame = useCallback(async () => {
     if (!gameId) return;
@@ -181,6 +185,7 @@ export default function GameControlPage() {
     setShowNextRoundConfirmPopup(false);
     setShowGameEndConfirmPopup(false);
     setShowFinalWinnerPopup(false);
+    setShowGoToStepModal(false);
     setConfirmPlayer(null);
     setSelectedCards([]);
     setSelectedWinners([]);
@@ -207,6 +212,78 @@ export default function GameControlPage() {
       setUpdating(false);
     }
   }
+
+  async function handleGoToStep() {
+    if (!gameId || updating) return;
+    setUpdating(true);
+    try {
+      const res = await fetch(`/api/game/${gameId}/go-to-step`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target_round: goToStepTargetRound,
+          target_step: goToStepTargetStep,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        closeAllPopups();
+        setGame(data.game);
+        setShowGoToStepModal(false);
+        setScoresCalculated(false);
+        if (data.game?.current_step === 10) setShowScoreSelectPopup(true);
+      } else {
+        alert(data.error || '단계 이동 실패');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('단계 이동 중 오류가 발생했습니다.');
+    } finally {
+      setUpdating(false);
+    }
+  }
+
+  /** Undo 반대: 팝업에서 예/완료가 안 눌릴 때 수동으로 다음 단계 진행 */
+  function handleProceed() {
+    if (updating) return;
+    if (showNextRoundConfirmPopup) {
+      confirmNextRound();
+      return;
+    }
+    if (showDealingPopup) {
+      completeDealing();
+      return;
+    }
+    if (showGameEndConfirmPopup) {
+      confirmGameEnd();
+      return;
+    }
+    if (showStrategyConfirmPopup) {
+      startStrategyMeeting();
+      return;
+    }
+    if (game?.current_step === 2 && !showDealingPopup) {
+      setShowStrategyConfirmPopup(true);
+      return;
+    }
+    if (game?.current_step === 10 && scoresCalculated && game.current_round >= 4) {
+      showGameEndPopup();
+      return;
+    }
+    if (game?.current_step === 10 && scoresCalculated && game.current_round < 4) {
+      startNextRound();
+      return;
+    }
+  }
+
+  const canProceed =
+    !!game &&
+    (showNextRoundConfirmPopup ||
+      showDealingPopup ||
+      showGameEndConfirmPopup ||
+      showStrategyConfirmPopup ||
+      (game.current_step === 2 && !showDealingPopup) ||
+      (game.current_step === 10 && scoresCalculated));
 
   async function setFirstPlayer(playerNum: number) {
     if (!game) return;
@@ -829,6 +906,7 @@ export default function GameControlPage() {
           timer_seconds: 0,
           timer_active: false,
           timer_end: false,
+          community_cards: [],
           players,
           action_type: 'start_round',
         }),
@@ -843,6 +921,7 @@ export default function GameControlPage() {
       }
     } catch (e) {
       console.error(e);
+      alert('다음 라운드 진행 중 오류가 발생했습니다. "진행" 버튼으로 다시 시도해보세요.');
     } finally {
       setUpdating(false);
     }
@@ -1101,16 +1180,32 @@ export default function GameControlPage() {
 
   return (
     <div className="control-demo-root">
-      {/* 송출 화면 링크 배너 */}
+      {/* 송출 화면 / 로그인 링크 배너 */}
       <div className="demo-banner">
         <span>게임 진행</span>
-        <a
-          href={`/game/display?session=${encodeURIComponent(game.session_id)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          송출 화면 열기
-        </a>
+        <div className="flex items-center gap-3">
+          <a
+            href={`/game/display?session=${encodeURIComponent(game.session_id)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            송출 화면 열기
+          </a>
+          <a
+            href={`/login?gameId=${gameId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            로그인 화면
+          </a>
+          <a
+            href={`/logout?gameId=${gameId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            로그아웃 화면
+          </a>
+        </div>
       </div>
 
       {/* 상단바 */}
@@ -1121,10 +1216,34 @@ export default function GameControlPage() {
           <button
             type="button"
             className="demo-undo-btn"
+            onClick={handleProceed}
+            disabled={updating || !game}
+            title={canProceed ? '다음 단계로 진행' : '현재 단계에서 진행 가능한 액션이 없습니다'}
+          >
+            진행
+          </button>
+          <button
+            type="button"
+            className="demo-undo-btn"
             onClick={() => router.push(`/game/edit/${gameId}`)}
             title="비상 시 상태 수정 (송출 레이아웃에서 인라인 편집)"
           >
             Edit
+          </button>
+          <button
+            type="button"
+            className="demo-undo-btn"
+            onClick={() => {
+              if (game) {
+                setGoToStepTargetRound(game.current_round);
+                setGoToStepTargetStep(game.current_step);
+              }
+              setShowGoToStepModal(true);
+            }}
+            disabled={updating || !game}
+            title="특정 라운드/단계로 되돌리기"
+          >
+            단계 이동
           </button>
           <button
             type="button"
@@ -1154,7 +1273,17 @@ export default function GameControlPage() {
                 : '--:--'}
               </div>
             </div>
-            {(((game.current_step === 3 || game.current_step === 4 || game.current_step === 5 || game.current_step === 7 || game.current_step === 8) && game.timer_seconds > 0) || (game.current_step === 10 && scoresCalculated)) && (
+            {game.status === '완료' && (
+              <button
+                type="button"
+                className="demo-next-round-btn"
+                onClick={() => setShowClosingConfirmModal(true)}
+                disabled={updating}
+              >
+                마무리 화면
+              </button>
+            )}
+            {game.status !== '완료' && (((game.current_step === 3 || game.current_step === 4 || game.current_step === 5 || game.current_step === 7 || game.current_step === 8) && game.timer_seconds > 0) || (game.current_step === 10 && scoresCalculated)) && (
               <>
                 {(game.current_step === 3 || game.current_step === 7) && (
                   <>
@@ -1303,7 +1432,10 @@ export default function GameControlPage() {
 
       {/* 카드 딜링 안내 팝업 */}
       {showDealingPopup && (
-        <div className="demo-modal-overlay">
+        <div
+          className="demo-modal-overlay"
+          onClick={() => !updating && setShowDealingPopup(false)}
+        >
           <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
             <p className="demo-modal-text">카드를 딜링 후, 한 장의 카드를 공개하고, 3장의 공용 카드를 공개하세요.(플랍)</p>
             <div className="demo-modal-buttons">
@@ -1313,6 +1445,12 @@ export default function GameControlPage() {
                 disabled={updating}
               >
                 완료
+              </button>
+              <button
+                className="demo-btn-secondary"
+                onClick={() => setShowDealingPopup(false)}
+              >
+                닫기 (나중에 진행)
               </button>
             </div>
           </div>
@@ -1705,7 +1843,10 @@ export default function GameControlPage() {
 
       {/* 다음 라운드 확인 팝업 */}
       {showNextRoundConfirmPopup && (
-        <div className="demo-modal-overlay">
+        <div
+          className="demo-modal-overlay"
+          onClick={() => !updating && setShowNextRoundConfirmPopup(false)}
+        >
           <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
             <p className="demo-modal-text">다음 라운드를 진행하시겠습니까?</p>
             <div className="demo-modal-buttons">
@@ -1729,7 +1870,10 @@ export default function GameControlPage() {
 
       {/* 게임 종료 확인 팝업 */}
       {showGameEndConfirmPopup && (
-        <div className="demo-modal-overlay">
+        <div
+          className="demo-modal-overlay"
+          onClick={() => !updating && setShowGameEndConfirmPopup(false)}
+        >
           <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
             <p className="demo-modal-text">게임이 종료되었습니다. 결과를 발표합니다.</p>
             <div className="demo-modal-buttons">
@@ -1870,6 +2014,111 @@ export default function GameControlPage() {
                 disabled={updating}
               >
                 완료
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 단계 이동 모달 */}
+      {showGoToStepModal && (
+        <div
+          className="demo-modal-overlay"
+          onClick={() => !updating && setShowGoToStepModal(false)}
+        >
+          <div className="demo-modal demo-edit-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-title">특정 단계로 되돌리기</p>
+            <p className="text-sm text-gray-600 mb-4">
+              Undo를 반복하여 선택한 라운드/단계 상태로 복원합니다. (점수, 투표 등 포함)
+            </p>
+            <div className="flex flex-col gap-4 mb-6">
+              <div>
+                <label className="block text-sm font-semibold mb-1">라운드</label>
+                <select
+                  value={goToStepTargetRound}
+                  onChange={(e) => setGoToStepTargetRound(Number(e.target.value))}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                >
+                  {[1, 2, 3, 4].map((r) => (
+                    <option key={r} value={r}>
+                      {r}라운드
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">단계</label>
+                <select
+                  value={goToStepTargetStep}
+                  onChange={(e) => setGoToStepTargetStep(Number(e.target.value))}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                >
+                  {Object.entries(STEP_LABELS).map(([step, label]) => (
+                    <option key={step} value={step}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="demo-modal-buttons">
+              <button
+                className="demo-btn-primary"
+                onClick={handleGoToStep}
+                disabled={updating}
+              >
+                이동
+              </button>
+              <button
+                className="demo-btn-secondary"
+                onClick={() => setShowGoToStepModal(false)}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 마무리 화면 송출 확인 모달 */}
+      {showClosingConfirmModal && (
+        <div
+          className="demo-modal-overlay"
+          onClick={() => !updating && setShowClosingConfirmModal(false)}
+        >
+          <div className="demo-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="demo-modal-title">마무리 화면을 송출하시겠습니까?</p>
+            <p className="text-sm text-gray-600 mb-6">
+              송출 화면이 피드백 QR 코드 화면으로 전환됩니다.
+            </p>
+            <div className="demo-modal-buttons">
+              <button
+                className="demo-btn-primary"
+                disabled={updating}
+                onClick={async () => {
+                  setUpdating(true);
+                  try {
+                    const res = await fetch(`/api/game/${gameId}/update`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ status: '마무리' }),
+                    });
+                    if (res.ok) {
+                      setShowClosingConfirmModal(false);
+                      await loadGame();
+                    }
+                  } finally {
+                    setUpdating(false);
+                  }
+                }}
+              >
+                송출
+              </button>
+              <button
+                className="demo-btn-secondary"
+                onClick={() => setShowClosingConfirmModal(false)}
+              >
+                취소
               </button>
             </div>
           </div>

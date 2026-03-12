@@ -87,6 +87,7 @@ export function apiUpdateToDb(body: Record<string, unknown>): Record<string, unk
   if (body.timer_active !== undefined) updates.timer_active = body.timer_active;
   if (body.timer_end !== undefined) updates.timer_end = body.timer_end;
   if (body.current_player !== undefined) updates.current_player = body.current_player;
+  if (body.community_cards !== undefined) updates.community_cards = body.community_cards;
   if (body.votes !== undefined) updates.votes = body.votes;
   if (body.round_winners !== undefined) updates.round_winners = body.round_winners;
   if (body.final_winners !== undefined) updates.final_winners = body.final_winners;

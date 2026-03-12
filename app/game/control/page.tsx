@@ -284,6 +284,22 @@ export default function ControlPage() {
                   >
                     <i className="fa-solid fa-external-link-alt" /> 송출 화면 열기
                   </a>
+                  <a
+                    href={`/login?gameId=${game.game_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="control-btn-secondary"
+                  >
+                    <i className="fa-solid fa-id-card" /> 로그인 화면
+                  </a>
+                  <a
+                    href={`/logout?gameId=${game.game_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="control-btn-secondary"
+                  >
+                    <i className="fa-solid fa-sign-out-alt" /> 로그아웃 화면
+                  </a>
                   <button
                     type="button"
                     className="control-btn-secondary"

@@ -36,7 +36,19 @@ BEGIN
     
     CASE v_action_type
         WHEN 'start_round' THEN
-            UPDATE game_0a SET current_step = 0, info_text = '대기' WHERE game_id = p_game_id;
+            UPDATE game_0a SET
+                current_round = GREATEST(1, v_current_round - 1),
+                current_step = CASE WHEN v_current_round <= 1 THEN 0 ELSE 10 END,
+                first_player_number = CASE WHEN v_current_round > 1
+                    THEN ((COALESCE(v_first_num, 1) - 4 + v_player_count) % v_player_count) + 1
+                    ELSE NULL END,
+                info_text = CASE WHEN v_current_round <= 1 THEN '1라운드를 시작하세요.' ELSE '이번 라운드 승리자를 선택하세요.' END,
+                current_player = NULL,
+                timer_active = false,
+                timer_seconds = 0,
+                timer_end = false,
+                dealing_completed = true
+            WHERE game_id = p_game_id;
         
         WHEN 'select_first' THEN
             UPDATE game_0a SET current_step = 1, first_player_number = NULL, info_text = '선 정하기'

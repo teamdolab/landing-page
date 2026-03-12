@@ -677,3 +677,29 @@
   border-color: #FFD700;
   box-shadow: 0 0 16px rgba(255, 215, 0, 0.5);
 }
+
+/* 마무리 화면 (피드백 QR만) */
+.game-display-root .closing-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 48px;
+  min-height: 0;
+}
+.game-display-root .closing-qr-wrap {
+  padding: 24px;
+  background: #fff;
+  border: 2px solid var(--key-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+.game-display-root .closing-qr-wrap canvas {
+  display: block;
+}
+.game-display-root .timer-credit-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--key-color);
+  margin-left: 16px;
+}
