@@ -64,7 +64,7 @@ function getInitialDemoGame(): DemoGameState {
   };
 }
 
-const STRATEGY_MEETING_DURATION = 10; // 테스트용 10초 (원래 8분)
+const STRATEGY_MEETING_DURATION = 480; // 8분
 const DECLARATION_TIME_LIMIT = 20; // 출마 선언 제한 시간 20초
 const CANDIDATE_SPEECH_TIME_LIMIT = 20; // 후보자 연설 제한 시간 20초
 const VOTE_TIME_LIMIT = 20; // 유권자 투표 제한 시간 20초
