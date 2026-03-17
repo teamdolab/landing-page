@@ -25,6 +25,7 @@ function LoginContent() {
   const [showTouchText, setShowTouchText] = useState(false);
   const [nfcError, setNfcError] = useState('');
   const nfcInputRef = useRef<HTMLInputElement>(null);
+  const nfcAutoSubmitRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showScreen = useCallback((id: Screen) => {
     setScreen(id);
@@ -38,6 +39,10 @@ function LoginContent() {
     if (screen === 'nfc') {
       setNfcError('');
       nfcInputRef.current?.setAttribute('data-nfc-buffer', '');
+      if (nfcAutoSubmitRef.current) {
+        clearTimeout(nfcAutoSubmitRef.current);
+        nfcAutoSubmitRef.current = null;
+      }
       const t = setTimeout(() => nfcInputRef.current?.focus(), 300);
       return () => clearTimeout(t);
     }
@@ -136,7 +141,8 @@ function LoginContent() {
     setNfcError('');
     setLoading(true);
     try {
-      const res = await fetch(`/api/game/${encodeURIComponent(gameId)}/register-player`, {
+      const apiUrl = `${window.location.origin}/api/game/${encodeURIComponent(gameId)}/register-player`;
+      const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -144,15 +150,23 @@ function LoginContent() {
           nfc_id: nfcId,
         }),
       });
-      const data = await res.json();
+      let data: { error?: string };
+      try {
+        data = await res.json();
+      } catch {
+        const msg = res.ok ? '응답 처리 중 오류가 발생했습니다.' : `서버 오류 (${res.status})`;
+        setNfcError(msg);
+        return;
+      }
 
-      if (res.ok) {
+      if (res.ok && (data as { success?: boolean }).success === true) {
         showScreen('success');
       } else {
-        setNfcError(data.error || '등록에 실패했습니다.');
+        setNfcError((data as { error?: string }).error || '등록에 실패했습니다.');
       }
     } catch (err) {
-      setNfcError('등록 중 오류가 발생했습니다.');
+      console.error('NFC 등록 fetch 오류:', err);
+      setNfcError('네트워크 오류가 발생했습니다. 연결을 확인해주세요.');
     } finally {
       setLoading(false);
     }
@@ -452,6 +466,10 @@ function LoginContent() {
               aria-label="NFC 카드 ID 입력"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
+                  if (nfcAutoSubmitRef.current) {
+                    clearTimeout(nfcAutoSubmitRef.current);
+                    nfcAutoSubmitRef.current = null;
+                  }
                   const val = (nfcInputRef.current?.getAttribute('data-nfc-buffer') ?? (e.target as HTMLInputElement).value)?.trim();
                   if (val) {
                     processNFC(val);
@@ -470,6 +488,16 @@ function LoginContent() {
                     const buf = (nfcInputRef.current?.getAttribute('data-nfc-buffer') ?? '') + char;
                     nfcInputRef.current?.setAttribute('data-nfc-buffer', buf);
                     (e.target as HTMLInputElement).value = buf;
+                    // Enter 없이 입력되는 NFC 리더기: 7자 이상이면 300ms 후 자동 제출
+                    if (nfcAutoSubmitRef.current) clearTimeout(nfcAutoSubmitRef.current);
+                    if (buf.length >= 7) {
+                      nfcAutoSubmitRef.current = setTimeout(() => {
+                        nfcAutoSubmitRef.current = null;
+                        processNFC(buf);
+                        nfcInputRef.current?.setAttribute('data-nfc-buffer', '');
+                        (e.target as HTMLInputElement).value = '';
+                      }, 300);
+                    }
                   }
                 }
               }}

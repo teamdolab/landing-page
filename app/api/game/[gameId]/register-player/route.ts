@@ -1,19 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('register-player: SUPABASE env 누락', {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseServiceKey,
+  });
+}
+
+const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ gameId: string }> }
 ) {
   try {
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: '서버 설정 오류: Supabase 환경 변수가 설정되지 않았습니다. Vercel에 NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY를 추가해주세요.' },
+        { status: 500 }
+      );
+    }
+
     const { gameId } = await params;
     const body = await req.json();
     const { user_id: userId, nfc_id: nfcId } = body;
+
+    console.log('register-player 요청:', { gameId, userId: userId?.slice(0, 8) + '...', nfcIdLen: nfcId?.length });
 
     if (!gameId || !userId || !nfcId) {
       return NextResponse.json(
@@ -42,6 +58,7 @@ export async function POST(
       .single();
 
     if (cardError || !card) {
+      console.error('register-player: player_cards 조회 실패', { nfcIdClean, cardError });
       return NextResponse.json(
         { error: '등록되지 않은 플레이어 카드입니다.' },
         { status: 400 }
@@ -58,6 +75,7 @@ export async function POST(
       .single();
 
     if (gameError || !game) {
+      console.error('register-player: game_0a 조회 실패', { gameId, gameError });
       return NextResponse.json(
         { error: '게임을 찾을 수 없습니다.' },
         { status: 404 }
@@ -105,12 +123,16 @@ export async function POST(
     }
 
     // 5. 등록 (status='active'로 이력 트래킹용)
-    const { error: insertError } = await supabase.from('game_participants').insert({
-      game_id: gameId,
-      player_number: playerNumber,
-      user_id: userId,
-      status: 'active',
-    });
+    const { data: inserted, error: insertError } = await supabase
+      .from('game_participants')
+      .insert({
+        game_id: gameId,
+        player_number: playerNumber,
+        user_id: userId,
+        status: 'active',
+      })
+      .select('id')
+      .single();
 
     if (insertError) {
       console.error('game_participants insert 에러:', insertError);
@@ -120,12 +142,42 @@ export async function POST(
       );
     }
 
+    // 6. 실제 저장 여부 검증 (다른 DB/프로젝트 연결 시 방어)
+    const { data: verify } = await supabase
+      .from('game_participants')
+      .select('id')
+      .eq('game_id', gameId)
+      .eq('player_number', playerNumber)
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .single();
+
+    if (!verify) {
+      console.error('register-player: insert 후 검증 실패 - DB에 row 없음', {
+        gameId,
+        playerNumber,
+        userId,
+        insertedId: inserted?.id,
+      });
+      return NextResponse.json(
+        { error: '등록 저장 검증에 실패했습니다. Supabase 연결을 확인해주세요.' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       player_number: playerNumber,
     });
   } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
     console.error('register-player 오류:', err);
+    if (errMsg.includes('Invalid API key') || errMsg.includes('JWT') || errMsg.includes('supabase')) {
+      return NextResponse.json(
+        { error: 'Supabase 연결 오류. Vercel 환경 변수(NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)를 확인해주세요.' },
+        { status: 500 }
+      );
+    }
     return NextResponse.json(
       { error: '서버 오류' },
       { status: 500 }
