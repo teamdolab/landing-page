@@ -359,11 +359,18 @@ export default function AdminPage() {
                 <select
                   className="form-input"
                   value={formData.gameType}
-                  onChange={(e) => setFormData({ ...formData, gameType: e.target.value })}
+                  onChange={(e) => {
+                    const gameType = e.target.value;
+                    let gameName = formData.gameName;
+                    if (gameType === 'A') gameName = '대선포커';
+                    else if (gameType === 'B') gameName = '수송선게임';
+                    else if (gameType === 'C') gameName = '게임3';
+                    setFormData({ ...formData, gameType, gameName });
+                  }}
                 >
-                  <option value="A">A (대선포커)</option>
-                  <option value="B">B (GAME 0B)</option>
-                  <option value="C">C (게임3)</option>
+                  <option value="A">A · 시즌0 대선포커</option>
+                  <option value="B">B · 시즌0 수송선게임</option>
+                  <option value="C">C · 시즌0 (추후)</option>
                 </select>
               </div>
             </div>

@@ -27,7 +27,7 @@ function TestroomContent() {
             if (v) setSessionId(v);
           }}
         >
-          <h1 className="text-lg font-semibold text-[var(--g0b-text)]">GAME 0B · 테스트룸</h1>
+          <h1 className="text-lg font-semibold text-[var(--g0b-text)]">수송선게임 · 테스트룸</h1>
           <input
             name="session"
             placeholder="세션 ID"

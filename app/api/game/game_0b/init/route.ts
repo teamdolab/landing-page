@@ -8,7 +8,7 @@ function buildInsert(sessionId: string): Record<string, unknown> {
     current_round: 1,
     phase: 'day',
     ship_hull: 100,
-    info_text: 'GAME 0B — 대기',
+    info_text: '수송선게임 — 대기',
   };
   for (let i = 1; i <= 12; i++) {
     const k = String(i).padStart(2, '0');

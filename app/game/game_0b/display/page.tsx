@@ -31,7 +31,7 @@ function DisplayContent() {
           }}
         >
           <h1 className="text-xl font-semibold text-[var(--g0b-text)] text-center" style={{ fontFamily: 'var(--font-orbitron)' }}>
-            GAME 0B · 송출
+            수송선게임 · 송출
           </h1>
           <input
             name="session"
@@ -71,7 +71,7 @@ function DisplayContent() {
         <div>
           <div className="text-xs text-[var(--g0b-muted)] tracking-widest">DO:LAB · SEASON 0</div>
           <div className="text-lg font-bold" style={{ fontFamily: 'var(--font-orbitron)' }}>
-            GAME 0B
+            수송선게임
           </div>
         </div>
         <div className="text-right">

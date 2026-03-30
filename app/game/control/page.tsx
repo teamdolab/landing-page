@@ -173,7 +173,7 @@ export default function ControlPage() {
         setDisplayUrl(`${window.location.origin}/game/game_0b/display?session=${encodeURIComponent(sid)}`);
         router.push(`/game/game_0b/host?session=${encodeURIComponent(sid)}`);
       } else {
-        alert(data?.error || 'GAME 0B 생성 실패');
+        alert(data?.error || '수송선게임 생성 실패');
       }
     } catch (e) {
       console.error(e);
@@ -314,7 +314,7 @@ export default function ControlPage() {
                 )}
                 {selectedSession && isSessionGame0b(selectedSession.session_id) && (
                   <p style={{ color: '#666', fontSize: 14, marginBottom: 12 }}>
-                    GAME 0B 세션입니다. 플레이어 수는 이후 단계에서 반영합니다.
+                    수송선게임 세션입니다. 플레이어 수는 이후 단계에서 반영합니다.
                   </p>
                 )}
                 <button
@@ -327,7 +327,7 @@ export default function ControlPage() {
               </div>
             ) : game0b && selectedSession ? (
               <div className="control-create-section">
-                <p style={{ color: '#2e7d32', fontWeight: 600, marginBottom: 12 }}>GAME 0B 진행 중</p>
+                <p style={{ color: '#2e7d32', fontWeight: 600, marginBottom: 12 }}>수송선게임 진행 중</p>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                   <Link
                     href={`/game/game_0b/host?session=${encodeURIComponent(selectedSession.session_id)}`}
