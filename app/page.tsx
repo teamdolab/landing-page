@@ -90,6 +90,16 @@ DO:LAB의 모든 프로젝트(오프라인 게임)는 다수의 테스터가 정
 제5조 (크레딧 환불 불가)
 • 이전 약관에 명시된 바와 같이, 현금 결제가 아닌 '크레딧(DO:LAB 자체 포인트)'으로 참가비를 결제한 경우, 취소 시 현금으로 환불되지 않으며 규정에 따른 비율만큼 크레딧으로 반환됩니다.`;
 
+/** 게임 소개 모달 제목 (구버전 state 키 호환) */
+function getGameIntroDisplayTitle(key: string): string {
+  if (key === 'GAME 0B' || key.toLowerCase() === 'game 0b') return '수송선게임';
+  return key;
+}
+
+function isSusongseonGameIntro(key: string): boolean {
+  return key === '수송선게임' || key === 'GAME 0B' || key.toLowerCase() === 'game 0b';
+}
+
 export default function Home() {
   const [isPowerOn, setIsPowerOn] = useState(false);
   const [sweepDone, setSweepDone] = useState(false);
@@ -621,8 +631,8 @@ export default function Home() {
               className="bg-phantom-white border-2 border-neon-orange clip-cut-corner max-h-[85vh] w-full max-w-lg flex flex-col"
             >
               <div className="p-4 border-b-2 border-neon-orange/30 flex-shrink-0">
-                <h3 className="font-orbitron text-sm font-bold text-neon-orange uppercase tracking-widest">
-                  {showGameIntro}
+                <h3 className="font-orbitron text-sm font-bold text-neon-orange tracking-widest normal-case">
+                  {showGameIntro ? getGameIntroDisplayTitle(showGameIntro) : ''}
                 </h3>
               </div>
               <div className="p-4 overflow-y-auto flex-1 text-text-main text-sm leading-relaxed whitespace-pre-line">
@@ -635,7 +645,7 @@ export default function Home() {
                     플레이 타임: 150분{'\n'}
                     장르: 정치, 전략, 포커
                   </>
-                ) : showGameIntro === '수송선게임' ? (
+                ) : showGameIntro && isSusongseonGameIntro(showGameIntro) ? (
                   <>
                     2126년, 지구는 외계인 침공과 방사능 노출로 인해 더 이상 살 수 없는 행성이 되었다.{'\n'}
                     남은 인류는 겨우 10명 남짓. 그리고 탈출을 위한 무너져가는 수송선 1개.{'\n'}
@@ -1074,12 +1084,18 @@ export default function Home() {
                       className="relative w-24 h-36 border-2 border-neon-orange clip-cut-corner cursor-pointer overflow-hidden hover:border-neon-orange/80 transition-colors bg-gradient-to-b from-slate-900/90 to-slate-800/90 block"
                     >
                       <img
-                        src="/game-0b-poster.png"
+                        src="/susongseon-game-poster.png"
                         alt="수송선게임"
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                          const el = e.currentTarget;
+                          if (el.dataset.tryLegacy !== '1') {
+                            el.dataset.tryLegacy = '1';
+                            el.src = '/game-0b-poster.png';
+                            return;
+                          }
+                          el.style.display = 'none';
+                          const fallback = el.nextElementSibling as HTMLElement;
                           if (fallback) fallback.style.display = 'flex';
                         }}
                       />
