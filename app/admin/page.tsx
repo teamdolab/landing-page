@@ -362,7 +362,7 @@ export default function AdminPage() {
                   onChange={(e) => setFormData({ ...formData, gameType: e.target.value })}
                 >
                   <option value="A">A (대선포커)</option>
-                  <option value="B">B (게임2)</option>
+                  <option value="B">B (GAME 0B)</option>
                   <option value="C">C (게임3)</option>
                 </select>
               </div>

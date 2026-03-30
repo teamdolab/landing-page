@@ -635,7 +635,19 @@ export default function Home() {
                     플레이 타임: 150분{'\n'}
                     장르: 정치, 전략, 포커
                   </>
-                ) : ''}
+                ) : showGameIntro === 'GAME 0B' ? (
+                  <>
+                    2126년, 지구는 외계인 침공과 방사능 노출로 인해 더 이상 살 수 없는 행성이 되었다.{'\n'}
+                    남은 인류는 겨우 10명 남짓. 그리고 탈출을 위한 무너져가는 수송선 1개.{'\n'}
+                    수송선의 탑승 인원은 정해져 있는데...{'\n'}
+                    과연 누가 수송선에 탑승하여 탈출할 것인가?{'\n\n'}
+                    <span className="font-bold">&quot;설명할 시간이 없어, 어서 타!&quot;</span>
+                    {'\n\n'}
+                    장르: 마피아, SF, 전략
+                  </>
+                ) : (
+                  ''
+                )}
               </div>
               <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30">
                 <button
@@ -1030,7 +1042,7 @@ export default function Home() {
                 <p className="font-orbitron text-xs font-bold text-neon-orange uppercase tracking-widest mb-4">
                   시즌 0 게임
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-4 md:gap-6">
                   <figure className="flex-shrink-0">
                     <button
                       type="button"
@@ -1053,6 +1065,31 @@ export default function Home() {
                     </button>
                     <figcaption className="mt-1.5 font-orbitron text-xs font-bold text-neon-orange uppercase tracking-wider text-center">
                       대선 포커
+                    </figcaption>
+                  </figure>
+                  <figure className="flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setShowGameIntro('GAME 0B')}
+                      className="relative w-24 h-36 border-2 border-neon-orange clip-cut-corner cursor-pointer overflow-hidden hover:border-neon-orange/80 transition-colors bg-gradient-to-b from-slate-900/90 to-slate-800/90 block"
+                    >
+                      <img
+                        src="/game-0b-poster.png"
+                        alt="GAME 0B"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                      <span className="absolute inset-0 hidden flex-col items-center justify-center gap-1 bg-slate-900/85 px-2 text-center font-orbitron text-[10px] font-bold leading-tight text-cyan-300">
+                        <span>GAME</span>
+                        <span className="text-sm text-cyan-200">0B</span>
+                      </span>
+                    </button>
+                    <figcaption className="mt-1.5 font-orbitron text-xs font-bold text-neon-orange uppercase tracking-wider text-center max-w-[6rem]">
+                      GAME 0B
                     </figcaption>
                   </figure>
                 </div>

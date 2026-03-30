@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import type { Game0bRow } from '@/lib/game-0b-types';
+import { isSessionGame0b } from '@/lib/session-game-kind';
 import './control-styles.css';
 
 const ADMIN_STORAGE_KEY = 'admin_authenticated';
@@ -60,6 +62,7 @@ export default function ControlPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [game, setGame] = useState<Game | null>(null);
+  const [game0b, setGame0b] = useState<Game0bRow | null>(null);
   const [playerCount, setPlayerCount] = useState(8);
   const [creating, setCreating] = useState(false);
   const [displayUrl, setDisplayUrl] = useState('');
@@ -103,22 +106,40 @@ export default function ControlPage() {
     if (Array.isArray(data)) setSessions(data);
   }
 
-  async function loadGame(sessionId: string) {
+  async function loadGameState(sessionId: string) {
+    if (isSessionGame0b(sessionId)) {
+      setGame(null);
+      const res = await fetch(`/api/game/game_0b/session/${encodeURIComponent(sessionId)}`);
+      const data = await res.json();
+      if (res.ok && data && data.game_id) {
+        setGame0b(data as Game0bRow);
+        if (typeof window !== 'undefined') {
+          setDisplayUrl(`${window.location.origin}/game/game_0b/display?session=${encodeURIComponent(sessionId)}`);
+        }
+      } else {
+        setGame0b(null);
+        setDisplayUrl('');
+      }
+      return;
+    }
+
+    setGame0b(null);
     const res = await fetch(`/api/game/session/${encodeURIComponent(sessionId)}`);
     const data = await res.json();
     if (res.ok && data) {
       setGame(data);
       if (typeof window !== 'undefined') {
-        setDisplayUrl(`${window.location.origin}/game/display?session=${sessionId}`);
+        setDisplayUrl(`${window.location.origin}/game/display?session=${encodeURIComponent(sessionId)}`);
       }
     } else {
       setGame(null);
+      setDisplayUrl('');
     }
   }
 
   async function selectSession(session: Session) {
     setSelectedSession(session);
-    await loadGame(session.session_id);
+    await loadGameState(session.session_id);
   }
 
   function handleGameStartClick() {
@@ -128,7 +149,38 @@ export default function ControlPage() {
 
   async function handleConfirmYes() {
     setConfirmOpen(false);
-    await createGameAndNavigate();
+    if (!selectedSession) return;
+    if (isSessionGame0b(selectedSession.session_id)) {
+      await createGame0bAndNavigate();
+    } else {
+      await createGameAndNavigate();
+    }
+  }
+
+  async function createGame0bAndNavigate() {
+    if (!selectedSession) return;
+    setCreating(true);
+    try {
+      const res = await fetch('/api/game/game_0b/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: selectedSession.session_id }),
+      });
+      const data = await res.json();
+      if (res.ok && data?.game_id) {
+        setGame0b(data as Game0bRow);
+        const sid = selectedSession.session_id;
+        setDisplayUrl(`${window.location.origin}/game/game_0b/display?session=${encodeURIComponent(sid)}`);
+        router.push(`/game/game_0b/host?session=${encodeURIComponent(sid)}`);
+      } else {
+        alert(data?.error || 'GAME 0B 생성 실패');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('게임 생성 중 오류가 발생했습니다.');
+    } finally {
+      setCreating(false);
+    }
   }
 
   async function createGameAndNavigate() {
@@ -146,7 +198,7 @@ export default function ControlPage() {
       const data = await res.json();
       if (res.ok) {
         setGame(data);
-        setDisplayUrl(`${window.location.origin}/game/display?session=${selectedSession.session_id}`);
+        setDisplayUrl(`${window.location.origin}/game/display?session=${encodeURIComponent(selectedSession.session_id)}`);
         router.push(`/game/control/${data.game_id}`);
       } else {
         alert(data.error || '게임 생성 실패');
@@ -245,19 +297,26 @@ export default function ControlPage() {
               <i className="fa-solid fa-play" />
               {selectedSession.session_id} · {selectedSession.game_name}
             </h2>
-            {!game ? (
+            {!game && !game0b ? (
               <div className="control-create-section">
-                <div className="control-form-group">
-                  <label>플레이어 수 (8~12명)</label>
-                  <select
-                    value={playerCount}
-                    onChange={(e) => setPlayerCount(Number(e.target.value))}
-                  >
-                    {[8, 9, 10, 11, 12].map((n) => (
-                      <option key={n} value={n}>{n}명</option>
-                    ))}
-                  </select>
-                </div>
+                {selectedSession && !isSessionGame0b(selectedSession.session_id) && (
+                  <div className="control-form-group">
+                    <label>플레이어 수 (8~12명)</label>
+                    <select
+                      value={playerCount}
+                      onChange={(e) => setPlayerCount(Number(e.target.value))}
+                    >
+                      {[8, 9, 10, 11, 12].map((n) => (
+                        <option key={n} value={n}>{n}명</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {selectedSession && isSessionGame0b(selectedSession.session_id) && (
+                  <p style={{ color: '#666', fontSize: 14, marginBottom: 12 }}>
+                    GAME 0B 세션입니다. 플레이어 수는 이후 단계에서 반영합니다.
+                  </p>
+                )}
                 <button
                   className="control-btn-primary"
                   onClick={handleGameStartClick}
@@ -266,7 +325,35 @@ export default function ControlPage() {
                   {creating ? '생성 중...' : '게임 시작'}
                 </button>
               </div>
-            ) : (
+            ) : game0b && selectedSession ? (
+              <div className="control-create-section">
+                <p style={{ color: '#2e7d32', fontWeight: 600, marginBottom: 12 }}>GAME 0B 진행 중</p>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <Link
+                    href={`/game/game_0b/host?session=${encodeURIComponent(selectedSession.session_id)}`}
+                    className="control-btn-primary"
+                  >
+                    <i className="fa-solid fa-gamepad" /> 진행자 화면
+                  </Link>
+                  <a
+                    href={displayUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="control-btn-secondary"
+                  >
+                    <i className="fa-solid fa-external-link-alt" /> 송출 화면 열기
+                  </a>
+                  <a
+                    href={`/game/game_0b/testroom?session=${encodeURIComponent(selectedSession.session_id)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="control-btn-secondary"
+                  >
+                    <i className="fa-solid fa-door-open" /> 테스트룸
+                  </a>
+                </div>
+              </div>
+            ) : game ? (
               <div className="control-create-section">
                 <p style={{ color: '#2e7d32', fontWeight: 600, marginBottom: 12 }}>게임 진행 중</p>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -326,7 +413,7 @@ export default function ControlPage() {
                   </button>
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         )}
 
