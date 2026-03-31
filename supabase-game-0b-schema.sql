@@ -1,6 +1,10 @@
 -- ============================================
--- GAME 0B (시즌0-B) — 스냅샷 + 이벤트 로그
--- Supabase SQL Editor에서 실행 (sessions, update_updated_at_column 존재 전제)
+-- 수송선게임 (game_0b) — 스냅샷 + 이벤트 로그
+--
+-- [필수] Supabase 대시보드 → SQL Editor → New query → 이 파일 전체 실행 후 Run
+--   · "Could not find the table public.game_0b" 오류는 이 스크립트 미실행 시 발생합니다.
+--   · 전제: sessions 테이블, update_updated_at_column() 함수가 이미 있어야 합니다.
+--   · publication 추가 줄에서 이미 등록됨 오류가 나면 해당 줄만 무시해도 됩니다.
 -- ============================================
 
 DROP TABLE IF EXISTS game_0b_event CASCADE;
@@ -16,14 +20,19 @@ CREATE TABLE game_0b (
   status VARCHAR(20) NOT NULL DEFAULT '대기중'
     CHECK (status IN ('대기중', '진행중', '완료')),
 
+  player_count INTEGER NOT NULL DEFAULT 12 CHECK (player_count >= 8 AND player_count <= 12),
   current_round INTEGER NOT NULL DEFAULT 1 CHECK (current_round >= 1 AND current_round <= 5),
-  phase VARCHAR(20) NOT NULL DEFAULT 'day'
-    CHECK (phase IN ('day', 'night', 'morning')),
+  phase VARCHAR(20) NOT NULL DEFAULT 'setup'
+    CHECK (phase IN ('setup', 'day', 'night', 'morning')),
   first_player_number INTEGER CHECK (first_player_number IS NULL OR (first_player_number >= 1 AND first_player_number <= 12)),
   phase_deadline_at TIMESTAMPTZ,
 
   -- 수송선: 0 이하 가능 (음수까지 하락)
   ship_hull INTEGER NOT NULL DEFAULT 100,
+
+  -- 밤 액션 처리용
+  night_action_count INTEGER NOT NULL DEFAULT 0,
+  detected_actions JSONB NOT NULL DEFAULT '[]'::jsonb,
 
   commander_player_number INTEGER CHECK (commander_player_number IS NULL OR (commander_player_number >= 1 AND commander_player_number <= 12)),
   revolutionary_player_number INTEGER CHECK (revolutionary_player_number IS NULL OR (revolutionary_player_number >= 1 AND revolutionary_player_number <= 12)),

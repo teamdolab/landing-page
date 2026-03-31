@@ -64,6 +64,8 @@ export default function ControlPage() {
   const [game, setGame] = useState<Game | null>(null);
   const [game0b, setGame0b] = useState<Game0bRow | null>(null);
   const [playerCount, setPlayerCount] = useState(8);
+  const [game0bPlayerCount, setGame0bPlayerCount] = useState(12);
+  const [game0bFirstPlayer, setGame0bFirstPlayer] = useState(1);
   const [creating, setCreating] = useState(false);
   const [displayUrl, setDisplayUrl] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -164,7 +166,11 @@ export default function ControlPage() {
       const res = await fetch('/api/game/game_0b/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: selectedSession.session_id }),
+        body: JSON.stringify({
+          session_id: selectedSession.session_id,
+          player_count: game0bPlayerCount,
+          first_player_number: game0bFirstPlayer,
+        }),
       });
       const data = await res.json();
       if (res.ok && data?.game_id) {
@@ -313,9 +319,34 @@ export default function ControlPage() {
                   </div>
                 )}
                 {selectedSession && isSessionGame0b(selectedSession.session_id) && (
-                  <p style={{ color: '#666', fontSize: 14, marginBottom: 12 }}>
-                    수송선게임 세션입니다. 플레이어 수는 이후 단계에서 반영합니다.
-                  </p>
+                  <>
+                    <div className="control-form-group">
+                      <label>플레이어 수 (8~12명)</label>
+                      <select
+                        value={game0bPlayerCount}
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          setGame0bPlayerCount(v);
+                          if (game0bFirstPlayer > v) setGame0bFirstPlayer(1);
+                        }}
+                      >
+                        {[8, 9, 10, 11, 12].map((n) => (
+                          <option key={n} value={n}>{n}명</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="control-form-group">
+                      <label>1라운드 선 플레이어</label>
+                      <select
+                        value={game0bFirstPlayer}
+                        onChange={(e) => setGame0bFirstPlayer(Number(e.target.value))}
+                      >
+                        {Array.from({ length: game0bPlayerCount }, (_, i) => i + 1).map((n) => (
+                          <option key={n} value={n}>{n}번</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
                 )}
                 <button
                   className="control-btn-primary"

@@ -1,6 +1,6 @@
 /** game_0b / game_0b_event — DB 행 타입 (스냅샷 + 이벤트) */
 
-export type Game0bPhase = 'day' | 'night' | 'morning';
+export type Game0bPhase = 'setup' | 'day' | 'night' | 'morning';
 export type Game0bStatus = '대기중' | '진행중' | '완료';
 export type Game0bEventSource = 'host' | 'testroom' | 'system';
 
@@ -8,11 +8,14 @@ export type Game0bRow = {
   game_id: string;
   session_id: string;
   status: Game0bStatus;
+  player_count: number;
   current_round: number;
   phase: Game0bPhase;
   first_player_number: number | null;
   phase_deadline_at: string | null;
   ship_hull: number;
+  night_action_count: number;
+  detected_actions: unknown[];
   commander_player_number: number | null;
   revolutionary_player_number: number | null;
   former_commander_player_number: number | null;
@@ -67,18 +70,9 @@ export type Game0bEventRow = {
 };
 
 const PLAYER_KEYS = [
-  'player_01',
-  'player_02',
-  'player_03',
-  'player_04',
-  'player_05',
-  'player_06',
-  'player_07',
-  'player_08',
-  'player_09',
-  'player_10',
-  'player_11',
-  'player_12',
+  'player_01', 'player_02', 'player_03', 'player_04',
+  'player_05', 'player_06', 'player_07', 'player_08',
+  'player_09', 'player_10', 'player_11', 'player_12',
 ] as const;
 
 export function getPlayerRoleCore(row: Game0bRow, playerNumber: number): { role: string | null; core: number } {
@@ -88,3 +82,20 @@ export function getPlayerRoleCore(row: Game0bRow, playerNumber: number): { role:
   const core = row[`${prefix}_core` as keyof Game0bRow] as number;
   return { role, core };
 }
+
+export function playerCoreKey(num: number): string {
+  return `player_${String(num).padStart(2, '0')}_core`;
+}
+
+export function playerRoleKey(num: number): string {
+  return `player_${String(num).padStart(2, '0')}_role`;
+}
+
+/** 인원 별 역할 분배 (사령관/생존자/반군수장/반군/외계인) */
+export const ROLE_DISTRIBUTION: Record<number, string[]> = {
+  8:  ['사령관', '생존자', '생존자', '반군수장', '반군', '반군', '외계인', '외계인'],
+  9:  ['사령관', '생존자', '생존자', '생존자', '반군수장', '반군', '반군', '외계인', '외계인'],
+  10: ['사령관', '생존자', '생존자', '생존자', '반군수장', '반군', '반군', '반군', '외계인', '외계인'],
+  11: ['사령관', '생존자', '생존자', '생존자', '생존자', '반군수장', '반군', '반군', '반군', '외계인', '외계인'],
+  12: ['사령관', '생존자', '생존자', '생존자', '생존자', '반군수장', '반군', '반군', '반군', '반군', '외계인', '외계인'],
+};

@@ -1,0 +1,370 @@
+/* 수송선 송출: 상단=우주 배경 / 중·하단=테이블(콘솔) 색 — 포스터 샘플 기준 */
+.game-display-root.susongseon-display {
+  /* 기본 송출의 회색 격자 제거 */
+  background-color: #d4d0ea;
+  background-image: none;
+}
+
+/* 송출 스캔라인은 이 테마에서만 살짝 줄임 */
+.game-display-root.susongseon-display .scanlines {
+  opacity: 0.35;
+}
+
+/* ── 상단: 우주 ── */
+.game-display-root.susongseon-display .display-header {
+  position: relative;
+  overflow: hidden;
+  flex: 0 0 72px;
+  background-color: #2a1458;
+  background-image:
+    radial-gradient(ellipse 100% 120% at 50% -30%, rgba(180, 120, 255, 0.22), transparent 55%),
+    radial-gradient(1.5px 1.5px at 8% 35%, rgba(255, 255, 255, 0.55) 50%, transparent 50%),
+    radial-gradient(1px 1px at 22% 62%, rgba(255, 255, 255, 0.35) 50%, transparent 50%),
+    radial-gradient(1px 1px at 78% 28%, rgba(255, 255, 255, 0.45) 50%, transparent 50%),
+    radial-gradient(1.2px 1.2px at 91% 55%, rgba(255, 255, 255, 0.3) 50%, transparent 50%),
+    linear-gradient(168deg, #1a0d38 0%, #3d1f7a 42%, #5d3a8c 78%, #4a2a72 100%);
+  border-bottom: 2px solid rgba(125, 87, 138, 0.85);
+  box-shadow: 0 6px 28px rgba(20, 5, 45, 0.45);
+  backdrop-filter: none;
+}
+
+.game-display-root.susongseon-display .display-header > * {
+  position: relative;
+  z-index: 1;
+}
+
+.game-display-root.susongseon-display .brand-main {
+  color: #f0e8ff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.game-display-root.susongseon-display .brand-sub {
+  color: #c9b4ff;
+}
+
+.game-display-root.susongseon-display .title-frame {
+  background: linear-gradient(180deg, #f2efff 0%, #e8e4f5 100%);
+  border-color: #2a1f4a;
+  box-shadow: 3px 3px 0 rgba(20, 10, 40, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.game-display-root.susongseon-display .title-frame::before {
+  border-top-color: #ff8c42;
+  border-left-color: #ff8c42;
+}
+
+.game-display-root.susongseon-display .title-frame::after {
+  border-bottom-color: #ae9bf6;
+  border-right-color: #ae9bf6;
+}
+
+.game-display-root.susongseon-display .game-title {
+  color: #1c1538;
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.game-display-root.susongseon-display .round-box {
+  background: linear-gradient(180deg, #2e1a52 0%, #1a0f2e 100%);
+  color: #e8dfff;
+  border: 1px solid rgba(174, 155, 246, 0.45);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* ── 중·하단: 테이블(콘솔 패널) ── */
+.game-display-root.susongseon-display .display-main {
+  background: linear-gradient(180deg, #c8c2e4 0%, #d4d0ea 35%, #dcd8f0 70%, #e4e0f5 100%);
+  box-shadow: inset 0 10px 24px -12px rgba(40, 20, 80, 0.12);
+}
+
+.game-display-root.susongseon-display .phase-container {
+  border-left-color: #6d42d0;
+}
+
+.game-display-root.susongseon-display .phase-current {
+  color: #1c1538;
+  text-shadow: none;
+}
+
+.game-display-root.susongseon-display .phase-current::before {
+  color: #6d42d0;
+}
+
+.game-display-root.susongseon-display .timer-container {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: #6d42d0;
+  box-shadow: 0 0 14px rgba(109, 66, 208, 0.15);
+}
+
+.game-display-root.susongseon-display .timer-value {
+  color: #5a32b8;
+  text-shadow: none;
+}
+
+.game-display-root.susongseon-display .timer-value.timer-end {
+  color: #c62828;
+}
+
+.game-display-root.susongseon-display .ranking-header {
+  color: #4a3d6b;
+  border-bottom-color: rgba(74, 61, 107, 0.45);
+}
+
+.game-display-root.susongseon-display .rank-item {
+  background: linear-gradient(90deg, transparent, rgba(109, 66, 208, 0.06));
+}
+
+.game-display-root.susongseon-display .detail-section {
+  border-top-color: rgba(74, 61, 107, 0.2);
+}
+
+.game-display-root.susongseon-display .node-box {
+  background: linear-gradient(180deg, #faf8ff 0%, #f0ecfc 100%);
+  border-color: #3a2d5c;
+  box-shadow: 0 3px 10px rgba(40, 25, 80, 0.12);
+}
+
+.game-display-root.susongseon-display .node-box .player-num {
+  color: #5a32b8;
+  text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
+}
+
+.game-display-root.susongseon-display .score-box {
+  background: linear-gradient(180deg, #2a1f4a 0%, #1a1530 100%);
+  color: #e8e0ff;
+  border-color: #4a3d6b;
+}
+
+.game-display-root.susongseon-display .first-player-badge {
+  border-color: #3a2d5c;
+}
+
+/* ── 하단 공통 ── */
+.game-display-root.susongseon-display .bottom-section {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(74, 61, 107, 0.25);
+}
+
+.game-display-root.susongseon-display .bottom-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 8px;
+  border: 1px solid rgba(74, 61, 107, 0.18);
+  overflow: hidden;
+}
+
+.game-display-root.susongseon-display .bottom-panel-label {
+  font-family: var(--title-font);
+  font-size: 11px;
+  font-weight: 700;
+  color: #4a3d6b;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(74, 61, 107, 0.2);
+  padding-bottom: 4px;
+}
+
+.game-display-root.susongseon-display .bottom-panel-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 수송선 상태 */
+.game-display-root.susongseon-display .ship-status-badge {
+  font-family: var(--main-font);
+  font-size: 32px;
+  font-weight: 900;
+  padding: 8px 24px;
+  border-radius: 8px;
+  text-align: center;
+}
+.game-display-root.susongseon-display .ship-status-badge.ship-safe {
+  color: #1b5e20;
+  background: rgba(76, 175, 80, 0.15);
+  border: 2px solid #4caf50;
+}
+.game-display-root.susongseon-display .ship-status-badge.ship-danger {
+  color: #e65100;
+  background: rgba(255, 152, 0, 0.15);
+  border: 2px solid #ff9800;
+}
+.game-display-root.susongseon-display .ship-status-badge.ship-destroy {
+  color: #b71c1c;
+  background: rgba(244, 67, 54, 0.15);
+  border: 2px solid #f44336;
+}
+
+/* 감지 액션 아이템 */
+.game-display-root.susongseon-display .detected-action-item {
+  font-family: var(--main-font);
+  font-size: 15px;
+  font-weight: 700;
+  color: #1c1538;
+  padding: 6px 12px;
+  background: rgba(109, 66, 208, 0.08);
+  border-radius: 4px;
+  border-left: 3px solid #6d42d0;
+  width: 100%;
+}
+
+/* 코어 교환 로그 */
+.game-display-root.susongseon-display .transfer-log-item {
+  font-family: var(--main-font);
+  font-size: 14px;
+  font-weight: 600;
+  color: #3a2d5c;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(74, 61, 107, 0.1);
+}
+
+/* 진행자 하단: 입력 영역 */
+.game-display-root.susongseon-display .host-input-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.game-display-root.susongseon-display .host-input-group label {
+  font-family: var(--main-font);
+  font-size: 13px;
+  font-weight: 700;
+  color: #4a3d6b;
+}
+
+.game-display-root.susongseon-display .host-select,
+.game-display-root.susongseon-display .host-number-input {
+  width: 100%;
+  max-width: 180px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 2px solid rgba(74, 61, 107, 0.3);
+  background: rgba(255, 255, 255, 0.85);
+  font-family: var(--main-font);
+  font-size: 18px;
+  font-weight: 700;
+  color: #1c1538;
+  text-align: center;
+}
+.game-display-root.susongseon-display .host-select:focus,
+.game-display-root.susongseon-display .host-number-input:focus {
+  outline: none;
+  border-color: #6d42d0;
+  box-shadow: 0 0 0 3px rgba(109, 66, 208, 0.15);
+}
+
+.game-display-root.susongseon-display .host-confirm-btn {
+  width: 100%;
+  max-width: 180px;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(180deg, #6d42d0 0%, #5a32b8 100%);
+  color: #fff;
+  font-family: var(--main-font);
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(109, 66, 208, 0.3);
+  transition: filter 0.15s;
+}
+.game-display-root.susongseon-display .host-confirm-btn:hover {
+  filter: brightness(1.1);
+}
+.game-display-root.susongseon-display .host-confirm-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 테스트룸 NFC 게이트 */
+.game-display-root.susongseon-display .nfc-gate-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+}
+
+.game-display-root.susongseon-display .nfc-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(109, 66, 208, 0.1);
+  border: 3px dashed rgba(109, 66, 208, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  animation: nfc-pulse 2s ease-in-out infinite;
+}
+
+@keyframes nfc-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.7; }
+}
+
+.game-display-root.susongseon-display .nfc-gate-text {
+  font-family: var(--main-font);
+  font-size: 18px;
+  font-weight: 700;
+  color: #3a2d5c;
+}
+
+/* 테스트룸 액션 버튼 */
+.game-display-root.susongseon-display .action-btn {
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: 2px solid rgba(74, 61, 107, 0.25);
+  background: rgba(255, 255, 255, 0.7);
+  font-family: var(--main-font);
+  font-size: 15px;
+  font-weight: 700;
+  color: #1c1538;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+.game-display-root.susongseon-display .action-btn:hover {
+  background: rgba(109, 66, 208, 0.1);
+  border-color: #6d42d0;
+}
+
+.game-display-root.susongseon-display .action-end-btn {
+  width: 100%;
+  max-width: 180px;
+  padding: 14px;
+  border-radius: 8px;
+  border: 2px solid #c62828;
+  background: rgba(198, 40, 40, 0.08);
+  color: #c62828;
+  font-family: var(--main-font);
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.game-display-root.susongseon-display .action-end-btn:hover {
+  background: rgba(198, 40, 40, 0.18);
+}
+
+/* 빈 상태 텍스트 */
+.game-display-root.susongseon-display .empty-text {
+  font-family: var(--main-font);
+  font-size: 14px;
+  color: #8a7db0;
+  font-style: italic;
+}

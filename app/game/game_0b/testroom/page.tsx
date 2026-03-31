@@ -1,103 +1,575 @@
 'use client';
 
-import { Suspense, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useGame0b } from '@/lib/use-game-0b';
-import { getPlayerRoleCore } from '@/lib/game-0b-types';
-import '../game-0b.css';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import GameLayout from '../components/GameLayout';
+import { getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
 
-function TestroomContent() {
-  const searchParams = useSearchParams();
-  const paramSession = searchParams.get('session')?.trim() || '';
-  const paramPlayer = parseInt(searchParams.get('player') || '', 10);
-  const [sessionId, setSessionId] = useState(paramSession);
-  const [playerNum, setPlayerNum] = useState(Number.isFinite(paramPlayer) && paramPlayer >= 1 && paramPlayer <= 12 ? paramPlayer : 1);
+export default function Game0bTestroomPage() {
+  return (
+    <GameLayout role="testroom">
+      {(game: Game0bRow, reload: () => void) => (
+        <TestroomBottom game={game} reload={reload} />
+      )}
+    </GameLayout>
+  );
+}
 
-  const { game, loading } = useGame0b(sessionId || null);
-  const { role, core } = game ? getPlayerRoleCore(game, playerNum) : { role: null, core: 0 };
-
-  if (!sessionId) {
-    return (
-      <div className="game-0b-root min-h-screen bg-[var(--g0b-bg)] flex items-center justify-center p-6">
-        <form
-          className="w-full max-w-md space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const v = (e.currentTarget.elements.namedItem('session') as HTMLInputElement)?.value?.trim();
-            if (v) setSessionId(v);
-          }}
-        >
-          <h1 className="text-lg font-semibold text-[var(--g0b-text)]">수송선게임 · 테스트룸</h1>
-          <input
-            name="session"
-            placeholder="세션 ID"
-            className="w-full px-4 py-3 rounded-lg bg-[var(--g0b-surface)] border border-white/10 text-[var(--g0b-text)]"
-          />
-          <button type="submit" className="w-full py-3 rounded-lg bg-[var(--g0b-accent)] text-[#0a0e14] font-bold">
-            입장
-          </button>
-        </form>
-      </div>
-    );
+function keyCodeToHexChar(e: React.KeyboardEvent): string | null {
+  const code = e.code;
+  if (code.startsWith('Digit')) return code.replace('Digit', '');
+  if (code.startsWith('Key')) {
+    const ch = code.replace('Key', '').toUpperCase();
+    if ('ABCDEF'.includes(ch)) return ch;
   }
+  return null;
+}
+
+/* ── NFC 게이트(대기) 화면 ── */
+function NfcGate({ game, onIdentified }: { game: Game0bRow; onIdentified: (num: number) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autoSubmitRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => inputRef.current?.focus(), 300);
+    return () => clearTimeout(t);
+  }, []);
+
+  const processNfc = useCallback(
+    async (uid: string) => {
+      const trimmed = uid.trim();
+      if (!trimmed) return;
+      setError('');
+      setLoading(true);
+      try {
+        const res = await fetch('/api/game/game_0b/nfc-lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nfc_id: trimmed, session_id: game.session_id }),
+        });
+        const j = await res.json();
+        if (res.ok && j.player_number) {
+          onIdentified(j.player_number);
+        } else {
+          setError(j.error || '등록되지 않은 카드입니다.');
+        }
+      } catch {
+        setError('카드 조회 중 오류가 발생했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [onIdentified, game.session_id],
+  );
 
   return (
-    <div className="game-0b-root min-h-screen bg-[var(--g0b-bg)] text-[var(--g0b-text)] p-4 md:p-6">
-      <div className="max-w-lg mx-auto space-y-6">
-        <header className="flex justify-between items-center">
-          <button type="button" onClick={() => setSessionId('')} className="text-sm text-[var(--g0b-muted)]">
-            ← 세션 변경
-          </button>
-          <span className="text-xs text-[var(--g0b-muted)]">{sessionId}</span>
-        </header>
-
-        <div className="flex gap-2 items-center">
-          <label className="text-sm text-[var(--g0b-muted)]">플레이어</label>
-          <select
-            value={playerNum}
-            onChange={(e) => setPlayerNum(Number(e.target.value))}
-            className="flex-1 px-3 py-2 rounded-lg bg-[var(--g0b-surface)] border border-white/10"
-          >
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={n}>
-                {n}번
-              </option>
-            ))}
-          </select>
+    <div
+      className="bottom-panel"
+      style={{ gridColumn: '1 / -1', cursor: 'pointer' }}
+      onClick={() => inputRef.current?.focus()}
+    >
+      <div className="bottom-panel-label">플레이어 식별</div>
+      <div className="bottom-panel-body">
+        <div className="nfc-gate-body">
+          <input
+            ref={inputRef}
+            type="text"
+            autoComplete="off"
+            autoFocus
+            lang="en"
+            inputMode="text"
+            className="absolute opacity-0"
+            aria-label="NFC 카드 ID 입력"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                if (autoSubmitRef.current) {
+                  clearTimeout(autoSubmitRef.current);
+                  autoSubmitRef.current = null;
+                }
+                const val =
+                  (inputRef.current?.getAttribute('data-nfc-buffer') ??
+                    (e.target as HTMLInputElement).value)?.trim();
+                if (val) {
+                  processNfc(val);
+                  inputRef.current?.setAttribute('data-nfc-buffer', '');
+                  (e.target as HTMLInputElement).value = '';
+                }
+              } else if (e.key === 'Backspace') {
+                const buf = (
+                  inputRef.current?.getAttribute('data-nfc-buffer') ?? ''
+                ).slice(0, -1);
+                inputRef.current?.setAttribute('data-nfc-buffer', buf);
+                (e.target as HTMLInputElement).value = buf;
+                e.preventDefault();
+              } else {
+                const char = keyCodeToHexChar(e);
+                if (char !== null) {
+                  e.preventDefault();
+                  const buf =
+                    (inputRef.current?.getAttribute('data-nfc-buffer') ?? '') +
+                    char;
+                  inputRef.current?.setAttribute('data-nfc-buffer', buf);
+                  (e.target as HTMLInputElement).value = buf;
+                  if (autoSubmitRef.current) clearTimeout(autoSubmitRef.current);
+                  if (buf.length >= 7) {
+                    autoSubmitRef.current = setTimeout(() => {
+                      autoSubmitRef.current = null;
+                      processNfc(buf);
+                      inputRef.current?.setAttribute('data-nfc-buffer', '');
+                      if (inputRef.current) (inputRef.current as HTMLInputElement).value = '';
+                    }, 300);
+                  }
+                }
+              }
+            }}
+          />
+          <div className="nfc-icon">📡</div>
+          <div className="nfc-gate-text">
+            {loading ? '확인 중...' : 'TAG YOUR PLAYER CARD'}
+          </div>
+          <span className="empty-text">
+            화면을 터치한 후 NFC 리더기에 카드를 태깅하세요
+          </span>
+          {error && (
+            <span style={{ color: '#c62828', fontWeight: 700, fontSize: 14 }}>
+              {error}
+            </span>
+          )}
         </div>
-
-        {loading && !game && <p className="text-[var(--g0b-muted)]">로딩…</p>}
-
-        {!loading && !game && (
-          <p className="text-amber-400 text-sm">game_0b 없음. 진행자 화면에서 init 하세요.</p>
-        )}
-
-        {game && (
-          <section className="rounded-2xl border border-[var(--g0b-accent)]/40 bg-[var(--g0b-surface)] p-6 space-y-4">
-            <div className="text-center">
-              <p className="text-sm text-[var(--g0b-muted)]">플레이어 {playerNum}</p>
-              <p className="text-2xl font-bold mt-1">{role ?? '역할 미배정'}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-[var(--g0b-muted)]">보유 코어</p>
-              <p className="text-5xl font-black text-[var(--g0b-accent)]" style={{ fontFamily: 'var(--font-share-tech-mono)' }}>
-                {core}
-              </p>
-            </div>
-            <p className="text-xs text-center text-[var(--g0b-muted)]">
-              카드 태그 연동은 이후 단계에서 추가합니다.
-            </p>
-          </section>
-        )}
       </div>
     </div>
   );
 }
 
-export default function Game0bTestroomPage() {
+/* ── setup 페이즈: 역할 확인 화면 ── */
+function RoleRevealPanel({
+  game,
+  playerNum,
+  onDone,
+}: {
+  game: Game0bRow;
+  playerNum: number;
+  onDone: () => void;
+}) {
+  const { role } = getPlayerRoleCore(game, playerNum);
+
+  const roleDescription: Record<string, string> = {
+    '사령관': '생존자 진영 리더. 반군수장을 알고 시작합니다.',
+    '생존자': '생존자 진영. 정보 없이 시작합니다.',
+    '반군수장': '반군 진영 리더. 모든 반군을 알고 시작합니다.',
+    '반군': '반군 진영. 정보 없이 시작합니다.',
+    '외계인': '외계인 진영. 다른 외계인을 알고 시작합니다.',
+  };
+
+  const factionInfo = getFactionInfo(game, playerNum, role);
+
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0a0e14] text-slate-400 flex items-center justify-center">로딩…</div>}>
-      <TestroomContent />
-    </Suspense>
+    <div className="bottom-panel" style={{ gridColumn: '1 / -1' }}>
+      <div className="bottom-panel-label">{playerNum}번 플레이어 · 역할 확인</div>
+      <div className="bottom-panel-body" style={{ gap: 12 }}>
+        <div style={{ fontSize: 32, fontWeight: 900, color: '#5a32b8' }}>
+          {role ?? '미배정'}
+        </div>
+        {role && (
+          <span style={{ color: '#aaa', fontSize: 14, textAlign: 'center' }}>
+            {roleDescription[role] ?? ''}
+          </span>
+        )}
+        {factionInfo && (
+          <span style={{ color: '#e8b84b', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>
+            {factionInfo}
+          </span>
+        )}
+        <button
+          type="button"
+          className="action-end-btn"
+          style={{ marginTop: 12 }}
+          onClick={onDone}
+        >
+          확인 완료
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function getFactionInfo(game: Game0bRow, playerNum: number, role: string | null): string | null {
+  if (!role) return null;
+  const pc = game.player_count ?? 12;
+
+  if (role === '사령관') {
+    for (let i = 1; i <= pc; i++) {
+      const { role: r } = getPlayerRoleCore(game, i);
+      if (r === '반군수장') return `반군수장: ${i}번 플레이어`;
+    }
+  }
+
+  if (role === '반군수장') {
+    const rebels: number[] = [];
+    for (let i = 1; i <= pc; i++) {
+      const { role: r } = getPlayerRoleCore(game, i);
+      if (r === '반군') rebels.push(i);
+    }
+    if (rebels.length > 0) return `반군: ${rebels.join(', ')}번`;
+  }
+
+  if (role === '외계인') {
+    const aliens: number[] = [];
+    for (let i = 1; i <= pc; i++) {
+      if (i === playerNum) continue;
+      const { role: r } = getPlayerRoleCore(game, i);
+      if (r === '외계인') aliens.push(i);
+    }
+    if (aliens.length > 0) return `다른 외계인: ${aliens.join(', ')}번`;
+  }
+
+  return null;
+}
+
+/* ── 밤 페이즈: 플레이어 액션 화면 ── */
+function PlayerActionPanel({
+  game,
+  playerNum,
+  reload,
+  onEnd,
+}: {
+  game: Game0bRow;
+  playerNum: number;
+  reload: () => void;
+  onEnd: () => void;
+}) {
+  const { role, core } = getPlayerRoleCore(game, playerNum);
+  const [actionDone, setActionDone] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [modalAction, setModalAction] = useState<ActionDef | null>(null);
+  const [targetPlayer, setTargetPlayer] = useState<number>(1);
+  const [detectTargets, setDetectTargets] = useState<number[]>([]);
+
+  const playerOptions = Array.from({ length: game.player_count ?? 12 }, (_, i) => i + 1).filter(n => n !== playerNum);
+
+  const handleSubmitAction = async (actionId: string, target?: number, extra?: Record<string, unknown>) => {
+    setSubmitting(true);
+    setMsg(null);
+    try {
+      const body: Record<string, unknown> = {
+        session_id: game.session_id,
+        player_number: playerNum,
+        action_type: actionId,
+      };
+      if (target != null) body.target_player = target;
+      if (extra) body.extra_data = extra;
+
+      const res = await fetch('/api/game/game_0b/night-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const j = await res.json();
+      if (!res.ok) {
+        setMsg(j.error || '액션 실패');
+      } else {
+        const isNonConsuming = actionId === 'detect' || actionId === 'hidden_trade';
+        if (!isNonConsuming) {
+          setActionDone(true);
+        }
+        setMsg(`${modalAction?.label ?? actionId} 완료`);
+        setModalAction(null);
+        reload();
+      }
+    } catch {
+      setMsg('네트워크 오류');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleConfirmModal = () => {
+    if (!modalAction) return;
+    if (modalAction.id === 'detect') {
+      handleSubmitAction('detect', undefined, { targets: detectTargets });
+    } else if (modalAction.needsTarget) {
+      handleSubmitAction(modalAction.id, targetPlayer);
+    } else {
+      handleSubmitAction(modalAction.id);
+    }
+  };
+
+  const handleEndTurn = async () => {
+    if (!actionDone) {
+      await handleSubmitAction('skip');
+    }
+    onEnd();
+  };
+
+  const actions = getActionsForRole(role, game);
+
+  return (
+    <>
+      {/* 좌측: 보유 코어 */}
+      <div className="bottom-panel">
+        <div className="bottom-panel-label">
+          {playerNum}번 · 보유 코어
+        </div>
+        <div className="bottom-panel-body">
+          <div style={{ fontFamily: 'var(--tech-font)', fontSize: 48, fontWeight: 900, color: '#5a32b8' }}>
+            {core}
+          </div>
+          <span className="empty-text">{role ?? '역할 미배정'}</span>
+        </div>
+      </div>
+
+      {/* 중앙: 액션 목록 */}
+      <div className="bottom-panel">
+        <div className="bottom-panel-label">액션</div>
+        <div className="bottom-panel-body" style={{ justifyContent: 'flex-start', alignItems: 'stretch', gap: 6 }}>
+          {actions.map((a) => {
+            const disabled = submitting || (actionDone && !a.nonConsuming) || core < a.cost;
+            return (
+              <button
+                key={a.id}
+                type="button"
+                className="action-btn"
+                disabled={disabled}
+                onClick={() => {
+                  setModalAction(a);
+                  setTargetPlayer(playerOptions[0] ?? 1);
+                  setDetectTargets([]);
+                }}
+                style={{ opacity: disabled ? 0.4 : 1 }}
+              >
+                [{a.label}]{' '}
+                <span style={{ fontWeight: 400, color: '#8a7db0' }}>
+                  {a.cost === 0 ? '무료' : `${a.cost}코어`}
+                </span>
+              </button>
+            );
+          })}
+          {msg && (
+            <span style={{ fontSize: 13, color: '#5a32b8', fontWeight: 600, textAlign: 'center', marginTop: 4 }}>
+              {msg}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* 우측: 액션 종료 */}
+      <div className="bottom-panel">
+        <div className="bottom-panel-label">액션 종료</div>
+        <div className="bottom-panel-body">
+          <button type="button" className="action-end-btn" onClick={handleEndTurn} disabled={submitting}>
+            액션 종료
+          </button>
+          <span className="empty-text">종료 후 다음 플레이어가 입장합니다.</span>
+        </div>
+      </div>
+
+      {/* 액션 모달 */}
+      {modalAction && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          }}
+          onClick={() => setModalAction(null)}
+        >
+          <div
+            style={{
+              background: '#1e1340', padding: 24, borderRadius: 12, minWidth: 300,
+              maxWidth: '90%', border: '1px solid #5a32b8',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ color: '#fff', fontSize: 18, fontWeight: 700, marginBottom: 16 }}>
+              {modalAction.label} {modalAction.cost > 0 && `(${modalAction.cost}코어)`}
+            </h3>
+
+            {modalAction.id === 'detect' ? (
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ color: '#aaa', fontSize: 13, display: 'block', marginBottom: 8 }}>
+                  감지 대상 (최대 3명 선택)
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {playerOptions.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      style={{
+                        padding: '6px 12px', borderRadius: 6, border: '1px solid #5a32b8',
+                        background: detectTargets.includes(n) ? '#5a32b8' : 'transparent',
+                        color: '#fff', cursor: 'pointer', fontSize: 14,
+                      }}
+                      onClick={() => {
+                        if (detectTargets.includes(n)) {
+                          setDetectTargets(detectTargets.filter(t => t !== n));
+                        } else if (detectTargets.length < 3) {
+                          setDetectTargets([...detectTargets, n]);
+                        }
+                      }}
+                    >
+                      {n}번
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : modalAction.needsTarget ? (
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ color: '#aaa', fontSize: 13, display: 'block', marginBottom: 8 }}>
+                  대상 플레이어
+                </label>
+                <select
+                  value={targetPlayer}
+                  onChange={(e) => setTargetPlayer(Number(e.target.value))}
+                  style={{
+                    width: '100%', padding: '8px 12px', borderRadius: 6,
+                    background: '#0d0820', border: '1px solid #5a32b8', color: '#fff', fontSize: 15,
+                  }}
+                >
+                  {playerOptions.map((n) => (
+                    <option key={n} value={n}>{n}번</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <p style={{ color: '#aaa', fontSize: 14, marginBottom: 16 }}>
+                {modalAction.label}을(를) 실행합니다.
+              </p>
+            )}
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                style={{
+                  flex: 1, padding: '10px 0', borderRadius: 8,
+                  background: '#5a32b8', color: '#fff', border: 'none',
+                  fontWeight: 700, fontSize: 15, cursor: 'pointer',
+                }}
+                disabled={submitting || (modalAction.id === 'detect' && detectTargets.length === 0)}
+                onClick={handleConfirmModal}
+              >
+                {submitting ? '처리 중...' : '확인'}
+              </button>
+              <button
+                type="button"
+                style={{
+                  flex: 1, padding: '10px 0', borderRadius: 8,
+                  background: 'transparent', color: '#888', border: '1px solid #444',
+                  fontWeight: 600, fontSize: 15, cursor: 'pointer',
+                }}
+                onClick={() => setModalAction(null)}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+type ActionDef = { id: string; label: string; cost: number; needsTarget: boolean; nonConsuming?: boolean };
+
+function getActionsForRole(role: string | null, game: Game0bRow): ActionDef[] {
+  if (!role) return [];
+
+  const isRevolutionary = game.revolutionary_player_number != null;
+
+  switch (role) {
+    case '사령관':
+      return [
+        { id: 'detect', label: '감지', cost: 0, needsTarget: false, nonConsuming: true },
+        { id: 'control', label: '통제', cost: 5, needsTarget: true },
+        { id: 'mine', label: '채굴', cost: 0, needsTarget: false },
+        { id: 'repair_survivor', label: '수리', cost: 1, needsTarget: false },
+      ];
+    case '생존자': {
+      const base: ActionDef[] = [
+        { id: 'search', label: '탐색', cost: 5, needsTarget: true },
+        { id: 'mine', label: '채굴', cost: 0, needsTarget: false },
+        { id: 'repair_survivor', label: '수리', cost: 1, needsTarget: false },
+      ];
+      if (isRevolutionary) {
+        base.push({ id: 'assassinate', label: '암살', cost: 10, needsTarget: true });
+      }
+      return base;
+    }
+    case '반군수장':
+    case '혁명가':
+      return [
+        { id: 'jamming', label: '교란', cost: 4, needsTarget: false },
+        { id: 'assassinate', label: '암살', cost: 10, needsTarget: true },
+        { id: 'hidden_trade', label: '은닉거래', cost: 0, needsTarget: true, nonConsuming: true },
+        { id: 'mine', label: '채굴', cost: 0, needsTarget: false },
+        { id: 'repair_rebel', label: '수리', cost: 2, needsTarget: false },
+      ];
+    case '반군':
+      return [
+        { id: 'search', label: '탐색', cost: 5, needsTarget: true },
+        { id: 'assassinate', label: '암살', cost: 10, needsTarget: true },
+        { id: 'mine', label: '채굴', cost: 0, needsTarget: false },
+        { id: 'repair_rebel', label: '수리', cost: 2, needsTarget: false },
+      ];
+    case '외계인':
+      return [
+        { id: 'plunder', label: '약탈', cost: 0, needsTarget: true },
+        { id: 'destroy', label: '파괴', cost: 4, needsTarget: false },
+      ];
+    default:
+      return [
+        { id: 'mine', label: '채굴', cost: 0, needsTarget: false },
+        { id: 'repair_survivor', label: '수리', cost: 1, needsTarget: false },
+      ];
+  }
+}
+
+/* ── 메인 테스트룸 하단 ── */
+function TestroomBottom({ game, reload }: { game: Game0bRow; reload: () => void }) {
+  const [playerNum, setPlayerNum] = useState<number | null>(null);
+
+  const handleEnd = () => {
+    setPlayerNum(null);
+  };
+
+  if (game.phase === 'day') {
+    return (
+      <div className="bottom-panel" style={{ gridColumn: '1 / -1' }}>
+        <div className="bottom-panel-label">대기</div>
+        <div className="bottom-panel-body">
+          <span style={{ fontSize: 18, color: '#aaa' }}>
+            현재 낮 시간입니다. 밤이 될 때까지 대기하세요.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (playerNum === null) {
+    return <NfcGate game={game} onIdentified={setPlayerNum} />;
+  }
+
+  if (game.phase === 'setup') {
+    return <RoleRevealPanel game={game} playerNum={playerNum} onDone={handleEnd} />;
+  }
+
+  if (game.phase === 'night') {
+    return (
+      <PlayerActionPanel
+        game={game}
+        playerNum={playerNum}
+        reload={reload}
+        onEnd={handleEnd}
+      />
+    );
+  }
+
+  return (
+    <div className="bottom-panel" style={{ gridColumn: '1 / -1' }}>
+      <div className="bottom-panel-label">대기</div>
+      <div className="bottom-panel-body">
+        <span style={{ fontSize: 18, color: '#aaa' }}>현재 활동 시간이 아닙니다.</span>
+      </div>
+    </div>
   );
 }
