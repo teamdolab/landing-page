@@ -18,6 +18,8 @@ const ACTION_LABEL: Record<string, string> = {
   hidden_trade: '은닉거래',
   skip: '행동 없음',
   none: '행동 없음',
+  commander_assassinated: '사령관이 암살당했습니다.',
+  revolutionary_emerged: '혁명가가 등장했습니다.',
 };
 
 export default function Game0bDisplayPage() {
@@ -30,8 +32,39 @@ export default function Game0bDisplayPage() {
 
 function DisplayBottom({ game }: { game: Game0bRow }) {
   const status = shipStatus(game.ship_hull);
-
   const detectedActions = Array.isArray(game.detected_actions) ? game.detected_actions : [];
+  const transferLog: number[] = Array.isArray(game.public_transfer_log) ? game.public_transfer_log as number[] : [];
+
+  if (game.phase === 'setup' || game.phase === 'role_reveal') {
+    return (
+      <>
+        <div className="bottom-panel">
+          <div className="bottom-panel-label">게임 준비</div>
+          <div className="bottom-panel-body">
+            <span style={{ fontSize: 16, color: '#aaa' }}>
+              {game.phase === 'setup' ? '게임 생성됨 · 역할 분배 대기' : '역할 확인 진행 중'}
+            </span>
+          </div>
+        </div>
+
+        <div className="bottom-panel">
+          <div className="bottom-panel-label">수송선 상태</div>
+          <div className="bottom-panel-body">
+            <div className={`ship-status-badge ${status.className}`}>{status.label}</div>
+          </div>
+        </div>
+
+        <div className="bottom-panel">
+          <div className="bottom-panel-label">참가 인원</div>
+          <div className="bottom-panel-body">
+            <span style={{ fontSize: 28, fontWeight: 800, color: '#5a32b8' }}>
+              {game.player_count ?? 12}명
+            </span>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -43,10 +76,11 @@ function DisplayBottom({ game }: { game: Game0bRow }) {
             ? detectedActions.map((a, i) => {
                 const item = a as Record<string, unknown>;
                 const actionName = ACTION_LABEL[item.action as string] ?? (item.action as string);
+                const hideTarget = item.action === 'plunder';
                 return (
                   <div key={i} className="detected-action-item">
                     {actionName}
-                    {item.target != null ? ` → ${item.target}번` : ''}
+                    {!hideTarget && item.target != null ? ` → ${item.target}번` : ''}
                   </div>
                 );
               })
@@ -65,14 +99,14 @@ function DisplayBottom({ game }: { game: Game0bRow }) {
       {/* 우측: 코어 교환 알림 */}
       <div className="bottom-panel">
         <div className="bottom-panel-label">코어 교환</div>
-        <div className="bottom-panel-body">
-          {game.last_public_transfer_from != null ? (
-            <div className="transfer-log-item">
-              {game.last_public_transfer_from}번 플레이어가 누군가에게 코어를 보냈습니다.
-            </div>
-          ) : (
-            <span className="empty-text">교환 기록 없음</span>
-          )}
+        <div className="bottom-panel-body" style={{ justifyContent: 'flex-start', alignItems: 'stretch' }}>
+          {transferLog.length > 0
+            ? transferLog.map((num, i) => (
+                <div key={i} className="transfer-log-item">
+                  PLAYER {num}
+                </div>
+              ))
+            : <span className="empty-text">교환 기록 없음</span>}
         </div>
       </div>
     </>

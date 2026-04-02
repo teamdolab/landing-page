@@ -177,7 +177,6 @@ export default function ControlPage() {
         setGame0b(data as Game0bRow);
         const sid = selectedSession.session_id;
         setDisplayUrl(`${window.location.origin}/game/game_0b/display?session=${encodeURIComponent(sid)}`);
-        router.push(`/game/game_0b/host?session=${encodeURIComponent(sid)}`);
       } else {
         alert(data?.error || '수송선게임 생성 실패');
       }
@@ -360,19 +359,21 @@ export default function ControlPage() {
               <div className="control-create-section">
                 <p style={{ color: '#2e7d32', fontWeight: 600, marginBottom: 12 }}>수송선게임 진행 중</p>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  <Link
+                  <a
                     href={`/game/game_0b/host?session=${encodeURIComponent(selectedSession.session_id)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="control-btn-primary"
                   >
                     <i className="fa-solid fa-gamepad" /> 진행자 화면
-                  </Link>
+                  </a>
                   <a
                     href={displayUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="control-btn-secondary"
                   >
-                    <i className="fa-solid fa-external-link-alt" /> 송출 화면 열기
+                    <i className="fa-solid fa-external-link-alt" /> 송출 화면
                   </a>
                   <a
                     href={`/game/game_0b/testroom?session=${encodeURIComponent(selectedSession.session_id)}`}
@@ -382,6 +383,37 @@ export default function ControlPage() {
                   >
                     <i className="fa-solid fa-door-open" /> 테스트룸
                   </a>
+                  <button
+                    type="button"
+                    className="control-btn-secondary"
+                    style={{ color: '#c62828', borderColor: '#c62828' }}
+                    onClick={async () => {
+                      if (!confirm('게임을 종료하시겠습니까?')) return;
+                      try {
+                        const res = await fetch('/api/game/game_0b/advance-phase', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            session_id: selectedSession.session_id,
+                            action: 'finish',
+                          }),
+                        });
+                        if (res.ok) {
+                          setGame0b(null);
+                          setDisplayUrl('');
+                          alert('게임이 종료되었습니다.');
+                        } else {
+                          const data = await res.json();
+                          alert(data.error || '종료 실패');
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        alert('종료 중 오류가 발생했습니다.');
+                      }
+                    }}
+                  >
+                    <i className="fa-solid fa-stop" /> 종료
+                  </button>
                 </div>
               </div>
             ) : game ? (

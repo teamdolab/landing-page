@@ -24,7 +24,7 @@ function buildInsert(
     session_id: sessionId,
     status: '진행중',
     player_count: playerCount,
-    current_round: 1,
+    current_round: 0,
     phase: 'setup',
     ship_hull: 100,
     first_player_number: firstPlayer,

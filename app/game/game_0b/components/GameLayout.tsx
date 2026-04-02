@@ -1,21 +1,15 @@
 'use client';
 
-import { Suspense, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useGame0b } from '@/lib/use-game-0b';
 import type { Game0bRow } from '@/lib/game-0b-types';
 import '../../display/styles.css';
 import '../display/susongseon-display.css';
 
-const SHIP_RULES: { text: string; tier: 's' | 'a' | 'b' | 'c' }[] = [
-  { text: '50% 초과 · 안전(탈출 가능)', tier: 's' },
-  { text: '50% 이하 · 위험(외계인 우세)', tier: 'a' },
-  { text: '0% 이하 · 파괴(수리 필요)', tier: 'b' },
-  { text: '라운드 종료 시 자연 부식', tier: 'c' },
-];
-
 export function phaseLabel(phase: string) {
   if (phase === 'setup') return '대기';
+  if (phase === 'role_reveal') return '역할 확인';
   if (phase === 'day') return '낮';
   if (phase === 'night') return '밤';
   if (phase === 'morning') return '아침 브리핑';
@@ -24,8 +18,35 @@ export function phaseLabel(phase: string) {
 
 export function shipStatus(hull: number): { label: string; className: string } {
   if (hull > 50) return { label: '안전', className: 'ship-safe' };
-  if (hull > 0) return { label: '위험', className: 'ship-danger' };
+  if (hull >= 0) return { label: '위험', className: 'ship-danger' };
   return { label: '파괴', className: 'ship-destroy' };
+}
+
+function useCountdown(deadline: string | null) {
+  const [remaining, setRemaining] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!deadline) {
+      setRemaining(null);
+      return;
+    }
+    const calc = () => {
+      const diff = new Date(deadline).getTime() - Date.now();
+      return Math.max(0, Math.floor(diff / 1000));
+    };
+    setRemaining(calc());
+    const id = setInterval(() => setRemaining(calc()), 1000);
+    return () => clearInterval(id);
+  }, [deadline]);
+
+  return remaining;
+}
+
+function formatTimer(seconds: number | null): string {
+  if (seconds == null) return '--:--';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 type PageRole = 'display' | 'host' | 'testroom';
@@ -47,6 +68,9 @@ function GameLayoutInner({ role, children }: Props) {
   const [sessionId, setSessionId] = useState(param);
 
   const { game, loading, reload } = useGame0b(sessionId || null);
+
+  const row = game as Game0bRow | null;
+  const timerSeconds = useCountdown(row?.phase_deadline_at ?? null);
 
   const handleSessionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,9 +133,10 @@ function GameLayoutInner({ role, children }: Props) {
     );
   }
 
-  const row = game as Game0bRow;
-  const phaseText = row.info_text || phaseLabel(row.phase);
-  const shipDanger = row.ship_hull <= 50;
+  const gameRow = game as Game0bRow;
+  const phaseText = gameRow.info_text || phaseLabel(gameRow.phase);
+  const timerExpired = timerSeconds != null && timerSeconds <= 0;
+  const status = shipStatus(gameRow.ship_hull);
 
   return (
     <div className="game-display-root susongseon-display">
@@ -126,7 +151,7 @@ function GameLayoutInner({ role, children }: Props) {
         <div className="title-frame">
           <h1 className="game-title">수송선게임</h1>
         </div>
-        <div className="round-box">{row.current_round} ROUND</div>
+        <div className="round-box">{gameRow.current_round} ROUND</div>
       </header>
 
       <main className="display-main">
@@ -137,31 +162,41 @@ function GameLayoutInner({ role, children }: Props) {
           </div>
           <div className="timer-wrapper">
             <div className="timer-container">
-              <div
-                className={`timer-value ${shipDanger ? 'timer-end' : ''}`}
-                style={{
-                  fontSize: Math.abs(row.ship_hull) >= 100 ? 40 : 54,
-                  letterSpacing: Math.abs(row.ship_hull) >= 100 ? 1 : 3,
-                }}
-              >
-                {row.ship_hull}%
+              <div className={`timer-value ${timerExpired ? 'timer-end' : ''}`}>
+                {formatTimer(timerSeconds)}
               </div>
             </div>
           </div>
           <div className="ranking-container">
-            <div className="ranking-header">수송선 기준</div>
-            <ul className="ranking-list">
-              {SHIP_RULES.map((r) => (
-                <li key={r.text} className={`rank-item ${r.tier}-tier`}>
-                  {r.text}
-                </li>
-              ))}
-            </ul>
+            {role === 'host' ? (
+              <>
+                <div className="ranking-header">수송선 게이지</div>
+                <div className="host-hull-display">
+                  <span className={`host-hull-value ${status.className}`}>{gameRow.ship_hull}%</span>
+                  <span className={`host-hull-status ${status.className}`}>{status.label}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="ranking-header">수송선 기준</div>
+                <ul className="ranking-list ship-rules-list">
+                  <li className={`rank-item ship-rule-safe ${status.className === 'ship-safe' ? 'active' : ''}`}>
+                    50% 초과 = 안전
+                  </li>
+                  <li className={`rank-item ship-rule-danger ${status.className === 'ship-danger' ? 'active' : ''}`}>
+                    50% 이하 = 위험
+                  </li>
+                  <li className={`rank-item ship-rule-destroy ${status.className === 'ship-destroy' ? 'active' : ''}`}>
+                    0% 미만 = 파괴
+                  </li>
+                </ul>
+              </>
+            )}
           </div>
         </section>
 
         {/* ── 하단: 페이지별 콘텐츠 ── */}
-        <section className="bottom-section">{children(row, reload)}</section>
+        <section className="bottom-section">{children(gameRow, reload)}</section>
       </main>
     </div>
   );

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { playerCoreKey } from '@/lib/game-0b-types';
+import { playerCoreKey, playerRoleKey } from '@/lib/game-0b-types';
 
 const ACTION_COSTS: Record<string, number> = {
   mine: 0,
@@ -54,6 +54,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `코어 부족 (보유: ${currentCore}, 필요: ${cost})` }, { status: 400 });
     }
 
+    if (actionType === 'detect') {
+      const { data: existing } = await supabase
+        .from('game_0b_event')
+        .select('id')
+        .eq('game_id', game.game_id)
+        .eq('event_type', 'night_action')
+        .eq('actor_player_number', playerNumber)
+        .filter('event_data->>action_type', 'eq', 'detect')
+        .filter('event_data->>round', 'eq', String(game.current_round))
+        .limit(1);
+      if (existing && existing.length > 0) {
+        return NextResponse.json({ error: '감지는 라운드당 1회만 가능합니다.' }, { status: 400 });
+      }
+    }
+
     const isNonConsuming = actionType === 'detect' || actionType === 'hidden_trade';
 
     const eventData: Record<string, unknown> = {
@@ -103,7 +118,18 @@ export async function POST(req: NextRequest) {
 
     await supabase.from('game_0b').update(snapshotUpdate).eq('game_id', game.game_id);
 
-    return NextResponse.json({ success: true, event_id: ev.id, event_seq: ev.seq });
+    const result: Record<string, unknown> = { success: true, event_id: ev.id, event_seq: ev.seq };
+
+    if (actionType === 'search' && targetPlayer != null) {
+      const targetRole = (game as Record<string, unknown>)[playerRoleKey(targetPlayer)] as string | null;
+      let faction = '불명';
+      if (targetRole === '사령관' || targetRole === '생존자') faction = '생존자 진영';
+      else if (targetRole === '반군수장' || targetRole === '혁명가' || targetRole === '반군') faction = '반군 진영';
+      else if (targetRole === '외계인') faction = '외계인 진영';
+      result.search_result = faction;
+    }
+
+    return NextResponse.json(result);
   } catch (e) {
     console.error('night-action:', e);
     return NextResponse.json({ error: '서버 오류' }, { status: 500 });

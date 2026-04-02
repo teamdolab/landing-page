@@ -113,6 +113,47 @@
   background: linear-gradient(90deg, transparent, rgba(109, 66, 208, 0.06));
 }
 
+/* 수송선 기준 — 색상 표기 */
+.game-display-root.susongseon-display .ship-rules-list {
+  gap: 6px;
+}
+.game-display-root.susongseon-display .ship-rule-safe {
+  color: #2e7d32;
+  border-left: 3px solid #4caf50;
+  background: transparent;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+.game-display-root.susongseon-display .ship-rule-danger {
+  color: #e65100;
+  border-left: 3px solid #ff9800;
+  background: transparent;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+.game-display-root.susongseon-display .ship-rule-destroy {
+  color: #c62828;
+  border-left: 3px solid #f44336;
+  background: transparent;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+.game-display-root.susongseon-display .ship-rule-safe.active {
+  opacity: 1;
+  font-weight: 800;
+  background: rgba(76, 175, 80, 0.1);
+}
+.game-display-root.susongseon-display .ship-rule-danger.active {
+  opacity: 1;
+  font-weight: 800;
+  background: rgba(255, 152, 0, 0.1);
+}
+.game-display-root.susongseon-display .ship-rule-destroy.active {
+  opacity: 1;
+  font-weight: 800;
+  background: rgba(244, 67, 54, 0.1);
+}
+
 .game-display-root.susongseon-display .detail-section {
   border-top-color: rgba(74, 61, 107, 0.2);
 }
@@ -367,4 +408,38 @@
   font-size: 14px;
   color: #8a7db0;
   font-style: italic;
+}
+
+/* 진행자 전용 수송선 게이지 표시 */
+.game-display-root.susongseon-display .host-hull-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 0;
+}
+.game-display-root.susongseon-display .host-hull-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1;
+}
+.game-display-root.susongseon-display .host-hull-status {
+  font-family: var(--main-font);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.game-display-root.susongseon-display .host-hull-value.ship-safe,
+.game-display-root.susongseon-display .host-hull-status.ship-safe {
+  color: #4caf50;
+}
+.game-display-root.susongseon-display .host-hull-value.ship-danger,
+.game-display-root.susongseon-display .host-hull-status.ship-danger {
+  color: #ff9800;
+}
+.game-display-root.susongseon-display .host-hull-value.ship-destroy,
+.game-display-root.susongseon-display .host-hull-status.ship-destroy {
+  color: #f44336;
 }

@@ -1,6 +1,6 @@
 /** game_0b / game_0b_event — DB 행 타입 (스냅샷 + 이벤트) */
 
-export type Game0bPhase = 'setup' | 'day' | 'night' | 'morning';
+export type Game0bPhase = 'setup' | 'role_reveal' | 'day' | 'night' | 'morning';
 export type Game0bStatus = '대기중' | '진행중' | '완료';
 export type Game0bEventSource = 'host' | 'testroom' | 'system';
 
@@ -22,6 +22,7 @@ export type Game0bRow = {
   info_text: string | null;
   last_public_transfer_from: number | null;
   last_public_transfer_at: string | null;
+  public_transfer_log: number[];
   result_locked: boolean;
   lifeboat_seat_1: number | null;
   lifeboat_seat_2: number | null;

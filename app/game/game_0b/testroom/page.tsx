@@ -82,6 +82,7 @@ function NfcGate({ game, onIdentified }: { game: Game0bRow; onIdentified: (num: 
             className="absolute opacity-0"
             aria-label="NFC 카드 ID 입력"
             onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing || e.keyCode === 229) return;
               if (e.key === 'Enter') {
                 if (autoSubmitRef.current) {
                   clearTimeout(autoSubmitRef.current);
@@ -243,6 +244,7 @@ function PlayerActionPanel({
   const [actionDone, setActionDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [searchResult, setSearchResult] = useState<string | null>(null);
   const [modalAction, setModalAction] = useState<ActionDef | null>(null);
   const [targetPlayer, setTargetPlayer] = useState<number>(1);
   const [detectTargets, setDetectTargets] = useState<number[]>([]);
@@ -273,6 +275,9 @@ function PlayerActionPanel({
         const isNonConsuming = actionId === 'detect' || actionId === 'hidden_trade';
         if (!isNonConsuming) {
           setActionDone(true);
+        }
+        if (actionId === 'search' && j.search_result) {
+          setSearchResult(`${target}번 플레이어 → ${j.search_result}`);
         }
         setMsg(`${modalAction?.label ?? actionId} 완료`);
         setModalAction(null);
@@ -346,6 +351,17 @@ function PlayerActionPanel({
               </button>
             );
           })}
+          {searchResult && (
+            <div style={{
+              padding: '10px 14px', borderRadius: 8, background: 'rgba(90, 50, 184, 0.15)',
+              border: '1px solid #5a32b8', textAlign: 'center', marginTop: 4,
+            }}>
+              <span style={{ fontSize: 11, color: '#aaa' }}>탐색 결과</span>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#e8b84b', marginTop: 2 }}>
+                {searchResult}
+              </div>
+            </div>
+          )}
           {msg && (
             <span style={{ fontSize: 13, color: '#5a32b8', fontWeight: 600, textAlign: 'center', marginTop: 4 }}>
               {msg}
@@ -496,10 +512,18 @@ function getActionsForRole(role: string | null, game: Game0bRow): ActionDef[] {
       return base;
     }
     case '반군수장':
-    case '혁명가':
       return [
         { id: 'jamming', label: '교란', cost: 4, needsTarget: false },
         { id: 'assassinate', label: '암살', cost: 10, needsTarget: true },
+        { id: 'hidden_trade', label: '은닉거래', cost: 0, needsTarget: true, nonConsuming: true },
+        { id: 'mine', label: '채굴', cost: 0, needsTarget: false },
+        { id: 'repair_rebel', label: '수리', cost: 2, needsTarget: false },
+      ];
+    case '혁명가':
+      return [
+        { id: 'detect', label: '감지', cost: 0, needsTarget: false, nonConsuming: true },
+        { id: 'control', label: '통제', cost: 5, needsTarget: true },
+        { id: 'jamming', label: '교란', cost: 4, needsTarget: false },
         { id: 'hidden_trade', label: '은닉거래', cost: 0, needsTarget: true, nonConsuming: true },
         { id: 'mine', label: '채굴', cost: 0, needsTarget: false },
         { id: 'repair_rebel', label: '수리', cost: 2, needsTarget: false },
@@ -532,6 +556,19 @@ function TestroomBottom({ game, reload }: { game: Game0bRow; reload: () => void 
     setPlayerNum(null);
   };
 
+  if (game.phase === 'setup') {
+    return (
+      <div className="bottom-panel" style={{ gridColumn: '1 / -1' }}>
+        <div className="bottom-panel-label">대기</div>
+        <div className="bottom-panel-body">
+          <span style={{ fontSize: 18, color: '#aaa' }}>
+            진행자가 역할 분배를 시작할 때까지 대기하세요.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   if (game.phase === 'day') {
     return (
       <div className="bottom-panel" style={{ gridColumn: '1 / -1' }}>
@@ -549,7 +586,7 @@ function TestroomBottom({ game, reload }: { game: Game0bRow; reload: () => void 
     return <NfcGate game={game} onIdentified={setPlayerNum} />;
   }
 
-  if (game.phase === 'setup') {
+  if (game.phase === 'role_reveal') {
     return <RoleRevealPanel game={game} playerNum={playerNum} onDone={handleEnd} />;
   }
 

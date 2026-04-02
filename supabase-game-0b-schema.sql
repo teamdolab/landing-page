@@ -21,9 +21,9 @@ CREATE TABLE game_0b (
     CHECK (status IN ('대기중', '진행중', '완료')),
 
   player_count INTEGER NOT NULL DEFAULT 12 CHECK (player_count >= 8 AND player_count <= 12),
-  current_round INTEGER NOT NULL DEFAULT 1 CHECK (current_round >= 1 AND current_round <= 5),
+  current_round INTEGER NOT NULL DEFAULT 0 CHECK (current_round >= 0 AND current_round <= 5),
   phase VARCHAR(20) NOT NULL DEFAULT 'setup'
-    CHECK (phase IN ('setup', 'day', 'night', 'morning')),
+    CHECK (phase IN ('setup', 'role_reveal', 'day', 'night', 'morning')),
   first_player_number INTEGER CHECK (first_player_number IS NULL OR (first_player_number >= 1 AND first_player_number <= 12)),
   phase_deadline_at TIMESTAMPTZ,
 
@@ -41,6 +41,7 @@ CREATE TABLE game_0b (
   info_text TEXT,
   last_public_transfer_from INTEGER CHECK (last_public_transfer_from IS NULL OR (last_public_transfer_from >= 1 AND last_public_transfer_from <= 12)),
   last_public_transfer_at TIMESTAMPTZ,
+  public_transfer_log JSONB NOT NULL DEFAULT '[]'::jsonb,
 
   result_locked BOOLEAN NOT NULL DEFAULT FALSE,
   lifeboat_seat_1 INTEGER CHECK (lifeboat_seat_1 IS NULL OR (lifeboat_seat_1 >= 1 AND lifeboat_seat_1 <= 12)),

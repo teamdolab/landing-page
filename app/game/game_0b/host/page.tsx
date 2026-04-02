@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import GameLayout from '../components/GameLayout';
-import type { Game0bRow } from '@/lib/game-0b-types';
+import { getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
 
 export default function Game0bHostPage() {
   return (
@@ -86,6 +86,18 @@ function HostBottom({ game, reload }: { game: Game0bRow; reload: () => void }) {
           type="button"
           className="host-confirm-btn"
           disabled={phaseLoading}
+          onClick={() => handleAdvance('distribute_roles')}
+        >
+          {phaseLoading ? '처리 중...' : '역할 분배'}
+        </button>
+      );
+    }
+    if (game.phase === 'role_reveal') {
+      return (
+        <button
+          type="button"
+          className="host-confirm-btn"
+          disabled={phaseLoading}
           onClick={() => handleAdvance('start_round')}
         >
           {phaseLoading ? '처리 중...' : '1라운드 시작'}
@@ -124,7 +136,7 @@ function HostBottom({ game, reload }: { game: Game0bRow; reload: () => void }) {
     return null;
   };
 
-  if (game.phase === 'night' || game.phase === 'setup') {
+  if (game.phase === 'night' || game.phase === 'setup' || game.phase === 'role_reveal') {
     return (
       <>
         <div className="bottom-panel">
@@ -141,7 +153,8 @@ function HostBottom({ game, reload }: { game: Game0bRow; reload: () => void }) {
           <div className="bottom-panel-label">현재 상태</div>
           <div className="bottom-panel-body">
             <span style={{ fontSize: 14, color: '#aaa' }}>
-              {game.phase === 'setup' && '게임 대기 중 — 플레이어 역할 확인 후 시작하세요.'}
+              {game.phase === 'setup' && '게임 생성됨 — 역할 분배를 시작하세요.'}
+              {game.phase === 'role_reveal' && '역할 확인 중 — 플레이어들이 테스트룸에서 카드를 태그하고 있습니다.'}
               {game.phase === 'night' && `${game.current_round}라운드 밤 진행 중`}
             </span>
           </div>
@@ -175,6 +188,9 @@ function HostBottom({ game, reload }: { game: Game0bRow; reload: () => void }) {
                 <option key={n} value={n}>{n}번</option>
               ))}
             </select>
+            <span style={{ fontSize: 14, color: '#5a32b8', fontWeight: 700 }}>
+              보유 코어: {getPlayerRoleCore(game, fromPlayer).core}
+            </span>
           </div>
         </div>
       </div>

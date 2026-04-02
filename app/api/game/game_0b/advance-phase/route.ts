@@ -27,9 +27,13 @@ export async function POST(req: NextRequest) {
 
     const update: Record<string, unknown> = {};
 
-    if (action === 'start_round') {
-      // setup→day 또는 night→next day
-      if (game.phase !== 'setup' && game.phase !== 'night') {
+    if (action === 'distribute_roles') {
+      if (game.phase !== 'setup') {
+        return NextResponse.json({ error: `현재 phase(${game.phase})에서 distribute_roles 불가` }, { status: 400 });
+      }
+      update.phase = 'role_reveal';
+    } else if (action === 'start_round') {
+      if (game.phase !== 'role_reveal' && game.phase !== 'night') {
         return NextResponse.json({ error: `현재 phase(${game.phase})에서 start_round 불가` }, { status: 400 });
       }
 
@@ -68,7 +72,8 @@ export async function POST(req: NextRequest) {
         const currentHull = (update.ship_hull as number | undefined) ?? (game.ship_hull as number);
         update.ship_hull = currentHull - 20;
       } else {
-        // setup → day: 1라운드 시작이므로 자연 부식 없음
+        // role_reveal → day: 1라운드 시작이므로 자연 부식 없음
+        update.current_round = 1;
         update.detected_actions = [];
       }
 
@@ -85,20 +90,31 @@ export async function POST(req: NextRequest) {
       update.phase = 'day';
       update.night_action_count = 0;
       update.last_public_transfer_from = null;
+      update.public_transfer_log = [];
+      update.phase_deadline_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
       // 5라운드 초과 시 게임 종료
       if ((update.current_round as number | undefined) != null && (update.current_round as number) > 5) {
         update.current_round = 5;
         update.phase = 'day';
         update.status = '완료';
+        update.phase_deadline_at = null;
       }
     } else if (action === 'start_night') {
       if (game.phase !== 'day') {
         return NextResponse.json({ error: `현재 phase(${game.phase})에서 start_night 불가` }, { status: 400 });
       }
 
+      const pc = game.player_count as number;
       update.phase = 'night';
       update.night_action_count = 0;
+      update.phase_deadline_at = new Date(Date.now() + pc * 60 * 1000).toISOString();
+
+      for (let i = 1; i <= pc; i++) {
+        const key = playerCoreKey(i);
+        const current = (game as Record<string, unknown>)[key] as number;
+        update[key] = current + 1;
+      }
     } else if (action === 'finish') {
       update.status = '완료';
     } else {

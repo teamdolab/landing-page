@@ -45,11 +45,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `${fromPlayer}번 플레이어의 코어가 부족합니다. (보유: ${fromCore})` }, { status: 400 });
     }
 
+    const existingLog = Array.isArray(game.public_transfer_log) ? game.public_transfer_log as number[] : [];
     const update: Record<string, unknown> = {
       [fromKey]: fromCore - amount,
       [toKey]: toCore + amount,
       last_public_transfer_from: fromPlayer,
       last_public_transfer_at: new Date().toISOString(),
+      public_transfer_log: [...existingLog, fromPlayer],
     };
 
     const { error: uErr } = await supabase

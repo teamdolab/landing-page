@@ -38,6 +38,7 @@ export function resolveNightActions(
 
   const controlledPlayers = new Set<number>();
   let jammingActive = false;
+  let commanderAssassinated = false;
 
   const detectTargets: number[] = [];
   let detectActor: number | null = null;
@@ -173,18 +174,33 @@ export function resolveNightActions(
         setRole(target, '생존자');
         updates.former_commander_player_number = commanderNum;
         updates.commander_player_number = null;
+        commanderAssassinated = true;
 
-        setRole(actor, actorRole === '반군수장' ? '혁명가' : actorRole);
-        updates.revolutionary_player_number = actor;
-
-        // 자금 찬탈: 사령관의 코어를 혁명가에게
+        // 반군수장을 찾아서 혁명가로 변환 (암살자가 반군수장이든 반군이든 관계없이)
+        const pc = (game.player_count as number) ?? 12;
+        let rebelLeaderNum: number | null = null;
         if (actorRole === '반군수장') {
-          const commanderCore = getCore(target);
-          setCore(actor, getCore(actor) + commanderCore);
-          setCore(target, 0);
-          log.push(`[암살 성공] ${actor}번(반군수장) → ${target}번(사령관) 암살 + 혁명 + 코어 ${commanderCore}개 찬탈`);
+          rebelLeaderNum = actor;
         } else {
-          log.push(`[암살 성공] ${actor}번(반군) → ${target}번(사령관) 암살`);
+          for (let i = 1; i <= pc; i++) {
+            if (getRole(i) === '반군수장') {
+              rebelLeaderNum = i;
+              break;
+            }
+          }
+        }
+
+        if (rebelLeaderNum != null) {
+          setRole(rebelLeaderNum, '혁명가');
+          updates.revolutionary_player_number = rebelLeaderNum;
+
+          // 자금 찬탈: 사령관의 코어를 혁명가(반군수장)에게
+          const commanderCore = getCore(target);
+          setCore(rebelLeaderNum, getCore(rebelLeaderNum) + commanderCore);
+          setCore(target, 0);
+          log.push(`[암살 성공] ${actor}번 → ${target}번(사령관) 암살 → ${rebelLeaderNum}번 혁명가 변환 + 코어 ${commanderCore}개 찬탈`);
+        } else {
+          log.push(`[암살 성공] ${actor}번 → ${target}번(사령관) 암살 (반군수장 없음)`);
         }
       } else {
         log.push(`[암살 실패] ${actor}번 → ${target}번 (사령관이 아님)`);
@@ -244,7 +260,14 @@ export function resolveNightActions(
     }
   }
 
-  if (detectActor != null && detectTargets.length > 0 && !jammingActive) {
+  if (commanderAssassinated) {
+    // 암살(3순위)이 감지(5순위)보다 상위 → 감지 결과 무효화, 대신 혁명 메시지 표시
+    detectedActions = [
+      { action: 'commander_assassinated', target: null },
+      { action: 'revolutionary_emerged', target: null },
+    ];
+    log.push(`[감지 무효] 사령관 암살로 감지 무효화`);
+  } else if (detectActor != null && detectTargets.length > 0 && !jammingActive) {
     const actionSummaries: unknown[] = [];
     for (const t of detectTargets) {
       const targetActions = events.filter(

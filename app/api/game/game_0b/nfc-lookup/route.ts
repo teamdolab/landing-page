@@ -33,13 +33,29 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdmin();
 
-    const { data: card, error: cardErr } = await supabase
+    // 1차: 정확 매칭
+    let { data: card } = await supabase
       .from('player_cards')
       .select('player_number')
       .eq('nfc_id', cleaned)
-      .single();
+      .maybeSingle();
 
-    if (cardErr || !card) {
+    // 2차: DB에 저장된 ID가 입력값의 부분문자열인 경우 (리더기 추가 바이트 대응)
+    if (!card) {
+      const { data: allCards } = await supabase
+        .from('player_cards')
+        .select('nfc_id, player_number');
+
+      if (allCards) {
+        const match = allCards.find(
+          (c) => cleaned.includes(c.nfc_id as string) || (c.nfc_id as string).includes(cleaned),
+        );
+        if (match) card = { player_number: match.player_number };
+      }
+    }
+
+    if (!card) {
+      console.error('nfc-lookup: 매칭 실패', { cleaned, len: cleaned.length });
       return NextResponse.json({ error: '등록되지 않은 플레이어 카드입니다.' }, { status: 404 });
     }
 
