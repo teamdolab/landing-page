@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import GameLayout from '../components/GameLayout';
-import { getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
+import { ACTION_ICON, getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
 
 export default function Game0bTestroomPage() {
   return (
@@ -328,14 +329,15 @@ function PlayerActionPanel({
       {/* 중앙: 액션 목록 */}
       <div className="bottom-panel">
         <div className="bottom-panel-label">액션</div>
-        <div className="bottom-panel-body" style={{ justifyContent: 'flex-start', alignItems: 'stretch', gap: 6 }}>
+        <div className="bottom-panel-body action-icon-grid">
           {actions.map((a) => {
             const disabled = submitting || (actionDone && !a.nonConsuming) || core < a.cost;
+            const iconSrc = ACTION_ICON[a.id];
             return (
               <button
                 key={a.id}
                 type="button"
-                className="action-btn"
+                className="action-icon-card action-icon-btn"
                 disabled={disabled}
                 onClick={() => {
                   setModalAction(a);
@@ -344,8 +346,11 @@ function PlayerActionPanel({
                 }}
                 style={{ opacity: disabled ? 0.4 : 1 }}
               >
-                [{a.label}]{' '}
-                <span style={{ fontWeight: 400, color: '#8a7db0' }}>
+                {iconSrc && (
+                  <Image src={iconSrc} alt={a.label} width={48} height={48} className="action-icon-img" />
+                )}
+                <span className="action-icon-label">{a.label}</span>
+                <span className="action-icon-cost">
                   {a.cost === 0 ? '무료' : `${a.cost}코어`}
                 </span>
               </button>

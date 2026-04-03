@@ -191,6 +191,11 @@ function HostBottom({ game, reload }: { game: Game0bRow; reload: () => void }) {
             <span style={{ fontSize: 14, color: '#5a32b8', fontWeight: 700 }}>
               보유 코어: {getPlayerRoleCore(game, fromPlayer).core}
             </span>
+            {Array.isArray(game.public_transfer_log) && game.public_transfer_log.includes(fromPlayer) && (
+              <span style={{ fontSize: 12, color: '#c62828', fontWeight: 700 }}>
+                이번 라운드 교환 완료
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -223,9 +228,9 @@ function HostBottom({ game, reload }: { game: Game0bRow; reload: () => void }) {
               type="number"
               className="host-number-input"
               min={1}
-              max={99}
+              max={3}
               value={coreAmount}
-              onChange={(e) => setCoreAmount(Math.max(1, Number(e.target.value)))}
+              onChange={(e) => setCoreAmount(Math.min(3, Math.max(1, Number(e.target.value))))}
             />
             <button
               type="button"

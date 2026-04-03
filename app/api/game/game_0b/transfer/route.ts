@@ -41,11 +41,19 @@ export async function POST(req: NextRequest) {
     const fromCore = (game as Record<string, unknown>)[fromKey] as number;
     const toCore = (game as Record<string, unknown>)[toKey] as number;
 
+    if (amount > 3) {
+      return NextResponse.json({ error: '1회 최대 3개까지 보낼 수 있습니다.' }, { status: 400 });
+    }
+
+    const existingLog = Array.isArray(game.public_transfer_log) ? game.public_transfer_log as number[] : [];
+    if (existingLog.includes(fromPlayer)) {
+      return NextResponse.json({ error: `${fromPlayer}번 플레이어는 이번 라운드에 이미 코어를 보냈습니다.` }, { status: 400 });
+    }
+
     if (fromCore < amount) {
       return NextResponse.json({ error: `${fromPlayer}번 플레이어의 코어가 부족합니다. (보유: ${fromCore})` }, { status: 400 });
     }
 
-    const existingLog = Array.isArray(game.public_transfer_log) ? game.public_transfer_log as number[] : [];
     const update: Record<string, unknown> = {
       [fromKey]: fromCore - amount,
       [toKey]: toCore + amount,

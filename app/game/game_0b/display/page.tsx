@@ -1,26 +1,8 @@
 'use client';
 
+import Image from 'next/image';
 import GameLayout, { shipStatus } from '../components/GameLayout';
-import type { Game0bRow } from '@/lib/game-0b-types';
-
-const ACTION_LABEL: Record<string, string> = {
-  mine: '채굴',
-  repair: '수리',
-  repair_survivor: '수리',
-  repair_rebel: '수리',
-  search: '탐색',
-  control: '통제',
-  detect: '감지',
-  jamming: '교란',
-  assassinate: '암살',
-  plunder: '약탈',
-  destroy: '파괴',
-  hidden_trade: '은닉거래',
-  skip: '행동 없음',
-  none: '행동 없음',
-  commander_assassinated: '사령관이 암살당했습니다.',
-  revolutionary_emerged: '혁명가가 등장했습니다.',
-};
+import { ACTION_ICON, ACTION_LABEL, type Game0bRow } from '@/lib/game-0b-types';
 
 export default function Game0bDisplayPage() {
   return (
@@ -71,16 +53,23 @@ function DisplayBottom({ game }: { game: Game0bRow }) {
       {/* 좌측: 감지된 액션 */}
       <div className="bottom-panel">
         <div className="bottom-panel-label">감지된 액션</div>
-        <div className="bottom-panel-body" style={{ justifyContent: 'flex-start', alignItems: 'stretch' }}>
+        <div className="bottom-panel-body action-icon-grid">
           {detectedActions.length > 0
             ? detectedActions.map((a, i) => {
                 const item = a as Record<string, unknown>;
-                const actionName = ACTION_LABEL[item.action as string] ?? (item.action as string);
-                const hideTarget = item.action === 'plunder';
+                const actionId = item.action as string;
+                const actionName = ACTION_LABEL[actionId] ?? actionId;
+                const iconSrc = ACTION_ICON[actionId];
+                const hideTarget = actionId === 'plunder';
                 return (
-                  <div key={i} className="detected-action-item">
-                    {actionName}
-                    {!hideTarget && item.target != null ? ` → ${item.target}번` : ''}
+                  <div key={i} className="action-icon-card">
+                    {iconSrc && (
+                      <Image src={iconSrc} alt={actionName} width={56} height={56} className="action-icon-img" />
+                    )}
+                    <span className="action-icon-label">{actionName}</span>
+                    {!hideTarget && item.target != null && (
+                      <span className="action-icon-target">→ {item.target as number}번</span>
+                    )}
                   </div>
                 );
               })

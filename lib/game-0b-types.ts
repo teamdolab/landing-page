@@ -92,6 +92,44 @@ export function playerRoleKey(num: number): string {
   return `player_${String(num).padStart(2, '0')}_role`;
 }
 
+/** 액션 ID → 아이콘 경로 매핑 */
+export const ACTION_ICON: Record<string, string> = {
+  mine: '/icons/actions/mine.jpg',
+  repair: '/icons/actions/repair.jpg',
+  repair_survivor: '/icons/actions/repair.jpg',
+  repair_rebel: '/icons/actions/repair.jpg',
+  search: '/icons/actions/search.jpg',
+  control: '/icons/actions/control.jpg',
+  detect: '/icons/actions/detect.jpg',
+  jamming: '/icons/actions/jamming.jpg',
+  assassinate: '/icons/actions/assassinate.jpg',
+  plunder: '/icons/actions/plunder.jpg',
+  destroy: '/icons/actions/destroy.jpg',
+  hidden_trade: '/icons/actions/hidden_trade.jpg',
+  skip: '/icons/actions/skip.jpg',
+  none: '/icons/actions/skip.jpg',
+};
+
+/** 액션 ID → 한글 라벨 매핑 */
+export const ACTION_LABEL: Record<string, string> = {
+  mine: '채굴',
+  repair: '수리',
+  repair_survivor: '수리',
+  repair_rebel: '수리',
+  search: '탐색',
+  control: '통제',
+  detect: '감지',
+  jamming: '교란',
+  assassinate: '암살',
+  plunder: '약탈',
+  destroy: '파괴',
+  hidden_trade: '은닉거래',
+  skip: '행동 없음',
+  none: '행동 없음',
+  commander_assassinated: '사령관이 암살당했습니다.',
+  revolutionary_emerged: '혁명가가 등장했습니다.',
+};
+
 /** 인원 별 역할 분배 (사령관/생존자/반군수장/반군/외계인) */
 export const ROLE_DISTRIBUTION: Record<number, string[]> = {
   8:  ['사령관', '생존자', '생존자', '반군수장', '반군', '반군', '외계인', '외계인'],
