@@ -29,6 +29,7 @@ function keyCodeToHexChar(e: React.KeyboardEvent): string | null {
 function NfcGate({ game, onIdentified }: { game: Game0bRow; onIdentified: (num: number) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const autoSubmitRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const submittingRef = useRef(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -39,8 +40,10 @@ function NfcGate({ game, onIdentified }: { game: Game0bRow; onIdentified: (num: 
 
   const processNfc = useCallback(
     async (uid: string) => {
-      const trimmed = uid.trim();
-      if (!trimmed) return;
+      const trimmed = uid.replace(/[^a-fA-F0-9]/g, '').trim();
+      if (!trimmed || trimmed.length < 7) return;
+      if (submittingRef.current) return;
+      submittingRef.current = true;
       setError('');
       setLoading(true);
       try {
@@ -59,10 +62,27 @@ function NfcGate({ game, onIdentified }: { game: Game0bRow; onIdentified: (num: 
         setError('카드 조회 중 오류가 발생했습니다.');
       } finally {
         setLoading(false);
+        submittingRef.current = false;
       }
     },
     [onIdentified, game.session_id],
   );
+
+  const clearInput = () => {
+    if (inputRef.current) {
+      inputRef.current.value = '';
+      inputRef.current.setAttribute('data-nfc-buffer', '');
+    }
+  };
+
+  const scheduleAutoSubmit = useCallback((val: string) => {
+    if (autoSubmitRef.current) clearTimeout(autoSubmitRef.current);
+    autoSubmitRef.current = setTimeout(() => {
+      autoSubmitRef.current = null;
+      processNfc(val);
+      clearInput();
+    }, 400);
+  }, [processNfc]);
 
   return (
     <div
@@ -79,50 +99,38 @@ function NfcGate({ game, onIdentified }: { game: Game0bRow; onIdentified: (num: 
             autoComplete="off"
             autoFocus
             lang="en"
-            inputMode="text"
+            inputMode="none"
             className="absolute opacity-0"
             aria-label="NFC 카드 ID 입력"
             onKeyDown={(e) => {
-              if (e.nativeEvent.isComposing || e.keyCode === 229) return;
               if (e.key === 'Enter') {
+                e.preventDefault();
                 if (autoSubmitRef.current) {
                   clearTimeout(autoSubmitRef.current);
                   autoSubmitRef.current = null;
                 }
-                const val =
-                  (inputRef.current?.getAttribute('data-nfc-buffer') ??
-                    (e.target as HTMLInputElement).value)?.trim();
+                const val = (e.target as HTMLInputElement).value;
                 if (val) {
                   processNfc(val);
-                  inputRef.current?.setAttribute('data-nfc-buffer', '');
-                  (e.target as HTMLInputElement).value = '';
+                  clearInput();
                 }
-              } else if (e.key === 'Backspace') {
-                const buf = (
-                  inputRef.current?.getAttribute('data-nfc-buffer') ?? ''
-                ).slice(0, -1);
+                return;
+              }
+              if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+              const char = keyCodeToHexChar(e);
+              if (char !== null) {
+                e.preventDefault();
+                const buf = (inputRef.current?.getAttribute('data-nfc-buffer') ?? '') + char;
                 inputRef.current?.setAttribute('data-nfc-buffer', buf);
                 (e.target as HTMLInputElement).value = buf;
-                e.preventDefault();
-              } else {
-                const char = keyCodeToHexChar(e);
-                if (char !== null) {
-                  e.preventDefault();
-                  const buf =
-                    (inputRef.current?.getAttribute('data-nfc-buffer') ?? '') +
-                    char;
-                  inputRef.current?.setAttribute('data-nfc-buffer', buf);
-                  (e.target as HTMLInputElement).value = buf;
-                  if (autoSubmitRef.current) clearTimeout(autoSubmitRef.current);
-                  if (buf.length >= 7) {
-                    autoSubmitRef.current = setTimeout(() => {
-                      autoSubmitRef.current = null;
-                      processNfc(buf);
-                      inputRef.current?.setAttribute('data-nfc-buffer', '');
-                      if (inputRef.current) (inputRef.current as HTMLInputElement).value = '';
-                    }, 300);
-                  }
-                }
+                if (buf.length >= 7) scheduleAutoSubmit(buf);
+              }
+            }}
+            onInput={(e) => {
+              const val = (e.target as HTMLInputElement).value;
+              const hex = val.replace(/[^a-fA-F0-9]/g, '');
+              if (hex.length >= 7) {
+                scheduleAutoSubmit(hex);
               }
             }}
           />
