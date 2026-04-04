@@ -60,16 +60,12 @@ function DisplayBottom({ game }: { game: Game0bRow }) {
                 const actionId = item.action as string;
                 const actionName = ACTION_LABEL[actionId] ?? actionId;
                 const iconSrc = ACTION_ICON[actionId];
-                const hideTarget = actionId === 'plunder';
                 return (
                   <div key={i} className="action-icon-card">
                     {iconSrc && (
                       <Image src={iconSrc} alt={actionName} width={56} height={56} className="action-icon-img" />
                     )}
                     <span className="action-icon-label">{actionName}</span>
-                    {!hideTarget && item.target != null && (
-                      <span className="action-icon-target">→ {item.target as number}번</span>
-                    )}
                   </div>
                 );
               })

@@ -39,6 +39,7 @@ export function resolveNightActions(
   const controlledPlayers = new Set<number>();
   let jammingActive = false;
   let commanderAssassinated = false;
+  let revolutionaryAssassinated = false;
 
   const detectTargets: number[] = [];
   let detectActor: number | null = null;
@@ -212,6 +213,7 @@ export function resolveNightActions(
         updates.revolutionary_player_number = null;
         setRole(actor, '사령관');
         updates.commander_player_number = actor;
+        revolutionaryAssassinated = true;
         log.push(`[암살 성공] ${actor}번(생존자) → ${target}번(혁명가) 암살 + 사령관 탈환`);
       } else {
         log.push(`[암살 실패] ${actor}번(생존자) → ${target}번 (혁명가가 아님)`);
@@ -261,12 +263,17 @@ export function resolveNightActions(
   }
 
   if (commanderAssassinated) {
-    // 암살(3순위)이 감지(5순위)보다 상위 → 감지 결과 무효화, 대신 혁명 메시지 표시
     detectedActions = [
       { action: 'commander_assassinated', target: null },
       { action: 'revolutionary_emerged', target: null },
     ];
     log.push(`[감지 무효] 사령관 암살로 감지 무효화`);
+  } else if (revolutionaryAssassinated) {
+    detectedActions = [
+      { action: 'revolutionary_assassinated', target: null },
+      { action: 'commander_reclaimed', target: null },
+    ];
+    log.push(`[혁명가 암살] 사령관 재집권`);
   } else if (detectActor != null && detectTargets.length > 0 && !jammingActive) {
     const actionSummaries: unknown[] = [];
     for (const t of detectTargets) {

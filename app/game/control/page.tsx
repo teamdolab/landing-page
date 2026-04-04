@@ -414,6 +414,34 @@ export default function ControlPage() {
                   >
                     <i className="fa-solid fa-stop" /> 종료
                   </button>
+                  <button
+                    type="button"
+                    className="control-btn-secondary"
+                    style={{ color: '#b71c1c', borderColor: '#b71c1c' }}
+                    onClick={async () => {
+                      if (!confirm('게임을 초기화하시겠습니까? 모든 진행 데이터가 삭제되고 처음부터 다시 시작합니다.')) return;
+                      try {
+                        const res = await fetch('/api/game/game_0b/reset', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ session_id: selectedSession.session_id }),
+                        });
+                        if (res.ok) {
+                          setGame0b(null);
+                          setDisplayUrl('');
+                          alert('게임이 초기화되었습니다. 다시 생성할 수 있습니다.');
+                        } else {
+                          const data = await res.json();
+                          alert(data.error || '초기화 실패');
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        alert('초기화 중 오류가 발생했습니다.');
+                      }
+                    }}
+                  >
+                    <i className="fa-solid fa-rotate-left" /> 초기화
+                  </button>
                 </div>
               </div>
             ) : game ? (

@@ -494,14 +494,14 @@
   font-family: var(--main-font);
   font-size: 16px;
   font-weight: 700;
-  color: #e0d6f2;
+  color: #111;
   text-align: center;
   line-height: 1.2;
 }
 .game-display-root.susongseon-display .action-icon-target {
   font-family: var(--tech-font);
   font-size: 13px;
-  color: #8a7db0;
+  color: #333;
 }
 .game-display-root.susongseon-display .action-icon-cost {
   font-family: var(--tech-font);

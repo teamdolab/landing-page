@@ -251,6 +251,7 @@ function PlayerActionPanel({
 }) {
   const { role, core } = getPlayerRoleCore(game, playerNum);
   const [actionDone, setActionDone] = useState(false);
+  const [detectUsed, setDetectUsed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [searchResult, setSearchResult] = useState<string | null>(null);
@@ -284,6 +285,9 @@ function PlayerActionPanel({
         const isNonConsuming = actionId === 'detect' || actionId === 'hidden_trade';
         if (!isNonConsuming) {
           setActionDone(true);
+        }
+        if (actionId === 'detect') {
+          setDetectUsed(true);
         }
         if (actionId === 'search' && j.search_result) {
           setSearchResult(`${target}번 플레이어 → ${j.search_result}`);
@@ -339,7 +343,7 @@ function PlayerActionPanel({
         <div className="bottom-panel-label">액션</div>
         <div className="bottom-panel-body action-icon-grid">
           {actions.map((a) => {
-            const disabled = submitting || (actionDone && !a.nonConsuming) || core < a.cost;
+            const disabled = submitting || (actionDone && !a.nonConsuming) || core < a.cost || (a.id === 'detect' && detectUsed);
             const iconSrc = ACTION_ICON[a.id];
             return (
               <button

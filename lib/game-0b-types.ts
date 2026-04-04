@@ -128,6 +128,8 @@ export const ACTION_LABEL: Record<string, string> = {
   none: '행동 없음',
   commander_assassinated: '사령관이 암살당했습니다.',
   revolutionary_emerged: '혁명가가 등장했습니다.',
+  revolutionary_assassinated: '혁명가가 암살당했습니다.',
+  commander_reclaimed: '사령관이 재집권하였습니다.',
 };
 
 /** 인원 별 역할 분배 (사령관/생존자/반군수장/반군/외계인) */
