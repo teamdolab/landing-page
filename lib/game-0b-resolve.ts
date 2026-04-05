@@ -4,7 +4,7 @@
  * 해당 라운드의 모든 night_action 이벤트를 우선순위대로 처리하여
  * game_0b 스냅샷에 반영할 변경 사항을 반환한다.
  */
-import { playerCoreKey, playerRoleKey } from './game-0b-types';
+import { clampShipHull, playerCoreKey, playerRoleKey } from './game-0b-types';
 
 export type NightEvent = {
   id: number;
@@ -105,8 +105,10 @@ export function resolveNightActions(
       case 'repair_survivor':
       case 'repair_rebel':
       case 'repair': {
-        const hull = (updates.ship_hull as number | undefined) ?? (game.ship_hull as number);
-        updates.ship_hull = hull + 10;
+        const hull = clampShipHull(
+          (updates.ship_hull as number | undefined) ?? (game.ship_hull as number),
+        );
+        updates.ship_hull = clampShipHull(hull + 10);
         log.push(`[수리] ${actor}번 → 게이지 +10%`);
         break;
       }
@@ -130,8 +132,10 @@ export function resolveNightActions(
         break;
       }
       case 'destroy': {
-        const hull = (updates.ship_hull as number | undefined) ?? (game.ship_hull as number);
-        updates.ship_hull = hull - 20;
+        const hull = clampShipHull(
+          (updates.ship_hull as number | undefined) ?? (game.ship_hull as number),
+        );
+        updates.ship_hull = clampShipHull(hull - 20);
         log.push(`[파괴] ${actor}번 → 게이지 -20%`);
         break;
       }

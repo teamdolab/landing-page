@@ -2,7 +2,7 @@
 
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import GameLayout from '../components/GameLayout';
-import { getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
+import { clampShipHull, getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
 import { countLifeboatSlots } from '@/lib/game-0b-result';
 
 export default function Game0bHostPage() {
@@ -295,7 +295,7 @@ function HostResultRevealBlock({
 }) {
   const slots = countLifeboatSlots(game);
   const locked = game.result_locked;
-  const hull = game.ship_hull;
+  const hull = clampShipHull(game.ship_hull);
   const lifeboatDone = game.lifeboat_seat_1 != null;
   const needLifeboat = hull > 50;
 

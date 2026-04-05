@@ -4,6 +4,13 @@ export type Game0bPhase = 'setup' | 'role_reveal' | 'day' | 'night' | 'morning' 
 export type Game0bStatus = '대기중' | '진행중' | '완료';
 export type Game0bEventSource = 'host' | 'testroom' | 'system';
 
+/** 수송선 게이지 상한 (%) */
+export const SHIP_HULL_MAX = 100;
+
+export function clampShipHull(value: number): number {
+  return Math.min(SHIP_HULL_MAX, value);
+}
+
 export type Game0bRow = {
   game_id: string;
   session_id: string;

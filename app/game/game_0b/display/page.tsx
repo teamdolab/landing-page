@@ -3,7 +3,13 @@
 import type { CSSProperties } from 'react';
 import Image from 'next/image';
 import GameLayout, { shipStatus } from '../components/GameLayout';
-import { ACTION_ICON, ACTION_LABEL, getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
+import {
+  ACTION_ICON,
+  ACTION_LABEL,
+  clampShipHull,
+  getPlayerRoleCore,
+  type Game0bRow,
+} from '@/lib/game-0b-types';
 import { REBEL_ROLES, SURVIVOR_ROLES, lifeboatSeatsFromRow } from '@/lib/game-0b-result';
 
 export default function Game0bDisplayPage() {
@@ -15,7 +21,7 @@ export default function Game0bDisplayPage() {
 }
 
 function podiumSections(game: Game0bRow): { label: string; nums: number[] }[] {
-  const hull = game.ship_hull;
+  const hull = clampShipHull(game.ship_hull);
   if (hull <= 50) {
     const nums: number[] = [];
     for (let i = 1; i <= game.player_count; i++) {
@@ -66,7 +72,7 @@ function podiumSections(game: Game0bRow): { label: string; nums: number[] }[] {
 
 function ResultRevealDisplay({ game }: { game: Game0bRow }) {
   const locked = game.result_locked;
-  const hull = game.ship_hull;
+  const hull = clampShipHull(game.ship_hull);
   const lifeboatDone = game.lifeboat_seat_1 != null;
   const needLifeboat = hull > 50;
   const showFinal = locked && (!needLifeboat || lifeboatDone);

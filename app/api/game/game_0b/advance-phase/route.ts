@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { playerCoreKey, type Game0bRow } from '@/lib/game-0b-types';
+import { clampShipHull, playerCoreKey, type Game0bRow } from '@/lib/game-0b-types';
 import { resolveNightActions, type NightEvent } from '@/lib/game-0b-resolve';
 import {
   preliminaryGaugeLine,
@@ -72,8 +72,11 @@ export async function POST(req: NextRequest) {
         const nextRound = game.current_round + 1;
         update.current_round = nextRound;
 
-        const currentHull = (update.ship_hull as number | undefined) ?? (game.ship_hull as number);
-        update.ship_hull = currentHull - 20;
+        // 매 라운드 밤 종료 시 자연 부식(5라운드 밤 → 결과 공개로 넘어갈 때 포함, 총 5회)
+        const currentHull = clampShipHull(
+          (update.ship_hull as number | undefined) ?? (game.ship_hull as number),
+        );
+        update.ship_hull = clampShipHull(currentHull - 20);
 
         if (nextRound > 5) {
           update.current_round = 5;
@@ -148,7 +151,7 @@ export async function POST(req: NextRequest) {
       if (!game.result_locked) {
         return NextResponse.json({ error: '먼저 게이지 공개를 진행하세요' }, { status: 400 });
       }
-      if ((game.ship_hull as number) <= 50) {
+      if (clampShipHull(game.ship_hull as number) <= 50) {
         return NextResponse.json({ error: '수송선이 안전 구간이 아니면 탑승 확정이 필요 없습니다' }, { status: 400 });
       }
       if (game.lifeboat_seat_1 != null) {

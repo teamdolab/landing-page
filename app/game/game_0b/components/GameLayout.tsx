@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useGame0b } from '@/lib/use-game-0b';
-import type { Game0bRow } from '@/lib/game-0b-types';
+import { clampShipHull, type Game0bRow } from '@/lib/game-0b-types';
 import '../../display/styles.css';
 import '../display/susongseon-display.css';
 
@@ -18,8 +18,9 @@ export function phaseLabel(phase: string) {
 }
 
 export function shipStatus(hull: number): { label: string; className: string } {
-  if (hull > 50) return { label: '안전', className: 'ship-safe' };
-  if (hull >= 0) return { label: '위험', className: 'ship-danger' };
+  const h = clampShipHull(hull);
+  if (h > 50) return { label: '안전', className: 'ship-safe' };
+  if (h >= 0) return { label: '위험', className: 'ship-danger' };
   return { label: '파괴', className: 'ship-destroy' };
 }
 
@@ -135,7 +136,10 @@ function GameLayoutInner({ role, children }: Props) {
   }
 
   const gameRow = game as Game0bRow;
-  const phaseText = gameRow.info_text || phaseLabel(gameRow.phase);
+  const phaseText =
+    role === 'display' && gameRow.phase === 'result_reveal'
+      ? '게임 종료'
+      : gameRow.info_text || phaseLabel(gameRow.phase);
   const timerExpired = timerSeconds != null && timerSeconds <= 0;
   const status = shipStatus(gameRow.ship_hull);
 
@@ -173,7 +177,7 @@ function GameLayoutInner({ role, children }: Props) {
               <>
                 <div className="ranking-header">수송선 게이지</div>
                 <div className="host-hull-display">
-                  <span className={`host-hull-value ${status.className}`}>{gameRow.ship_hull}%</span>
+                  <span className={`host-hull-value ${status.className}`}>{clampShipHull(gameRow.ship_hull)}%</span>
                   <span className={`host-hull-status ${status.className}`}>{status.label}</span>
                 </div>
               </>

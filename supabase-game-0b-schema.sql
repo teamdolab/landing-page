@@ -78,7 +78,7 @@ CREATE TRIGGER update_game_0b_updated_at
   EXECUTE FUNCTION update_updated_at_column();
 
 COMMENT ON TABLE game_0b IS 'GAME 0B 스냅샷 (송출/진행/테스트룸 공통 현재 상태)';
-COMMENT ON COLUMN game_0b.ship_hull IS '수송선 체력 (0 이하·음수 가능)';
+COMMENT ON COLUMN game_0b.ship_hull IS '수송선 체력 (상한 100%, 0 이하·음수 가능)';
 
 -- --------------------------------------------
 -- 이벤트 로그 (append, undo/히스토리용)

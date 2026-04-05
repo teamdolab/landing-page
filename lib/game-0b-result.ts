@@ -1,5 +1,4 @@
-import type { Game0bRow } from './game-0b-types';
-import { getPlayerRoleCore } from './game-0b-types';
+import { clampShipHull, getPlayerRoleCore, type Game0bRow } from './game-0b-types';
 
 const REBEL_ROLES = new Set(['반군수장', '반군', '혁명가']);
 const SURVIVOR_ROLES = new Set(['사령관', '생존자']);
@@ -20,7 +19,7 @@ export function countLifeboatSlots(game: Game0bRow): number {
 
 /** 게이지 공개 직후 송출용 한 줄 (hull ≤ 50이면 곧 최종 외계인 승리 문구) */
 export function preliminaryGaugeLine(game: Game0bRow): string {
-  const hull = game.ship_hull;
+  const hull = clampShipHull(game.ship_hull);
   if (hull <= 50) {
     return `수송선 게이지: ${hull}% · 외계인 진영이 승리하였습니다`;
   }
@@ -59,13 +58,14 @@ export function finalOutcomeInfoText(game: Game0bRow, seats: number[]): string {
   const hasAlien = roles.some((r) => r === '외계인');
   const hasRebel = roles.some((r) => r != null && REBEL_ROLES.has(r));
 
+  const hull = clampShipHull(game.ship_hull);
   if (hasAlien) {
-    return `최종: 외계인 진영 단독 승리 · 수송선 게이지 ${game.ship_hull}%`;
+    return `최종: 외계인 진영 단독 승리 · 수송선 게이지 ${hull}%`;
   }
   if (hasRebel) {
-    return `최종: 반군 진영 1등 · 생존자 진영 2등 · 수송선 게이지 ${game.ship_hull}%`;
+    return `최종: 반군 진영 1등 · 생존자 진영 2등 · 수송선 게이지 ${hull}%`;
   }
-  return `최종: 생존자 진영 단독 승리 · 수송선 게이지 ${game.ship_hull}%`;
+  return `최종: 생존자 진영 단독 승리 · 수송선 게이지 ${hull}%`;
 }
 
 export function lifeboatSeatsFromRow(game: Game0bRow): number[] {
