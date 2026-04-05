@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import GameLayout from '../components/GameLayout';
 import { getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
+import { countLifeboatSlots } from '@/lib/game-0b-result';
 
 export default function Game0bHostPage() {
   return (
@@ -19,8 +20,24 @@ function HostBottom({ game, reload }: { game: Game0bRow; reload: () => void }) {
   const [sending, setSending] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [phaseLoading, setPhaseLoading] = useState(false);
+  const [lifeboatPick, setLifeboatPick] = useState<Set<number>>(() => new Set());
 
   const playerOptions = Array.from({ length: game.player_count ?? 12 }, (_, i) => i + 1);
+
+  if (game.phase === 'result_reveal' && game.status === '완료') {
+    return (
+      <HostResultRevealBlock
+        game={game}
+        reload={reload}
+        lifeboatPick={lifeboatPick}
+        setLifeboatPick={setLifeboatPick}
+        msg={msg}
+        setMsg={setMsg}
+        phaseLoading={phaseLoading}
+        setPhaseLoading={setPhaseLoading}
+      />
+    );
+  }
 
   const handleTransfer = async () => {
     if (fromPlayer === toPlayer) {
@@ -54,14 +71,14 @@ function HostBottom({ game, reload }: { game: Game0bRow; reload: () => void }) {
     }
   };
 
-  const handleAdvance = async (action: string) => {
+  const handleAdvance = async (action: string, extra?: Record<string, unknown>) => {
     setPhaseLoading(true);
     setMsg(null);
     try {
       const res = await fetch('/api/game/game_0b/advance-phase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: game.session_id, action }),
+        body: JSON.stringify({ session_id: game.session_id, action, ...extra }),
       });
       const j = await res.json();
       if (!res.ok) {
@@ -117,6 +134,8 @@ function HostBottom({ game, reload }: { game: Game0bRow; reload: () => void }) {
       );
     }
     if (game.phase === 'night') {
+      const endLabel =
+        game.current_round >= 5 ? '게임 종료 및 결과 처리' : '다음 라운드 시작';
       return (
         <>
           <span style={{ fontSize: 13, color: '#8a7db0', marginBottom: 4 }}>
@@ -128,7 +147,7 @@ function HostBottom({ game, reload }: { game: Game0bRow; reload: () => void }) {
             disabled={phaseLoading}
             onClick={() => handleAdvance('start_round')}
           >
-            {phaseLoading ? '처리 중...' : '다음 라운드 시작'}
+            {phaseLoading ? '처리 중...' : endLabel}
           </button>
         </>
       );
@@ -252,5 +271,148 @@ function HostBottom({ game, reload }: { game: Game0bRow; reload: () => void }) {
         </div>
       </div>
     </>
+  );
+}
+
+function HostResultRevealBlock({
+  game,
+  reload,
+  lifeboatPick,
+  setLifeboatPick,
+  msg,
+  setMsg,
+  phaseLoading,
+  setPhaseLoading,
+}: {
+  game: Game0bRow;
+  reload: () => void;
+  lifeboatPick: Set<number>;
+  setLifeboatPick: Dispatch<SetStateAction<Set<number>>>;
+  msg: string | null;
+  setMsg: (s: string | null) => void;
+  phaseLoading: boolean;
+  setPhaseLoading: (v: boolean) => void;
+}) {
+  const slots = countLifeboatSlots(game);
+  const locked = game.result_locked;
+  const hull = game.ship_hull;
+  const lifeboatDone = game.lifeboat_seat_1 != null;
+  const needLifeboat = hull > 50;
+
+  const handleAdvance = async (action: string, extra?: Record<string, unknown>) => {
+    setPhaseLoading(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/game/game_0b/advance-phase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: game.session_id, action, ...extra }),
+      });
+      const j = await res.json();
+      if (!res.ok) {
+        setMsg(j.error || '실패');
+      } else {
+        setLifeboatPick(new Set());
+        reload();
+      }
+    } catch {
+      setMsg('네트워크 오류');
+    } finally {
+      setPhaseLoading(false);
+    }
+  };
+
+  const toggleSeat = (n: number) => {
+    setLifeboatPick((prev) => {
+      const next = new Set(prev);
+      if (next.has(n)) next.delete(n);
+      else if (next.size < slots) next.add(n);
+      return next;
+    });
+  };
+
+  let body: React.ReactNode;
+  if (!locked) {
+    body = (
+      <button
+        type="button"
+        className="host-confirm-btn"
+        disabled={phaseLoading}
+        onClick={() => handleAdvance('reveal_gauge')}
+      >
+        {phaseLoading ? '처리 중...' : '게이지 공개'}
+      </button>
+    );
+  } else if (needLifeboat && !lifeboatDone) {
+    body = (
+      <div className="host-lifeboat-block">
+        <p className="host-lifeboat-hint">
+          탑승 인원 {slots}명 선택 (현재 진영 인원만 선택 가능)
+        </p>
+        <div className="host-lifeboat-checks">
+          {Array.from({ length: game.player_count }, (_, i) => i + 1).map((n) => {
+            const { role } = getPlayerRoleCore(game, n);
+            const checked = lifeboatPick.has(n);
+            return (
+              <label key={n} className="host-lifeboat-row">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggleSeat(n)}
+                />
+                <span>
+                  {n}번 {role ? `· ${role}` : ''}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          className="host-confirm-btn"
+          disabled={phaseLoading || lifeboatPick.size !== slots}
+          onClick={() => handleAdvance('confirm_lifeboat', { seats: [...lifeboatPick].sort((a, b) => a - b) })}
+        >
+          {phaseLoading ? '처리 중...' : '탑승 확정'}
+        </button>
+      </div>
+    );
+  } else {
+    body = (
+      <span style={{ fontSize: 15, color: '#4a3d6b', fontWeight: 700, textAlign: 'center' }}>
+        최종 결과는 송출 화면을 확인하세요.
+      </span>
+    );
+  }
+
+  return (
+    <div className="host-result-reveal-wrap">
+      <div className="bottom-panel host-result-reveal-panel">
+        <div className="bottom-panel-label">결과 공개</div>
+        <div className="bottom-panel-body host-result-reveal-body">
+          {body}
+          {msg && (
+            <span style={{ fontSize: 13, color: '#c62828', fontWeight: 600 }}>{msg}</span>
+          )}
+        </div>
+      </div>
+      <div className="bottom-panel">
+        <div className="bottom-panel-label">수송선 게이지</div>
+        <div className="bottom-panel-body">
+          <span style={{ fontSize: 28, fontWeight: 800, color: '#5a32b8' }}>{hull}%</span>
+        </div>
+      </div>
+      <div className="bottom-panel">
+        <div className="bottom-panel-label">탑승</div>
+        <div className="bottom-panel-body">
+          <span style={{ fontSize: 14, color: '#666' }}>
+            {!needLifeboat && '위험/파괴 — 외계인 승리 (탑승 선택 없음)'}
+            {needLifeboat && !locked && '게이지 공개 후 탑승 인원을 선택합니다.'}
+            {needLifeboat && locked && !lifeboatDone && `${slots}명 선택 후 확정하세요.`}
+            {needLifeboat && lifeboatDone && '탑승 확정 완료'}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }

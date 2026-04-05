@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { playerCoreKey } from '@/lib/game-0b-types';
+import { playerCoreKey, type Game0bRow } from '@/lib/game-0b-types';
 import { resolveNightActions, type NightEvent } from '@/lib/game-0b-resolve';
+import {
+  preliminaryGaugeLine,
+  validateLifeboatSeats,
+  finalOutcomeInfoText,
+} from '@/lib/game-0b-result';
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,7 +43,6 @@ export async function POST(req: NextRequest) {
       }
 
       if (game.phase === 'night') {
-        // 밤 액션 일괄 처리
         const { data: nightEvents } = await supabase
           .from('game_0b_event')
           .select('*')
@@ -65,40 +69,48 @@ export async function POST(req: NextRequest) {
           });
         }
 
-        // 라운드 증가
-        update.current_round = game.current_round + 1;
+        const nextRound = game.current_round + 1;
+        update.current_round = nextRound;
 
-        // 자연 부식 (라운드 2 이상)
         const currentHull = (update.ship_hull as number | undefined) ?? (game.ship_hull as number);
         update.ship_hull = currentHull - 20;
+
+        if (nextRound > 5) {
+          update.current_round = 5;
+          update.phase = 'result_reveal';
+          update.status = '완료';
+          update.phase_deadline_at = null;
+          update.night_action_count = 0;
+          update.last_public_transfer_from = null;
+          update.public_transfer_log = [];
+          update.result_locked = false;
+          update.info_text = null;
+          for (let k = 1; k <= 5; k++) {
+            update[`lifeboat_seat_${k}`] = null;
+          }
+        } else {
+          const pc = game.player_count as number;
+          for (let i = 1; i <= pc; i++) {
+            const key = playerCoreKey(i);
+            const current =
+              (update[key] as number | undefined) ?? ((game as Record<string, unknown>)[key] as number);
+            update[key] = current + 1;
+          }
+
+          update.phase = 'day';
+          update.night_action_count = 0;
+          update.last_public_transfer_from = null;
+          update.public_transfer_log = [];
+          update.phase_deadline_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+        }
       } else {
-        // role_reveal → day: 1라운드 시작이므로 자연 부식 없음
         update.current_round = 1;
         update.detected_actions = [];
-      }
-
-      // 코어 지급 (밤→낮 전환 시)
-      if (game.phase === 'night') {
-        const pc = game.player_count as number;
-        for (let i = 1; i <= pc; i++) {
-          const key = playerCoreKey(i);
-          const current = (update[key] as number | undefined) ?? ((game as Record<string, unknown>)[key] as number);
-          update[key] = current + 1;
-        }
-      }
-
-      update.phase = 'day';
-      update.night_action_count = 0;
-      update.last_public_transfer_from = null;
-      update.public_transfer_log = [];
-      update.phase_deadline_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-      // 5라운드 초과 시 게임 종료
-      if ((update.current_round as number | undefined) != null && (update.current_round as number) > 5) {
-        update.current_round = 5;
         update.phase = 'day';
-        update.status = '완료';
-        update.phase_deadline_at = null;
+        update.night_action_count = 0;
+        update.last_public_transfer_from = null;
+        update.public_transfer_log = [];
+        update.phase_deadline_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
       }
     } else if (action === 'start_night') {
       if (game.phase !== 'day') {
@@ -115,6 +127,44 @@ export async function POST(req: NextRequest) {
         const current = (game as Record<string, unknown>)[key] as number;
         update[key] = current + 1;
       }
+    } else if (action === 'reveal_gauge') {
+      if (game.phase !== 'result_reveal') {
+        return NextResponse.json({ error: `현재 phase(${game.phase})에서 reveal_gauge 불가` }, { status: 400 });
+      }
+      if (game.result_locked) {
+        return NextResponse.json({ error: '이미 게이지를 공개했습니다' }, { status: 400 });
+      }
+      update.result_locked = true;
+      update.info_text = preliminaryGaugeLine(game as Game0bRow);
+    } else if (action === 'confirm_lifeboat') {
+      const seats = body?.seats as unknown;
+      if (!Array.isArray(seats) || !seats.every((x) => typeof x === 'number')) {
+        return NextResponse.json({ error: 'seats: 숫자 배열 필수' }, { status: 400 });
+      }
+      const seatNums = seats.map((x) => Math.trunc(x as number));
+      if (game.phase !== 'result_reveal') {
+        return NextResponse.json({ error: `현재 phase(${game.phase})에서 confirm_lifeboat 불가` }, { status: 400 });
+      }
+      if (!game.result_locked) {
+        return NextResponse.json({ error: '먼저 게이지 공개를 진행하세요' }, { status: 400 });
+      }
+      if ((game.ship_hull as number) <= 50) {
+        return NextResponse.json({ error: '수송선이 안전 구간이 아니면 탑승 확정이 필요 없습니다' }, { status: 400 });
+      }
+      if (game.lifeboat_seat_1 != null) {
+        return NextResponse.json({ error: '이미 탑승이 확정되었습니다' }, { status: 400 });
+      }
+
+      const row = game as Game0bRow;
+      const err = validateLifeboatSeats(row, seatNums);
+      if (err) {
+        return NextResponse.json({ error: err }, { status: 400 });
+      }
+
+      for (let i = 0; i < 5; i++) {
+        update[`lifeboat_seat_${i + 1}`] = seatNums[i] ?? null;
+      }
+      update.info_text = finalOutcomeInfoText(row, seatNums);
     } else if (action === 'finish') {
       update.status = '완료';
     } else {

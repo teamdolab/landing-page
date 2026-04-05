@@ -1,8 +1,10 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import Image from 'next/image';
 import GameLayout, { shipStatus } from '../components/GameLayout';
-import { ACTION_ICON, ACTION_LABEL, type Game0bRow } from '@/lib/game-0b-types';
+import { ACTION_ICON, ACTION_LABEL, getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
+import { REBEL_ROLES, SURVIVOR_ROLES, lifeboatSeatsFromRow } from '@/lib/game-0b-result';
 
 export default function Game0bDisplayPage() {
   return (
@@ -12,7 +14,158 @@ export default function Game0bDisplayPage() {
   );
 }
 
+function podiumSections(game: Game0bRow): { label: string; nums: number[] }[] {
+  const hull = game.ship_hull;
+  if (hull <= 50) {
+    const nums: number[] = [];
+    for (let i = 1; i <= game.player_count; i++) {
+      if (getPlayerRoleCore(game, i).role === '외계인') nums.push(i);
+    }
+    return [{ label: '승리 · 외계인 진영', nums }];
+  }
+  const seats = lifeboatSeatsFromRow(game);
+  if (seats.length === 0) return [];
+  const hasAlien = seats.some((s) => getPlayerRoleCore(game, s).role === '외계인');
+  const hasRebel = seats.some((s) => {
+    const r = getPlayerRoleCore(game, s).role;
+    return r != null && REBEL_ROLES.has(r);
+  });
+  if (hasAlien) {
+    return [
+      {
+        label: '승리 · 외계인 진영',
+        nums: seats.filter((s) => getPlayerRoleCore(game, s).role === '외계인'),
+      },
+    ];
+  }
+  if (hasRebel) {
+    const rebelNums = seats.filter((s) => {
+      const r = getPlayerRoleCore(game, s).role;
+      return r != null && REBEL_ROLES.has(r);
+    });
+    const survOnBoat = seats.filter((s) => {
+      const r = getPlayerRoleCore(game, s).role;
+      return r != null && SURVIVOR_ROLES.has(r);
+    });
+    let secondNums: number[];
+    if (survOnBoat.length > 0) secondNums = survOnBoat;
+    else {
+      secondNums = [];
+      for (let i = 1; i <= game.player_count; i++) {
+        const r = getPlayerRoleCore(game, i).role;
+        if (r != null && SURVIVOR_ROLES.has(r)) secondNums.push(i);
+      }
+    }
+    return [
+      { label: '1등 · 반군 진영', nums: rebelNums },
+      { label: '2등 · 생존자 진영', nums: secondNums },
+    ];
+  }
+  return [{ label: '승리 · 생존자 진영', nums: seats }];
+}
+
+function ResultRevealDisplay({ game }: { game: Game0bRow }) {
+  const locked = game.result_locked;
+  const hull = game.ship_hull;
+  const lifeboatDone = game.lifeboat_seat_1 != null;
+  const needLifeboat = hull > 50;
+  const showFinal = locked && (!needLifeboat || lifeboatDone);
+
+  if (!locked) {
+    return (
+      <div className="ss-result-reveal-root">
+        <div className="final-result-loading ss-final-result-loading">
+          <span className="final-result-loading-text">결과 집계 중...</span>
+          <span className="final-result-dots">
+            <span className="dot">.</span>
+            <span className="dot">.</span>
+            <span className="dot">.</span>
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!showFinal) {
+    return (
+      <div className="ss-result-reveal-root ss-result-reveal-wait">
+        <p className="ss-result-reveal-main">{game.info_text ?? '—'}</p>
+        <p className="ss-result-reveal-sub">탑승 인원 선정 중...</p>
+      </div>
+    );
+  }
+
+  const sections = podiumSections(game);
+  const maxRow = Math.max(1, ...sections.map((s) => s.nums.length));
+  const bottomWidth = maxRow * 76 + Math.max(0, maxRow - 1) * 16;
+  const allPlayers = Array.from({ length: game.player_count }, (_, i) => {
+    const n = i + 1;
+    const { role } = getPlayerRoleCore(game, n);
+    return { num: n, role };
+  });
+
+  return (
+    <div className="ss-result-reveal-root">
+      <section
+        className="final-result-section ss-final-result-section"
+        style={{ '--bottom-content-width': `${bottomWidth}px` } as CSSProperties}
+      >
+        <div className="ss-result-reveal-headline">{game.info_text ?? ''}</div>
+
+        <div className="ss-result-podium-wrap">
+          {sections.map((sec) => (
+            <div key={sec.label} className="ss-result-podium-block">
+              <div className="ss-result-podium-label">{sec.label}</div>
+              <div className="final-result-podium ss-result-podium">
+                <div className="final-result-podium-inner">
+                  {sec.nums.map((num) => {
+                    const { role } = getPlayerRoleCore(game, num);
+                    return (
+                      <div key={num} className="final-result-player final-result-winner">
+                        <div className="final-winner-crown">👑</div>
+                        <div className="avatar-wrapper">
+                          <div className="node-box">
+                            <span className="player-num">{num}</span>
+                          </div>
+                        </div>
+                        <div className="score-box ss-result-role-box">{role ?? '—'}</div>
+                        <div className="final-badge final-badge-winner">승리</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="ss-result-all-label">전원 역할 공개</div>
+        <div className="final-result-bottom ss-final-result-bottom">
+          {allPlayers.map((p) => (
+            <div key={p.num} className="final-result-player">
+              <div className="avatar-wrapper">
+                <div className="node-box">
+                  <span className="player-num">{p.num}</span>
+                </div>
+              </div>
+              <div className="score-box ss-result-role-box">{p.role ?? '—'}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function DisplayBottom({ game }: { game: Game0bRow }) {
+  if (game.phase === 'result_reveal') {
+    return (
+      <div style={{ gridColumn: '1 / -1' }}>
+        <ResultRevealDisplay game={game} />
+      </div>
+    );
+  }
+
   const status = shipStatus(game.ship_hull);
   const detectedActions = Array.isArray(game.detected_actions) ? game.detected_actions : [];
   const transferLog: number[] = Array.isArray(game.public_transfer_log) ? game.public_transfer_log as number[] : [];

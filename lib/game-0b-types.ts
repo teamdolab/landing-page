@@ -1,6 +1,6 @@
 /** game_0b / game_0b_event — DB 행 타입 (스냅샷 + 이벤트) */
 
-export type Game0bPhase = 'setup' | 'role_reveal' | 'day' | 'night' | 'morning';
+export type Game0bPhase = 'setup' | 'role_reveal' | 'day' | 'night' | 'morning' | 'result_reveal';
 export type Game0bStatus = '대기중' | '진행중' | '완료';
 export type Game0bEventSource = 'host' | 'testroom' | 'system';
 

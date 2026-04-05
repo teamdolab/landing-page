@@ -13,6 +13,7 @@ export function phaseLabel(phase: string) {
   if (phase === 'day') return '낮';
   if (phase === 'night') return '밤';
   if (phase === 'morning') return '아침 브리핑';
+  if (phase === 'result_reveal') return '결과 공개';
   return phase;
 }
 

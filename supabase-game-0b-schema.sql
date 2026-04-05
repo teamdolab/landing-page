@@ -23,7 +23,7 @@ CREATE TABLE game_0b (
   player_count INTEGER NOT NULL DEFAULT 12 CHECK (player_count >= 8 AND player_count <= 12),
   current_round INTEGER NOT NULL DEFAULT 0 CHECK (current_round >= 0 AND current_round <= 5),
   phase VARCHAR(20) NOT NULL DEFAULT 'setup'
-    CHECK (phase IN ('setup', 'role_reveal', 'day', 'night', 'morning')),
+    CHECK (phase IN ('setup', 'role_reveal', 'day', 'night', 'morning', 'result_reveal')),
   first_player_number INTEGER CHECK (first_player_number IS NULL OR (first_player_number >= 1 AND first_player_number <= 12)),
   phase_deadline_at TIMESTAMPTZ,
 
