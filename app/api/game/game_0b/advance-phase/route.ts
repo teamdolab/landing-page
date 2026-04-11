@@ -92,14 +92,7 @@ export async function POST(req: NextRequest) {
             update[`lifeboat_seat_${k}`] = null;
           }
         } else {
-          const pc = game.player_count as number;
-          for (let i = 1; i <= pc; i++) {
-            const key = playerCoreKey(i);
-            const current =
-              (update[key] as number | undefined) ?? ((game as Record<string, unknown>)[key] as number);
-            update[key] = current + 1;
-          }
-
+          // 코어 +1은 밤 시작(start_night) 시에만 지급. 밤 종료 → 낮 전환에서는 지급하지 않음.
           update.phase = 'day';
           update.night_action_count = 0;
           update.last_public_transfer_from = null;

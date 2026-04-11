@@ -549,6 +549,7 @@ function getActionsForRole(role: string | null, game: Game0bRow): ActionDef[] {
       return [
         { id: 'search', label: '탐색', cost: 5, needsTarget: true },
         { id: 'assassinate', label: '암살', cost: 10, needsTarget: true },
+        { id: 'hidden_trade', label: '은닉거래', cost: 0, needsTarget: true, nonConsuming: true },
         { id: 'mine', label: '채굴', cost: 0, needsTarget: false },
         { id: 'repair_rebel', label: '수리', cost: 2, needsTarget: false },
       ];
