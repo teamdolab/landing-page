@@ -252,6 +252,7 @@ function PlayerActionPanel({
   const { role, core } = getPlayerRoleCore(game, playerNum);
   const [actionDone, setActionDone] = useState(false);
   const [detectUsed, setDetectUsed] = useState(false);
+  const [hiddenTradeUsed, setHiddenTradeUsed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [searchResult, setSearchResult] = useState<string | null>(null);
@@ -260,6 +261,14 @@ function PlayerActionPanel({
   const [detectTargets, setDetectTargets] = useState<number[]>([]);
 
   const playerOptions = Array.from({ length: game.player_count ?? 12 }, (_, i) => i + 1).filter(n => n !== playerNum);
+
+  useEffect(() => {
+    setActionDone(false);
+    setDetectUsed(false);
+    setHiddenTradeUsed(false);
+    setSearchResult(null);
+    setMsg(null);
+  }, [playerNum, game.current_round]);
 
   const handleSubmitAction = async (actionId: string, target?: number, extra?: Record<string, unknown>) => {
     setSubmitting(true);
@@ -288,6 +297,9 @@ function PlayerActionPanel({
         }
         if (actionId === 'detect') {
           setDetectUsed(true);
+        }
+        if (actionId === 'hidden_trade') {
+          setHiddenTradeUsed(true);
         }
         if (actionId === 'search' && j.search_result) {
           setSearchResult(`${target}번 플레이어 → ${j.search_result}`);
@@ -343,7 +355,12 @@ function PlayerActionPanel({
         <div className="bottom-panel-label">액션</div>
         <div className="bottom-panel-body action-icon-grid">
           {actions.map((a) => {
-            const disabled = submitting || (actionDone && !a.nonConsuming) || core < a.cost || (a.id === 'detect' && detectUsed);
+            const disabled =
+              submitting ||
+              (actionDone && !a.nonConsuming) ||
+              core < a.cost ||
+              (a.id === 'detect' && detectUsed) ||
+              (a.id === 'hidden_trade' && hiddenTradeUsed);
             const iconSrc = ACTION_ICON[a.id];
             return (
               <button

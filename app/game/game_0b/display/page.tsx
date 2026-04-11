@@ -10,7 +10,8 @@ import {
   getPlayerRoleCore,
   type Game0bRow,
 } from '@/lib/game-0b-types';
-import { REBEL_ROLES, SURVIVOR_ROLES, lifeboatSeatsFromRow } from '@/lib/game-0b-result';
+import { getShipStatusImageSrc } from '@/lib/game-0b-ship-assets';
+import { lifeboatSeatsFromRow } from '@/lib/game-0b-result';
 
 export default function Game0bDisplayPage() {
   return (
@@ -20,6 +21,7 @@ export default function Game0bDisplayPage() {
   );
 }
 
+/** 최종 단상에 올릴 승리자 번호. 외계인 승(위험/파괴 또는 탑승에 외계인): 외계인만. 인간 측 승(탑승 확정): 탑승자 전원만. */
 function podiumSections(game: Game0bRow): { label: string; nums: number[] }[] {
   const hull = clampShipHull(game.ship_hull);
   if (hull <= 50) {
@@ -31,43 +33,35 @@ function podiumSections(game: Game0bRow): { label: string; nums: number[] }[] {
   }
   const seats = lifeboatSeatsFromRow(game);
   if (seats.length === 0) return [];
+  const numsSorted = [...seats].sort((a, b) => a - b);
   const hasAlien = seats.some((s) => getPlayerRoleCore(game, s).role === '외계인');
-  const hasRebel = seats.some((s) => {
-    const r = getPlayerRoleCore(game, s).role;
-    return r != null && REBEL_ROLES.has(r);
-  });
   if (hasAlien) {
     return [
       {
         label: '승리 · 외계인 진영',
-        nums: seats.filter((s) => getPlayerRoleCore(game, s).role === '외계인'),
+        nums: numsSorted.filter((s) => getPlayerRoleCore(game, s).role === '외계인'),
       },
     ];
   }
-  if (hasRebel) {
-    const rebelNums = seats.filter((s) => {
-      const r = getPlayerRoleCore(game, s).role;
-      return r != null && REBEL_ROLES.has(r);
-    });
-    const survOnBoat = seats.filter((s) => {
-      const r = getPlayerRoleCore(game, s).role;
-      return r != null && SURVIVOR_ROLES.has(r);
-    });
-    let secondNums: number[];
-    if (survOnBoat.length > 0) secondNums = survOnBoat;
-    else {
-      secondNums = [];
-      for (let i = 1; i <= game.player_count; i++) {
-        const r = getPlayerRoleCore(game, i).role;
-        if (r != null && SURVIVOR_ROLES.has(r)) secondNums.push(i);
-      }
+  // 인간 진영 승리: 탑승자만 승리(나머지는 패배). 1·2등 서사는 상단 info_text에만 반영.
+  return [{ label: '승리 · 탑승자', nums: numsSorted }];
+}
+
+function getWinnerPlayerNumbers(game: Game0bRow): Set<number> {
+  const hull = clampShipHull(game.ship_hull);
+  if (hull <= 50) {
+    const s = new Set<number>();
+    for (let i = 1; i <= game.player_count; i++) {
+      if (getPlayerRoleCore(game, i).role === '외계인') s.add(i);
     }
-    return [
-      { label: '1등 · 반군 진영', nums: rebelNums },
-      { label: '2등 · 생존자 진영', nums: secondNums },
-    ];
+    return s;
   }
-  return [{ label: '승리 · 생존자 진영', nums: seats }];
+  const seats = lifeboatSeatsFromRow(game);
+  const hasAlien = seats.some((s) => getPlayerRoleCore(game, s).role === '외계인');
+  if (hasAlien) {
+    return new Set(seats.filter((s) => getPlayerRoleCore(game, s).role === '외계인'));
+  }
+  return new Set(seats);
 }
 
 function ResultRevealDisplay({ game }: { game: Game0bRow }) {
@@ -95,7 +89,7 @@ function ResultRevealDisplay({ game }: { game: Game0bRow }) {
   if (!showFinal) {
     return (
       <div className="ss-result-reveal-root ss-result-reveal-wait">
-        <p className="ss-result-reveal-main">{game.info_text ?? '—'}</p>
+        <p className="ss-result-reveal-main">수송선 게이지: {hull}%</p>
         <p className="ss-result-reveal-sub">탑승 인원 선정 중...</p>
       </div>
     );
@@ -104,6 +98,7 @@ function ResultRevealDisplay({ game }: { game: Game0bRow }) {
   const sections = podiumSections(game);
   const maxRow = Math.max(1, ...sections.map((s) => s.nums.length));
   const bottomWidth = maxRow * 76 + Math.max(0, maxRow - 1) * 16;
+  const winnerNums = getWinnerPlayerNumbers(game);
   const allPlayers = Array.from({ length: game.player_count }, (_, i) => {
     const n = i + 1;
     const { role } = getPlayerRoleCore(game, n);
@@ -116,8 +111,6 @@ function ResultRevealDisplay({ game }: { game: Game0bRow }) {
         className="final-result-section ss-final-result-section"
         style={{ '--bottom-content-width': `${bottomWidth}px` } as CSSProperties}
       >
-        <div className="ss-result-reveal-headline">{game.info_text ?? ''}</div>
-
         <div className="ss-result-podium-wrap">
           {sections.map((sec) => (
             <div key={sec.label} className="ss-result-podium-block">
@@ -147,16 +140,25 @@ function ResultRevealDisplay({ game }: { game: Game0bRow }) {
 
         <div className="ss-result-all-label">전원 역할 공개</div>
         <div className="final-result-bottom ss-final-result-bottom">
-          {allPlayers.map((p) => (
-            <div key={p.num} className="final-result-player">
-              <div className="avatar-wrapper">
-                <div className="node-box">
-                  <span className="player-num">{p.num}</span>
+          {allPlayers.map((p) => {
+            const won = winnerNums.has(p.num);
+            return (
+              <div
+                key={p.num}
+                className={`final-result-player ${won ? 'ss-result-row-winner' : 'ss-result-row-loser'}`}
+              >
+                <div className="avatar-wrapper">
+                  <div className="node-box">
+                    <span className="player-num">{p.num}</span>
+                  </div>
+                </div>
+                <div className="score-box ss-result-role-box">{p.role ?? '—'}</div>
+                <div className={`ss-result-outcome-badge ${won ? 'ss-result-outcome-win' : 'ss-result-outcome-lose'}`}>
+                  {won ? '승리' : '패배'}
                 </div>
               </div>
-              <div className="score-box ss-result-role-box">{p.role ?? '—'}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     </div>
@@ -191,7 +193,15 @@ function DisplayBottom({ game }: { game: Game0bRow }) {
         <div className="bottom-panel">
           <div className="bottom-panel-label">수송선 상태</div>
           <div className="bottom-panel-body">
-            <div className={`ship-status-badge ${status.className}`}>{status.label}</div>
+            <div className="ship-status-display-panel">
+              <Image
+                src={getShipStatusImageSrc(status.className)}
+                alt={`수송선 ${status.label}`}
+                width={200}
+                height={112}
+                className="ship-status-img ship-status-img-panel"
+              />
+            </div>
           </div>
         </div>
 
@@ -236,7 +246,15 @@ function DisplayBottom({ game }: { game: Game0bRow }) {
       <div className="bottom-panel">
         <div className="bottom-panel-label">수송선 상태</div>
         <div className="bottom-panel-body">
-          <div className={`ship-status-badge ${status.className}`}>{status.label}</div>
+          <div className="ship-status-display-panel">
+            <Image
+              src={getShipStatusImageSrc(status.className)}
+              alt={`수송선 ${status.label}`}
+              width={200}
+              height={112}
+              className="ship-status-img ship-status-img-panel"
+            />
+          </div>
         </div>
       </div>
 

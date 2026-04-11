@@ -69,6 +69,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (actionType === 'hidden_trade') {
+      const { data: existingHt } = await supabase
+        .from('game_0b_event')
+        .select('id')
+        .eq('game_id', game.game_id)
+        .eq('event_type', 'night_action')
+        .eq('actor_player_number', playerNumber)
+        .filter('event_data->>action_type', 'eq', 'hidden_trade')
+        .filter('event_data->>round', 'eq', String(game.current_round))
+        .limit(1);
+      if (existingHt && existingHt.length > 0) {
+        return NextResponse.json({ error: '은닉거래는 라운드당 1회만 가능합니다.' }, { status: 400 });
+      }
+    }
+
     const isNonConsuming = actionType === 'detect' || actionType === 'hidden_trade';
 
     const eventData: Record<string, unknown> = {

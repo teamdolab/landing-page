@@ -239,7 +239,22 @@
   gap: 6px;
 }
 
-/* 수송선 상태 */
+/* 송출 하단 패널 — 수송선 상태 일러스트 */
+.game-display-root.susongseon-display .ship-status-display-panel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+.game-display-root.susongseon-display .ship-status-img {
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+.game-display-root.susongseon-display .ship-status-img-panel {
+  max-height: 112px;
+}
+
 .game-display-root.susongseon-display .ship-status-badge {
   font-family: var(--main-font);
   font-size: 40px;
@@ -650,6 +665,34 @@
 
 .game-display-root.susongseon-display .ss-final-result-bottom {
   padding-top: 8px;
+}
+
+.game-display-root.susongseon-display .ss-final-result-bottom .ss-result-outcome-badge {
+  width: var(--node-size);
+  padding: 6px 0;
+  text-align: center;
+  font-family: var(--title-font);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.game-display-root.susongseon-display .ss-result-outcome-win {
+  background: linear-gradient(135deg, #e8dfff 0%, #c9b4ff 100%);
+  color: #1c1538;
+  border: 1px solid #6d42d0;
+}
+
+.game-display-root.susongseon-display .ss-result-outcome-lose {
+  background: rgba(60, 50, 90, 0.12);
+  color: #5c5478;
+  border: 1px solid rgba(74, 61, 107, 0.22);
+}
+
+.game-display-root.susongseon-display .ss-result-row-loser .node-box {
+  opacity: 0.88;
 }
 
 .game-display-root.susongseon-display .ss-final-result-section .final-result-winner .node-box {
