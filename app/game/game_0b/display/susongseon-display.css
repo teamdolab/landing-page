@@ -239,22 +239,7 @@
   gap: 6px;
 }
 
-/* 송출 하단 패널 — 수송선 상태 일러스트 */
-.game-display-root.susongseon-display .ship-status-display-panel {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-}
-.game-display-root.susongseon-display .ship-status-img {
-  height: auto;
-  max-width: 100%;
-  object-fit: contain;
-}
-.game-display-root.susongseon-display .ship-status-img-panel {
-  max-height: 112px;
-}
-
+/* 수송선 상태 */
 .game-display-root.susongseon-display .ship-status-badge {
   font-family: var(--main-font);
   font-size: 40px;

@@ -10,7 +10,6 @@ import {
   getPlayerRoleCore,
   type Game0bRow,
 } from '@/lib/game-0b-types';
-import { getShipStatusImageSrc } from '@/lib/game-0b-ship-assets';
 import { lifeboatSeatsFromRow } from '@/lib/game-0b-result';
 
 export default function Game0bDisplayPage() {
@@ -193,15 +192,7 @@ function DisplayBottom({ game }: { game: Game0bRow }) {
         <div className="bottom-panel">
           <div className="bottom-panel-label">수송선 상태</div>
           <div className="bottom-panel-body">
-            <div className="ship-status-display-panel">
-              <Image
-                src={getShipStatusImageSrc(status.className)}
-                alt={`수송선 ${status.label}`}
-                width={200}
-                height={112}
-                className="ship-status-img ship-status-img-panel"
-              />
-            </div>
+            <div className={`ship-status-badge ${status.className}`}>{status.label}</div>
           </div>
         </div>
 
@@ -246,15 +237,7 @@ function DisplayBottom({ game }: { game: Game0bRow }) {
       <div className="bottom-panel">
         <div className="bottom-panel-label">수송선 상태</div>
         <div className="bottom-panel-body">
-          <div className="ship-status-display-panel">
-            <Image
-              src={getShipStatusImageSrc(status.className)}
-              alt={`수송선 ${status.label}`}
-              width={200}
-              height={112}
-              className="ship-status-img ship-status-img-panel"
-            />
-          </div>
+          <div className={`ship-status-badge ${status.className}`}>{status.label}</div>
         </div>
       </div>
 
