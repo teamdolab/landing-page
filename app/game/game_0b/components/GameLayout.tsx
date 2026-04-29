@@ -20,7 +20,7 @@ export function phaseLabel(phase: string) {
 export function shipStatus(hull: number): { label: string; className: string } {
   const h = clampShipHull(hull);
   if (h > 50) return { label: '안전', className: 'ship-safe' };
-  if (h >= 0) return { label: '위험', className: 'ship-danger' };
+  if (h > 0)  return { label: '위험', className: 'ship-danger' };
   return { label: '파괴', className: 'ship-destroy' };
 }
 
@@ -192,7 +192,7 @@ function GameLayoutInner({ role, children }: Props) {
                     50% 이하 = 위험
                   </li>
                   <li className={`rank-item ship-rule-destroy ${status.className === 'ship-destroy' ? 'active' : ''}`}>
-                    0% 미만 = 파괴
+                    0% 이하 = 파괴
                   </li>
                 </ul>
               </>

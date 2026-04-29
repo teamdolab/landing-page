@@ -72,12 +72,6 @@ export async function POST(req: NextRequest) {
         const nextRound = game.current_round + 1;
         update.current_round = nextRound;
 
-        // 매 라운드 밤 종료 시 자연 부식(5라운드 밤 → 결과 공개로 넘어갈 때 포함, 총 5회)
-        const currentHull = clampShipHull(
-          (update.ship_hull as number | undefined) ?? (game.ship_hull as number),
-        );
-        update.ship_hull = clampShipHull(currentHull - 20);
-
         if (nextRound > 5) {
           update.current_round = 5;
           update.phase = 'result_reveal';
@@ -118,6 +112,10 @@ export async function POST(req: NextRequest) {
       update.night_action_count = 0;
       update.phase_deadline_at = new Date(Date.now() + pc * 60 * 1000).toISOString();
 
+      // 1. 자연 부식 먼저 적용 (낮→밤 전환 시)
+      update.ship_hull = clampShipHull(game.ship_hull as number) - 20;
+
+      // 2. 코어 +1 지급
       for (let i = 1; i <= pc; i++) {
         const key = playerCoreKey(i);
         const current = (game as Record<string, unknown>)[key] as number;

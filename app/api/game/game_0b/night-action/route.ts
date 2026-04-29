@@ -9,7 +9,6 @@ const ACTION_COSTS: Record<string, number> = {
   search: 5,
   control: 5,
   detect: 0,
-  jamming: 4,
   assassinate: 10,
   plunder: 0,
   destroy: 4,

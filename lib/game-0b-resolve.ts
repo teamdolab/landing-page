@@ -3,6 +3,14 @@
  * advance-phase의 start_round 내부에서 호출됨.
  * 해당 라운드의 모든 night_action 이벤트를 우선순위대로 처리하여
  * game_0b 스냅샷에 반영할 변경 사항을 반환한다.
+ *
+ * 처리 우선순위:
+ *   1순위 (즉시, 통제 무시): 은닉거래, 탐색
+ *   2순위: 통제
+ *   3순위: 채굴 / 수리 / 파괴 / 스킵
+ *   4순위: 암살
+ *   5순위: 약탈
+ *   6순위: 감지
  */
 import { clampShipHull, playerCoreKey, playerRoleKey } from './game-0b-types';
 
@@ -37,7 +45,6 @@ export function resolveNightActions(
   let detectedActions: unknown[] = [];
 
   const controlledPlayers = new Set<number>();
-  let jammingActive = false;
   let commanderAssassinated = false;
   let revolutionaryAssassinated = false;
 
@@ -45,20 +52,22 @@ export function resolveNightActions(
   let detectActor: number | null = null;
 
   const grouped = {
-    control: [] as NightEvent[],
-    general: [] as NightEvent[],
-    assassinate: [] as NightEvent[],
-    plunder: [] as NightEvent[],
-    detect: [] as NightEvent[],
+    immediate: [] as NightEvent[],   // 1순위: 은닉거래, 탐색 (통제 무시)
+    control:   [] as NightEvent[],   // 2순위
+    general:   [] as NightEvent[],   // 3순위: 채굴/수리/파괴/스킵
+    assassinate: [] as NightEvent[], // 4순위
+    plunder:   [] as NightEvent[],   // 5순위
+    detect:    [] as NightEvent[],   // 6순위
   };
 
   for (const ev of events) {
     const action = ev.event_data.action_type;
-    if (action === 'control') grouped.control.push(ev);
+    if (action === 'hidden_trade' || action === 'search') grouped.immediate.push(ev);
+    else if (action === 'control')    grouped.control.push(ev);
     else if (action === 'assassinate') grouped.assassinate.push(ev);
-    else if (action === 'plunder') grouped.plunder.push(ev);
-    else if (action === 'detect') grouped.detect.push(ev);
-    else grouped.general.push(ev);
+    else if (action === 'plunder')    grouped.plunder.push(ev);
+    else if (action === 'detect')     grouped.detect.push(ev);
+    else grouped.general.push(ev); // mine, repair, destroy, skip
   }
 
   const getCore = (p: number): number => {
@@ -77,7 +86,28 @@ export function resolveNightActions(
     updates[playerRoleKey(p)] = role;
   };
 
-  // === 1순위: 통제 ===
+  // === 1순위(즉시): 은닉거래, 탐색 (통제 무시) ===
+  for (const ev of grouped.immediate) {
+    const actor = ev.actor_player_number;
+    const action = ev.event_data.action_type;
+
+    if (action === 'search') {
+      const target = ev.event_data.target_player;
+      if (target != null) {
+        const targetRole = getRole(target);
+        let faction = '불명';
+        if (targetRole === '사령관' || targetRole === '생존자') faction = '생존자 진영';
+        else if (targetRole === '반군수장' || targetRole === '혁명가' || targetRole === '반군') faction = '반군 진영';
+        else if (targetRole === '외계인') faction = '외계인 진영';
+        ev.event_data.search_result = faction;
+        log.push(`[탐색] ${actor}번 → ${target}번 = ${faction}`);
+      }
+    } else if (action === 'hidden_trade') {
+      log.push(`[은닉거래] ${actor}번 → ${ev.event_data.target_player}번`);
+    }
+  }
+
+  // === 2순위: 통제 ===
   for (const ev of grouped.control) {
     const target = ev.event_data.target_player;
     if (target != null) {
@@ -86,12 +116,12 @@ export function resolveNightActions(
     }
   }
 
-  // === 2순위: 일반 (채굴/수리/탐색/교란/은닉거래/파괴) ===
+  // === 3순위: 일반 (채굴/수리/파괴/스킵) ===
   for (const ev of grouped.general) {
     const actor = ev.actor_player_number;
     const action = ev.event_data.action_type;
 
-    if (controlledPlayers.has(actor) && action !== 'hidden_trade') {
+    if (controlledPlayers.has(actor)) {
       log.push(`[통제됨] ${actor}번의 ${action} 무효화`);
       continue;
     }
@@ -112,36 +142,12 @@ export function resolveNightActions(
         log.push(`[수리] ${actor}번 → 게이지 +10%`);
         break;
       }
-      case 'search': {
-        const target = ev.event_data.target_player;
-        if (target != null) {
-          const targetRole = getRole(target);
-          let faction = '불명';
-          if (targetRole === '사령관' || targetRole === '생존자') faction = '생존자 진영';
-          else if (targetRole === '반군수장' || targetRole === '혁명가' || targetRole === '반군') faction = '반군 진영';
-          else if (targetRole === '외계인') faction = '외계인 진영';
-
-          ev.event_data.search_result = faction;
-          log.push(`[탐색] ${actor}번 → ${target}번 = ${faction}`);
-        }
-        break;
-      }
-      case 'jamming': {
-        jammingActive = true;
-        log.push(`[교란] ${actor}번 → 감지 무효화`);
-        break;
-      }
       case 'destroy': {
         const hull = clampShipHull(
           (updates.ship_hull as number | undefined) ?? (game.ship_hull as number),
         );
         updates.ship_hull = clampShipHull(hull - 20);
         log.push(`[파괴] ${actor}번 → 게이지 -20%`);
-        break;
-      }
-      case 'hidden_trade': {
-        // 코어 이동은 night-action API에서 이미 처리됨
-        log.push(`[은닉거래] ${actor}번 → ${ev.event_data.target_player}번`);
         break;
       }
       case 'skip': {
@@ -151,7 +157,7 @@ export function resolveNightActions(
     }
   }
 
-  // === 3순위: 암살 ===
+  // === 4순위: 암살 ===
   for (const ev of grouped.assassinate) {
     const actor = ev.actor_player_number;
     const target = ev.event_data.target_player;
@@ -175,13 +181,11 @@ export function resolveNightActions(
 
     if (actorRole === '반군수장' || actorRole === '반군') {
       if (target === commanderNum && targetRole === '사령관') {
-        // 사령관 암살 성공 → 혁명
         setRole(target, '생존자');
         updates.former_commander_player_number = commanderNum;
         updates.commander_player_number = null;
         commanderAssassinated = true;
 
-        // 반군수장을 찾아서 혁명가로 변환 (암살자가 반군수장이든 반군이든 관계없이)
         const pc = (game.player_count as number) ?? 12;
         let rebelLeaderNum: number | null = null;
         if (actorRole === '반군수장') {
@@ -198,8 +202,6 @@ export function resolveNightActions(
         if (rebelLeaderNum != null) {
           setRole(rebelLeaderNum, '혁명가');
           updates.revolutionary_player_number = rebelLeaderNum;
-
-          // 자금 찬탈: 사령관의 코어를 혁명가(반군수장)에게
           const commanderCore = getCore(target);
           setCore(rebelLeaderNum, getCore(rebelLeaderNum) + commanderCore);
           setCore(target, 0);
@@ -212,7 +214,6 @@ export function resolveNightActions(
       }
     } else if (actorRole === '생존자') {
       if (target === revolutionaryNum && targetRole === '혁명가') {
-        // 혁명가 암살 성공 → 사령관 재탈환
         setRole(target, '반군수장');
         updates.revolutionary_player_number = null;
         setRole(actor, '사령관');
@@ -227,7 +228,7 @@ export function resolveNightActions(
     }
   }
 
-  // === 4순위: 약탈 (최종 잔고 기준) ===
+  // === 5순위: 약탈 (최종 잔고 기준) ===
   for (const ev of grouped.plunder) {
     const actor = ev.actor_player_number;
     const target = ev.event_data.target_player;
@@ -248,7 +249,7 @@ export function resolveNightActions(
     log.push(`[약탈] ${actor}번 → ${target}번에서 코어 ${stolen}개 약탈`);
   }
 
-  // === 5순위: 감지 ===
+  // === 6순위: 감지 ===
   for (const ev of grouped.detect) {
     const actor = ev.actor_player_number;
 
@@ -278,7 +279,7 @@ export function resolveNightActions(
       { action: 'commander_reclaimed', target: null },
     ];
     log.push(`[혁명가 암살] 사령관 재집권`);
-  } else if (detectActor != null && detectTargets.length > 0 && !jammingActive) {
+  } else if (detectActor != null && detectTargets.length > 0) {
     const actionSummaries: unknown[] = [];
     for (const t of detectTargets) {
       const targetActions = events.filter(
@@ -296,8 +297,6 @@ export function resolveNightActions(
     }
     detectedActions = shuffle(actionSummaries);
     log.push(`[감지] ${detectActor}번 → ${detectTargets.join(',')}번 감지 (${actionSummaries.length}건)`);
-  } else if (detectActor != null && jammingActive) {
-    log.push(`[감지 무효] 교란으로 감지 무효화됨`);
   }
 
   return { updates, detectedActions, log };
