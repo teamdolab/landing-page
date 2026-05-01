@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
 import GameLayout from '../components/GameLayout';
-import { ACTION_ICON, getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
+import { getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
+import { ACTION_CONFIG } from '@/lib/game-0b-action-config';
+import { ActionCard } from '../components/ActionCard';
 
 export default function Game0bTestroomPage() {
   return (
@@ -152,6 +153,47 @@ function NfcGate({ game, onIdentified }: { game: Game0bRow; onIdentified: (num: 
   );
 }
 
+/* ── 캐릭터 초상화 (sprite sheet 크롭) ── */
+const CHAR_INDEX: Record<string, number> = {
+  '사령관':   0,
+  '생존자':   1,
+  '반군수장': 2,
+  '혁명가':   2,
+  '반군':     3,
+  '외계인':   4,
+};
+
+function CharacterPortrait({ role }: { role: string }) {
+  const totalChars = 5;
+  const imageWidth = 677;
+  const imageHeight = 369;
+  const displayWidth = 130;
+  const charWidth = imageWidth / totalChars; // ~135.4px per char
+  const scale = displayWidth / charWidth;    // 1 char → 130px
+  const bgWidth = imageWidth * scale;
+  const bgHeight = imageHeight * scale;
+  const displayHeight = Math.round(bgHeight * 0.75); // 상단 75% 표시
+
+  const index = CHAR_INDEX[role] ?? 0;
+  const xPercent = (index / (totalChars - 1)) * 100;
+
+  return (
+    <div
+      style={{
+        width: displayWidth,
+        height: displayHeight,
+        backgroundImage: 'url(/game-0b/characters.png)',
+        backgroundSize: `${bgWidth}px ${bgHeight}px`,
+        backgroundPosition: `${xPercent}% top`,
+        backgroundRepeat: 'no-repeat',
+        borderRadius: 12,
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
 /* ── setup 페이즈: 역할 확인 화면 ── */
 function RoleRevealPanel({
   game,
@@ -165,53 +207,111 @@ function RoleRevealPanel({
   const { role } = getPlayerRoleCore(game, playerNum);
 
   const roleDescription: Record<string, string> = {
-    '사령관': '생존자 진영 리더. 반군수장을 알고 시작합니다.',
-    '생존자': '생존자 진영. 정보 없이 시작합니다.',
-    '반군수장': '반군 진영 리더. 모든 반군을 알고 시작합니다.',
-    '반군': '반군 진영. 정보 없이 시작합니다.',
-    '외계인': '외계인 진영. 다른 외계인을 알고 시작합니다.',
+    '사령관': '생존자 진영의 리더',
+    '생존자': '생존자 진영',
+    '반군수장': '반군 진영의 리더',
+    '반군': '반군 진영',
+    '외계인': '외계인 진영',
   };
 
-  const factionInfo = getFactionInfo(game, playerNum, role);
+  const factionData = getFactionInfoData(game, playerNum, role);
 
   return (
-    <div className="bottom-panel" style={{ gridColumn: '1 / -1' }}>
-      <div className="bottom-panel-label">{playerNum}번 플레이어 · 역할 확인</div>
-      <div className="bottom-panel-body" style={{ gap: 12 }}>
-        <div style={{ fontSize: 32, fontWeight: 900, color: '#5a32b8' }}>
-          {role ?? '미배정'}
+    <>
+      {/* 좌측: 캐릭터 초상화 */}
+      <div className="bottom-panel">
+        <div className="bottom-panel-label">{playerNum}번 플레이어</div>
+        <div className="bottom-panel-body">
+          {role
+            ? <CharacterPortrait role={role} />
+            : <span className="empty-text">미배정</span>
+          }
         </div>
-        {role && (
-          <span style={{ color: '#aaa', fontSize: 14, textAlign: 'center' }}>
-            {roleDescription[role] ?? ''}
-          </span>
-        )}
-        {factionInfo && (
-          <span style={{ color: '#e8b84b', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>
-            {factionInfo}
-          </span>
-        )}
-        <button
-          type="button"
-          className="action-end-btn"
-          style={{ marginTop: 12 }}
-          onClick={onDone}
-        >
-          확인 완료
-        </button>
       </div>
-    </div>
+
+      {/* 중앙: 직업명 + 진영 */}
+      <div className="bottom-panel">
+        <div className="bottom-panel-label">역할</div>
+        <div className="bottom-panel-body" style={{ gap: 10 }}>
+          <div style={{ fontSize: 34, fontWeight: 900, color: '#5a32b8', letterSpacing: '-0.5px' }}>
+            {role ?? '미배정'}
+          </div>
+          {role && (
+            <span style={{ color: '#aaa', fontSize: 13, textAlign: 'center' }}>
+              {roleDescription[role] ?? ''}
+            </span>
+          )}
+          <button
+            type="button"
+            className="action-end-btn"
+            style={{ marginTop: 16 }}
+            onClick={onDone}
+          >
+            확인 완료
+          </button>
+        </div>
+      </div>
+
+      {/* 우측: 알아야 하는 정보 */}
+      <div className="bottom-panel">
+        <div className="bottom-panel-label">기밀 정보</div>
+        <div className="bottom-panel-body" style={{ gap: 8, alignItems: 'stretch' }}>
+          {factionData ? (
+            <>
+              <span style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                {factionData.title}
+              </span>
+              {factionData.items.map((item, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: 'rgba(232, 184, 75, 0.08)',
+                    border: '1px solid rgba(232, 184, 75, 0.25)',
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                  }}
+                >
+                  <span style={{ fontSize: 15, fontWeight: 800, color: '#e8b84b' }}>
+                    {item.label}
+                  </span>
+                  <span style={{ fontSize: 12, color: '#aaa' }}>
+                    {item.value}
+                  </span>
+                </div>
+              ))}
+            </>
+          ) : (
+            <span className="empty-text" style={{ fontSize: 13 }}>
+              알 수 있는 정보가 없습니다
+            </span>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 
-function getFactionInfo(game: Game0bRow, playerNum: number, role: string | null): string | null {
+type FactionInfoData = {
+  title: string;
+  items: { label: string; value: string }[];
+} | null;
+
+function getFactionInfoData(game: Game0bRow, playerNum: number, role: string | null): FactionInfoData {
   if (!role) return null;
   const pc = game.player_count ?? 12;
 
   if (role === '사령관') {
     for (let i = 1; i <= pc; i++) {
       const { role: r } = getPlayerRoleCore(game, i);
-      if (r === '반군수장') return `반군수장: ${i}번 플레이어`;
+      if (r === '반군수장') {
+        return {
+          title: '기밀 정보',
+          items: [{ label: '반군수장', value: `${i}번 플레이어` }],
+        };
+      }
     }
   }
 
@@ -221,7 +321,10 @@ function getFactionInfo(game: Game0bRow, playerNum: number, role: string | null)
       const { role: r } = getPlayerRoleCore(game, i);
       if (r === '반군') rebels.push(i);
     }
-    if (rebels.length > 0) return `반군: ${rebels.join(', ')}번`;
+    return {
+      title: '반군 목록',
+      items: rebels.map((n) => ({ label: `${n}번`, value: '반군' })),
+    };
   }
 
   if (role === '외계인') {
@@ -231,10 +334,21 @@ function getFactionInfo(game: Game0bRow, playerNum: number, role: string | null)
       const { role: r } = getPlayerRoleCore(game, i);
       if (r === '외계인') aliens.push(i);
     }
-    if (aliens.length > 0) return `다른 외계인: ${aliens.join(', ')}번`;
+    if (aliens.length > 0) {
+      return {
+        title: '동료 외계인',
+        items: aliens.map((n) => ({ label: `${n}번`, value: '외계인' })),
+      };
+    }
   }
 
   return null;
+}
+
+function getFactionInfo(game: Game0bRow, playerNum: number, role: string | null): string | null {
+  const data = getFactionInfoData(game, playerNum, role);
+  if (!data) return null;
+  return data.items.map(i => `${i.label} ${i.value}`).join(', ');
 }
 
 /* ── 밤 페이즈: 플레이어 액션 화면 ── */
@@ -361,28 +475,22 @@ function PlayerActionPanel({
               core < a.cost ||
               (a.id === 'detect' && detectUsed) ||
               (a.id === 'hidden_trade' && hiddenTradeUsed);
-            const iconSrc = ACTION_ICON[a.id];
+            const cfg = ACTION_CONFIG[a.id];
+            if (!cfg) return null;
             return (
-              <button
+              <ActionCard
                 key={a.id}
-                type="button"
-                className="action-icon-card action-icon-btn"
+                icon={cfg.icon}
+                label={a.label}
+                color={cfg.color}
+                cost={a.cost}
                 disabled={disabled}
                 onClick={() => {
                   setModalAction(a);
                   setTargetPlayer(playerOptions[0] ?? 1);
                   setDetectTargets([]);
                 }}
-                style={{ opacity: disabled ? 0.4 : 1 }}
-              >
-                {iconSrc && (
-                  <Image src={iconSrc} alt={a.label} width={48} height={48} className="action-icon-img" />
-                )}
-                <span className="action-icon-label">{a.label}</span>
-                <span className="action-icon-cost">
-                  {a.cost === 0 ? '무료' : `${a.cost}코어`}
-                </span>
-              </button>
+              />
             );
           })}
           {searchResult && (

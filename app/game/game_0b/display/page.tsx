@@ -1,15 +1,16 @@
 'use client';
 
 import type { CSSProperties } from 'react';
-import Image from 'next/image';
+import { Anchor, Siren, Skull } from 'lucide-react';
 import GameLayout, { shipStatus } from '../components/GameLayout';
 import {
-  ACTION_ICON,
   ACTION_LABEL,
   clampShipHull,
   getPlayerRoleCore,
   type Game0bRow,
 } from '@/lib/game-0b-types';
+import { ACTION_CONFIG } from '@/lib/game-0b-action-config';
+import { ActionCard } from '../components/ActionCard';
 import { lifeboatSeatsFromRow } from '@/lib/game-0b-result';
 
 export default function Game0bDisplayPage() {
@@ -219,14 +220,16 @@ function DisplayBottom({ game }: { game: Game0bRow }) {
                 const item = a as Record<string, unknown>;
                 const actionId = item.action as string;
                 const actionName = ACTION_LABEL[actionId] ?? actionId;
-                const iconSrc = ACTION_ICON[actionId];
+                const cfg = ACTION_CONFIG[actionId];
+                if (!cfg) return <span key={i} className="empty-text">{actionName}</span>;
                 return (
-                  <div key={i} className="action-icon-card">
-                    {iconSrc && (
-                      <Image src={iconSrc} alt={actionName} width={56} height={56} className="action-icon-img" />
-                    )}
-                    <span className="action-icon-label">{actionName}</span>
-                  </div>
+                  <ActionCard
+                    key={i}
+                    icon={cfg.icon}
+                    label={actionName}
+                    color={cfg.color}
+                    size="sm"
+                  />
                 );
               })
             : <span className="empty-text">감지 결과 없음</span>}
@@ -236,8 +239,8 @@ function DisplayBottom({ game }: { game: Game0bRow }) {
       {/* 중앙: 수송선 상태 */}
       <div className="bottom-panel">
         <div className="bottom-panel-label">수송선 상태</div>
-        <div className="bottom-panel-body">
-          <div className={`ship-status-badge ${status.className}`}>{status.label}</div>
+        <div className="bottom-panel-body" style={{ gap: 8 }}>
+          <ShipStatusCards currentStatus={status.className} />
         </div>
       </div>
 
@@ -255,5 +258,95 @@ function DisplayBottom({ game }: { game: Game0bRow }) {
         </div>
       </div>
     </>
+  );
+}
+
+const SHIP_STATUS_CARDS = [
+  {
+    key: 'ship-safe',
+    label: '안전',
+    icon: Anchor,
+    color: '#22C55E',
+    activeGlow: '0 0 18px #22C55E99, 0 0 40px #22C55E44',
+    pulseClass: undefined,
+  },
+  {
+    key: 'ship-danger',
+    label: '위험',
+    icon: Siren,
+    color: '#F59E0B',
+    activeGlow: '0 0 18px #F59E0B99, 0 0 40px #F59E0B44',
+    pulseClass: 'ship-status-card-pulse-danger',
+  },
+  {
+    key: 'ship-destroy',
+    label: '파괴',
+    icon: Skull,
+    color: '#EF4444',
+    activeGlow: '0 0 18px #EF444499, 0 0 40px #EF444444',
+    pulseClass: 'ship-status-card-pulse-destroy',
+  },
+] as const;
+
+function ShipStatusCards({ currentStatus }: { currentStatus: string }) {
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
+      {SHIP_STATUS_CARDS.map(({ key, label, icon: Icon, color, activeGlow, pulseClass }) => {
+        const isActive = currentStatus === key;
+        return (
+          <div
+            key={key}
+            className={isActive && pulseClass ? pulseClass : undefined}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              width: 72,
+              borderRadius: 8,
+              overflow: 'hidden',
+              border: `2px solid ${isActive ? color : '#333'}`,
+              boxShadow: isActive ? activeGlow : 'none',
+              opacity: isActive ? 1 : 0.25,
+              transition: 'opacity 0.4s, border-color 0.4s, box-shadow 0.4s',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '14px 10px 10px',
+                background: isActive
+                  ? `linear-gradient(160deg, ${color}2e 0%, ${color}0d 100%)`
+                  : '#0a0a0a',
+                width: '100%',
+              }}
+            >
+              <Icon size={40} color={isActive ? color : '#555'} strokeWidth={1.6} />
+            </div>
+            <div
+              style={{
+                background: '#111',
+                borderTop: `1px solid ${isActive ? color + '55' : '#222'}`,
+                padding: '5px 4px 6px',
+                textAlign: 'center',
+                width: '100%',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 800,
+                  color: isActive ? color : '#444',
+                  letterSpacing: '0.3px',
+                }}
+              >
+                {label}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
