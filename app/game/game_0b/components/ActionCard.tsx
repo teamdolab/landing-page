@@ -22,9 +22,9 @@ export function ActionCard({
   size = 'md',
 }: ActionCardProps) {
   const isButton = !!onClick;
-  const cardWidth = size === 'sm' ? 72 : 82;
-  const iconSize = size === 'sm' ? 38 : 46;
-  const iconPadding = size === 'sm' ? '12px 8px 8px' : '16px 10px 12px';
+  const cardWidth = size === 'sm' ? 108 : 123;
+  const iconSize = size === 'sm' ? 57 : 69;
+  const iconPadding = size === 'sm' ? '18px 12px 12px' : '24px 15px 18px';
 
   const cardInner = (
     <div
@@ -58,13 +58,13 @@ export function ActionCard({
         style={{
           background: '#111',
           borderTop: `1px solid ${color}55`,
-          padding: '5px 4px 6px',
+          padding: '7px 6px 8px',
           textAlign: 'center',
         }}
       >
         <div
           style={{
-            fontSize: size === 'sm' ? 11 : 12,
+            fontSize: size === 'sm' ? 13 : 15,
             fontWeight: 800,
             color: '#f0f0f0',
             letterSpacing: '0.3px',
@@ -76,10 +76,10 @@ export function ActionCard({
         {cost !== undefined && (
           <div
             style={{
-              fontSize: 10,
+              fontSize: size === 'sm' ? 11 : 12,
               fontWeight: 700,
               color,
-              marginTop: 2,
+              marginTop: 3,
             }}
           >
             {cost === 0 ? '무료' : `${cost}코어`}
