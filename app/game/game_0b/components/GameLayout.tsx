@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useGame0b } from '@/lib/use-game-0b';
 import { clampShipHull, type Game0bRow } from '@/lib/game-0b-types';
@@ -44,6 +44,13 @@ function useCountdown(deadline: string | null) {
   return remaining;
 }
 
+function playAudio(src: string) {
+  try {
+    const audio = new Audio(src);
+    audio.play().catch(() => {});
+  } catch {}
+}
+
 function formatTimer(seconds: number | null): string {
   if (seconds == null) return '--:--';
   const m = Math.floor(seconds / 60);
@@ -73,6 +80,37 @@ function GameLayoutInner({ role, children }: Props) {
 
   const row = game as Game0bRow | null;
   const timerSeconds = useCountdown(row?.phase_deadline_at ?? null);
+
+  // ── 오디오: 페이즈 전환 감지 (display 화면 전용) ──
+  const prevPhaseRef = useRef<string | null>(null);
+  const day10sDeadlineRef = useRef<string | null>(null);
+  const currentPhase = row?.phase ?? null;
+
+  useEffect(() => {
+    if (role !== 'display') return;
+    if (currentPhase === null) return;
+    const prev = prevPhaseRef.current;
+    if (prev !== null && prev !== currentPhase) {
+      if (currentPhase === 'day') {
+        playAudio('/game-0b/audio/round_start.wav');
+      } else if (currentPhase === 'night') {
+        playAudio('/game-0b/audio/night_start.wav');
+      } else if (currentPhase === 'result_reveal') {
+        playAudio('/game-0b/audio/game_end.wav');
+      }
+    }
+    prevPhaseRef.current = currentPhase;
+  }, [role, currentPhase]);
+
+  useEffect(() => {
+    if (role !== 'display') return;
+    if (currentPhase !== 'day') return;
+    if (timerSeconds !== 10) return;
+    const deadline = row?.phase_deadline_at ?? '';
+    if (day10sDeadlineRef.current === deadline) return;
+    day10sDeadlineRef.current = deadline;
+    playAudio('/game-0b/audio/day_warning.wav');
+  }, [role, currentPhase, timerSeconds, row?.phase_deadline_at]);
 
   const handleSessionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
