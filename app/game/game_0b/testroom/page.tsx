@@ -154,43 +154,25 @@ function NfcGate({ game, onIdentified }: { game: Game0bRow; onIdentified: (num: 
 }
 
 /* ── 캐릭터 초상화 (sprite sheet 크롭) ── */
-const CHAR_INDEX: Record<string, number> = {
-  '사령관':   0,
-  '생존자':   1,
-  '반군수장': 2,
-  '혁명가':   2,
-  '반군':     3,
-  '외계인':   4,
-};
 
 function CharacterPortrait({ role }: { role: string }) {
-  const totalChars = 5;
-  const imageWidth = 677;
-  const imageHeight = 369;
-  const displayWidth = 130;
-  const charWidth = imageWidth / totalChars; // ~135.4px per char
-  const scale = displayWidth / charWidth;    // 1 char → 130px
-  const bgWidth = imageWidth * scale;
-  const bgHeight = imageHeight * scale;
-  const displayHeight = Math.round(bgHeight * 0.75); // 상단 75% 표시
-
-  const index = CHAR_INDEX[role] ?? 0;
-  const xPercent = (index / (totalChars - 1)) * 100;
-
   return (
     <div
       style={{
-        width: displayWidth,
-        height: displayHeight,
-        backgroundImage: 'url(/game-0b/characters.png)',
-        backgroundSize: `${bgWidth}px ${bgHeight}px`,
-        backgroundPosition: `${xPercent}% top`,
-        backgroundRepeat: 'no-repeat',
+        width: 140,
         borderRadius: 12,
         overflow: 'hidden',
         flexShrink: 0,
+        background: '#111',
       }}
-    />
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/game-0b/char_${role}.png`}
+        alt={role}
+        style={{ width: '100%', height: 'auto', display: 'block' }}
+      />
+    </div>
   );
 }
 
