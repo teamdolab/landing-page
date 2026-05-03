@@ -301,7 +301,7 @@ function ShipStatusCards({ currentStatus }: { currentStatus: string }) {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              width: 72,
+              width: 140,
               borderRadius: 8,
               overflow: 'hidden',
               border: `2px solid ${isActive ? color : '#333'}`,
@@ -315,27 +315,27 @@ function ShipStatusCards({ currentStatus }: { currentStatus: string }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '14px 10px 10px',
+                padding: '22px 14px 14px',
                 background: isActive
                   ? `linear-gradient(160deg, ${color}2e 0%, ${color}0d 100%)`
                   : '#0a0a0a',
                 width: '100%',
               }}
             >
-              <Icon size={40} color={isActive ? color : '#555'} strokeWidth={1.6} />
+              <Icon size={76} color={isActive ? color : '#555'} strokeWidth={1.6} />
             </div>
             <div
               style={{
                 background: '#111',
                 borderTop: `1px solid ${isActive ? color + '55' : '#222'}`,
-                padding: '5px 4px 6px',
+                padding: '7px 6px 8px',
                 textAlign: 'center',
                 width: '100%',
               }}
             >
               <span
                 style={{
-                  fontSize: 12,
+                  fontSize: 15,
                   fontWeight: 800,
                   color: isActive ? color : '#444',
                   letterSpacing: '0.3px',

@@ -22,9 +22,9 @@ export function ActionCard({
   size = 'md',
 }: ActionCardProps) {
   const isButton = !!onClick;
-  const cardWidth = size === 'sm' ? 108 : 123;
-  const iconSize = size === 'sm' ? 57 : 69;
-  const iconPadding = size === 'sm' ? '18px 12px 12px' : '24px 15px 18px';
+  const cardWidth = size === 'sm' ? 140 : 160;
+  const iconSize = size === 'sm' ? 76 : 88;
+  const iconPadding = size === 'sm' ? '22px 14px 14px' : '28px 18px 20px';
 
   const cardInner = (
     <div
@@ -64,7 +64,7 @@ export function ActionCard({
       >
         <div
           style={{
-            fontSize: size === 'sm' ? 13 : 15,
+            fontSize: size === 'sm' ? 15 : 17,
             fontWeight: 800,
             color: '#f0f0f0',
             letterSpacing: '0.3px',
@@ -76,7 +76,7 @@ export function ActionCard({
         {cost !== undefined && (
           <div
             style={{
-              fontSize: size === 'sm' ? 11 : 12,
+              fontSize: size === 'sm' ? 13 : 14,
               fontWeight: 700,
               color,
               marginTop: 3,
