@@ -121,19 +121,22 @@ export async function verifyReferrerExists(phone: string): Promise<boolean> {
   return data === true || (Array.isArray(data) && data[0] === true);
 }
 
-// 기존 회원 패스워드 검증 (RLS 적용 시 user_info 직접 조회 불가)
+// 기존 회원 패스워드 검증 (서버 API에서 bcrypt 처리)
 export async function verifyUserPassword(userId: string, password: string): Promise<{ id: string; credits: number } | null> {
-  const { data, error } = await supabase.rpc('verify_user_password', {
-    p_user_id: userId,
-    p_password: password,
-  });
+  try {
+    const res = await fetch('/api/login/verify-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, password }),
+    });
 
-  if (error || !data || !Array.isArray(data) || data.length === 0) {
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    return { id: data.id, credits: data.credits ?? 0 };
+  } catch {
     return null;
   }
-
-  const row = data[0] as { user_id: string; credits: number };
-  return { id: row.user_id, credits: row.credits };
 }
 
 // 유저 크레딧 조회

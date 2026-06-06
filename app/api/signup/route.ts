@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { hashPassword } from '@/lib/password';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,13 +22,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const passwordHash = await hashPassword(password);
+
     const { data, error } = await getSupabaseAdmin()
       .from('user_info')
       .insert({
         name,
         phone: String(phone).replace(/\D/g, ''),
         nickname: nickname || null,
-        password,
+        password: passwordHash,
         privacy_consent: !!privacy_consent,
         privacy_consent_at: privacy_consent ? new Date().toISOString() : null,
         marketing_consent: !!marketing_consent,

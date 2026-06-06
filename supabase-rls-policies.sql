@@ -138,14 +138,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 기존 회원 패스워드 검증 (RLS 우회)
+-- [사용 중단] 패스워드 검증은 /api/login/verify-password (bcrypt)로 이전됨
 CREATE OR REPLACE FUNCTION verify_user_password(p_user_id UUID, p_password VARCHAR)
 RETURNS TABLE (user_id UUID, credits INTEGER) AS $$
 BEGIN
-    RETURN QUERY
-    SELECT u.id, u.credits
-    FROM user_info u
-    WHERE u.id = p_user_id AND u.password = p_password;
+    RETURN;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

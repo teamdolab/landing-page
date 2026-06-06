@@ -106,7 +106,7 @@ function LoginContent() {
     }
   };
 
-  const submitPassword = () => {
+  const submitPassword = async () => {
     if (password.length !== 4) {
       setPasswordError(true);
       setPasswordErrorMessage('패스워드가 틀렸습니다.');
@@ -117,14 +117,29 @@ function LoginContent() {
       setPasswordErrorMessage('패스워드가 틀렸습니다.');
       return;
     }
-    // TODO: 실제 배포 시 bcrypt로 해시 비교. 테스트용 평문 비교
-    if (selectedUser.password === password) {
-      setPasswordError(false);
-      setPasswordErrorMessage('');
-      showScreen('nfc');
-    } else {
+
+    setLoading(true);
+    setPasswordError(false);
+    setPasswordErrorMessage('');
+
+    try {
+      const res = await fetch('/api/login/verify-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: selectedUser.id, password }),
+      });
+
+      if (res.ok) {
+        showScreen('nfc');
+      } else {
+        setPasswordError(true);
+        setPasswordErrorMessage('패스워드가 틀렸습니다.');
+      }
+    } catch {
       setPasswordError(true);
-      setPasswordErrorMessage('패스워드가 틀렸습니다.');
+      setPasswordErrorMessage('패스워드 확인 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -419,10 +434,11 @@ function LoginContent() {
                 <button
                   type="button"
                   onClick={submitPassword}
-                  className="mt-6 py-3 px-12 bg-[#222] text-white text-lg cursor-pointer hover:bg-[#FF4F00] transition-colors"
+                  disabled={loading}
+                  className="mt-6 py-3 px-12 bg-[#222] text-white text-lg cursor-pointer hover:bg-[#FF4F00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
                 >
-                  ENTER
+                  {loading ? '...' : 'ENTER'}
                 </button>
               </div>
               {passwordErrorMessage && (
