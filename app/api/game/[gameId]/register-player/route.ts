@@ -90,7 +90,7 @@ export async function POST(
       );
     }
 
-    // 3. 해당 슬롯이 이미 사용 중인지 확인 (active만)
+    // 3. 해당 슬롯이 이미 active인 경우 → 재등록 처리 (이전 행 completed 전환)
     const { data: existing } = await supabase
       .from('game_participants')
       .select('id')
@@ -100,13 +100,21 @@ export async function POST(
       .single();
 
     if (existing) {
-      return NextResponse.json(
-        { error: '이 플레이어 카드는 이미 등록되었습니다.' },
-        { status: 409 }
-      );
+      console.log(`재등록 처리: player_number=${playerNumber}, 이전 active 행 completed 전환`);
+      const { error: reregisterError } = await supabase
+        .from('game_participants')
+        .update({ status: 'completed' })
+        .eq('game_id', gameId)
+        .eq('player_number', playerNumber)
+        .eq('status', 'active');
+
+      if (reregisterError) {
+        console.error('register-player: 재등록 전환 실패', reregisterError);
+        return NextResponse.json({ error: '재등록 처리 중 오류가 발생했습니다.' }, { status: 500 });
+      }
     }
 
-    // 4. 해당 유저가 이미 이 게임에 등록했는지 확인 (active만)
+    // 4. 해당 유저가 이미 이 게임에 active로 등록된 경우 → 재등록 처리
     const { data: userExisting } = await supabase
       .from('game_participants')
       .select('id')
@@ -116,10 +124,18 @@ export async function POST(
       .single();
 
     if (userExisting) {
-      return NextResponse.json(
-        { error: '이미 이 게임에 등록되어 있습니다.' },
-        { status: 409 }
-      );
+      console.log(`재등록 처리: user_id=${userId.slice(0, 8)}..., 이전 active 행 completed 전환`);
+      const { error: userReregisterError } = await supabase
+        .from('game_participants')
+        .update({ status: 'completed' })
+        .eq('game_id', gameId)
+        .eq('user_id', userId)
+        .eq('status', 'active');
+
+      if (userReregisterError) {
+        console.error('register-player: 유저 재등록 전환 실패', userReregisterError);
+        return NextResponse.json({ error: '재등록 처리 중 오류가 발생했습니다.' }, { status: 500 });
+      }
     }
 
     // 5. 등록 (status='active'로 이력 트래킹용)

@@ -22,6 +22,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '게임 없음' }, { status: 404 });
     }
 
+    // 1. game_participants active 행 정리 (이력 보존, status만 변경)
+    await supabase
+      .from('game_participants')
+      .update({ status: 'completed' })
+      .eq('game_id', game.game_id)
+      .eq('status', 'active');
+
+    // 2. game_0b_event → game_0b 순서로 삭제 (기존 로직 유지)
     await supabase
       .from('game_0b_event')
       .delete()

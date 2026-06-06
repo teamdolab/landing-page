@@ -16,6 +16,19 @@ export async function POST(
   }
 
   try {
+    // 1. game_participants active 행 정리 (이력 보존, status만 변경)
+    const { error: participantsError } = await supabase
+      .from('game_participants')
+      .update({ status: 'completed' })
+      .eq('game_id', gameId)
+      .eq('status', 'active');
+
+    if (participantsError) {
+      console.error('game_participants 정리 에러:', participantsError);
+      return NextResponse.json({ error: participantsError.message }, { status: 500 });
+    }
+
+    // 2. game_0a 삭제
     const { error } = await supabase
       .from('game_0a')
       .delete()
