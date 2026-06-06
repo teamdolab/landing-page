@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { clampShipHull, playerCoreKey, type Game0bRow } from '@/lib/game-0b-types';
+import { clampShipHull, playerCoreKey, playerRoleKey, type Game0bRow } from '@/lib/game-0b-types';
 import { resolveNightActions, type NightEvent } from '@/lib/game-0b-resolve';
 import {
   preliminaryGaugeLine,
   validateLifeboatSeats,
   finalOutcomeInfoText,
 } from '@/lib/game-0b-result';
+import { insertSessionResult, playerNumbersToUserIds } from '@/lib/session-result';
 
 export async function POST(req: NextRequest) {
   try {
@@ -130,6 +131,37 @@ export async function POST(req: NextRequest) {
       }
       update.result_locked = true;
       update.info_text = preliminaryGaugeLine(game as Game0bRow);
+
+      // ── hull <= 50 → 외계인 승 → session_results INSERT (비차단) ──
+      if (clampShipHull(game.ship_hull as number) <= 50) {
+        (async () => {
+          try {
+            const hull = clampShipHull(game.ship_hull as number);
+            const pc = game.player_count as number;
+            const alienNums: number[] = [];
+            const gameMap = game as Record<string, unknown>;
+            for (let i = 1; i <= pc; i++) {
+              if (gameMap[playerRoleKey(i)] === '외계인') alienNums.push(i);
+            }
+            const winnerUserIds = await playerNumbersToUserIds(game.game_id as string, alienNums);
+            await insertSessionResult({
+              sessionId: (game.session_id as string) ?? null,
+              gameType: 'game_0b',
+              startedAt: (game.created_at as string) ?? null,
+              endedAt: new Date().toISOString(),
+              playerCount: pc,
+              winnerUserIds,
+              resultSummary: {
+                ship_hull_final: hull,
+                winning_faction: '외계인',
+                alien_player_numbers: alienNums,
+              },
+            });
+          } catch (e) {
+            console.error('advance-phase reveal_gauge: session_results 저장 실패 (무시)', e);
+          }
+        })();
+      }
     } else if (action === 'confirm_lifeboat') {
       const seats = body?.seats as unknown;
       if (!Array.isArray(seats) || !seats.every((x) => typeof x === 'number')) {
@@ -159,6 +191,31 @@ export async function POST(req: NextRequest) {
         update[`lifeboat_seat_${i + 1}`] = seatNums[i] ?? null;
       }
       update.info_text = finalOutcomeInfoText(row, seatNums);
+
+      // ── 탑승 확정 → session_results INSERT (비차단) ──
+      (async () => {
+        try {
+          const hull = clampShipHull(game.ship_hull as number);
+          const winningFaction = game.revolutionary_player_number != null ? '반군' : '생존자';
+          const winnerUserIds = await playerNumbersToUserIds(game.game_id as string, seatNums);
+          await insertSessionResult({
+            sessionId: (game.session_id as string) ?? null,
+            gameType: 'game_0b',
+            startedAt: (game.created_at as string) ?? null,
+            endedAt: new Date().toISOString(),
+            playerCount: game.player_count as number,
+            winnerUserIds,
+            resultSummary: {
+              ship_hull_final: hull,
+              winning_faction: winningFaction,
+              lifeboat_seats: seatNums,
+              lifeboat_count: seatNums.length,
+            },
+          });
+        } catch (e) {
+          console.error('advance-phase confirm_lifeboat: session_results 저장 실패 (무시)', e);
+        }
+      })();
     } else if (action === 'finish') {
       update.status = '완료';
     } else {

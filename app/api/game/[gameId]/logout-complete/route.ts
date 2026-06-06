@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getCreditReward } from '@/lib/credit-reward';
+import { insertSessionResult, playerNumbersToUserIds } from '@/lib/session-result';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -56,7 +57,7 @@ export async function POST(
 
     const { data: game } = await supabase
       .from('game_0a')
-      .select('player_count, players, final_winners')
+      .select('session_id, player_count, players, final_winners, created_at')
       .eq('game_id', gameId)
       .single();
     if (!game) return NextResponse.json({ error: '게임 없음' }, { status: 404 });
@@ -86,6 +87,40 @@ export async function POST(
       .eq('game_id', gameId)
       .eq('player_number', card.player_number)
       .eq('status', 'active');
+
+    // ── 마지막 플레이어 체크아웃 시 session_results INSERT (비차단) ──
+    try {
+      const { count: remainingActive } = await supabase
+        .from('game_participants')
+        .select('*', { count: 'exact', head: true })
+        .eq('game_id', gameId)
+        .eq('status', 'active');
+
+      if (remainingActive === 0) {
+        const endedAt = new Date().toISOString();
+        const winnerNums: number[] = finalWinners ?? (ranked.length > 0 ? [ranked[0].player_number] : []);
+        const winnerUserIds = await playerNumbersToUserIds(gameId, winnerNums);
+        const topScore = ranked[0]?.total_score ?? 0;
+
+        await insertSessionResult({
+          sessionId: (game.session_id as string) ?? null,
+          gameType: 'game_0a',
+          startedAt: (game.created_at as string) ?? null,
+          endedAt,
+          playerCount,
+          winnerUserIds,
+          resultSummary: {
+            top_score: topScore,
+            final_ranking: ranked.map((p) => ({
+              player_number: p.player_number,
+              total_score: p.total_score,
+            })),
+          },
+        });
+      }
+    } catch (srErr) {
+      console.error('logout-complete: session_results 저장 실패 (무시)', srErr);
+    }
 
     return NextResponse.json({
       settlement: {
