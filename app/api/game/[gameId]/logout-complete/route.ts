@@ -73,27 +73,62 @@ export async function POST(
     const creditsBefore = (user.credits as number) ?? 0;
     const creditsAfter = creditsBefore + creditGain;
 
+    // ── 피드백 저장 (비차단 — 실패해도 정산 흐름 계속) ──
+    let feedbackSaved = false;
+    const hasFeedback =
+      (typeof q2Score === 'number' && q2Score >= 0 && q2Score <= 10) ||
+      (typeof q3Score === 'number' && q3Score >= 0 && q3Score <= 10);
+
+    if (hasFeedback) {
+      try {
+        const feedbackPayload: Record<string, unknown> = {};
+        if (typeof q2Score === 'number' && q2Score >= 0 && q2Score <= 10) {
+          feedbackPayload.feedback_satisfaction = q2Score;
+        }
+        if (typeof q3Score === 'number' && q3Score >= 0 && q3Score <= 10) {
+          feedbackPayload.feedback_recommendation = q3Score;
+        }
+        const { error: feedbackError } = await supabase
+          .from('game_participants')
+          .update(feedbackPayload)
+          .eq('game_id', gameId)
+          .eq('player_number', card.player_number)
+          .eq('status', 'active');
+
+        if (feedbackError) {
+          console.error('logout-complete: 피드백 저장 실패', feedbackError);
+        } else {
+          feedbackSaved = true;
+        }
+      } catch (feedbackErr) {
+        console.error('logout-complete: 피드백 저장 예외', feedbackErr);
+      }
+    }
+
+    // ── 정산: 크레딧 업데이트 ──
     await supabase
       .from('user_info')
       .update({ credits: creditsAfter })
       .eq('id', participant.user_id);
 
-    // status='completed'로 업데이트 + 간략 피드백 저장 (플레이 스타일 분석용 이력 보존)
-    const updatePayload: Record<string, unknown> = { status: 'completed' };
-    if (typeof q2Score === 'number' && q2Score >= 0 && q2Score <= 10) {
-      updatePayload.feedback_satisfaction = q2Score;
-    }
-    if (typeof q3Score === 'number' && q3Score >= 0 && q3Score <= 10) {
-      updatePayload.feedback_recommendation = q3Score;
-    }
+    // ── 정산: status='completed' 전환 ──
     await supabase
       .from('game_participants')
-      .update(updatePayload)
+      .update({ status: 'completed' })
       .eq('game_id', gameId)
       .eq('player_number', card.player_number)
       .eq('status', 'active');
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      settlement: {
+        success: true,
+        creditGain,
+        creditsAfter,
+      },
+      feedback: {
+        saved: hasFeedback ? feedbackSaved : null,
+      },
+    });
   } catch (err) {
     console.error('logout-complete 오류:', err);
     return NextResponse.json({ error: '서버 오류' }, { status: 500 });
