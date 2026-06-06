@@ -14,7 +14,7 @@ export async function POST(
   try {
     const { gameId } = await params;
     const body = await req.json();
-    const { nfc_id: nfcId, q2_score: q2Score, q3_score: q3Score } = body;
+    const { nfc_id: nfcId } = body;
 
     if (!gameId || !nfcId) {
       return NextResponse.json(
@@ -73,38 +73,6 @@ export async function POST(
     const creditsBefore = (user.credits as number) ?? 0;
     const creditsAfter = creditsBefore + creditGain;
 
-    // ── 피드백 저장 (비차단 — 실패해도 정산 흐름 계속) ──
-    let feedbackSaved = false;
-    const hasFeedback =
-      (typeof q2Score === 'number' && q2Score >= 0 && q2Score <= 10) ||
-      (typeof q3Score === 'number' && q3Score >= 0 && q3Score <= 10);
-
-    if (hasFeedback) {
-      try {
-        const feedbackPayload: Record<string, unknown> = {};
-        if (typeof q2Score === 'number' && q2Score >= 0 && q2Score <= 10) {
-          feedbackPayload.feedback_satisfaction = q2Score;
-        }
-        if (typeof q3Score === 'number' && q3Score >= 0 && q3Score <= 10) {
-          feedbackPayload.feedback_recommendation = q3Score;
-        }
-        const { error: feedbackError } = await supabase
-          .from('game_participants')
-          .update(feedbackPayload)
-          .eq('game_id', gameId)
-          .eq('player_number', card.player_number)
-          .eq('status', 'active');
-
-        if (feedbackError) {
-          console.error('logout-complete: 피드백 저장 실패', feedbackError);
-        } else {
-          feedbackSaved = true;
-        }
-      } catch (feedbackErr) {
-        console.error('logout-complete: 피드백 저장 예외', feedbackErr);
-      }
-    }
-
     // ── 정산: 크레딧 업데이트 ──
     await supabase
       .from('user_info')
@@ -124,9 +92,6 @@ export async function POST(
         success: true,
         creditGain,
         creditsAfter,
-      },
-      feedback: {
-        saved: hasFeedback ? feedbackSaved : null,
       },
     });
   } catch (err) {
