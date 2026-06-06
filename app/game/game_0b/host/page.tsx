@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type Dispatch, type SetStateAction } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import GameLayout from '../components/GameLayout';
 import { clampShipHull, getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
 import { countLifeboatSlots } from '@/lib/game-0b-result';
@@ -10,6 +11,42 @@ export default function Game0bHostPage() {
     <GameLayout role="host">
       {(game: Game0bRow, reload: () => void) => <HostBottom game={game} reload={reload} />}
     </GameLayout>
+  );
+}
+
+function QrPanel({ sessionId }: { sessionId: string }) {
+  const [show, setShow] = useState(false);
+
+  const todayMidnightUnix = (() => {
+    const d = new Date();
+    d.setHours(23, 59, 59, 0);
+    return Math.floor(d.getTime() / 1000);
+  })();
+
+  const qrUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/feedback/deep?session=${encodeURIComponent(sessionId)}&expires=${todayMidnightUnix}`;
+
+  return (
+    <div className="bottom-panel">
+      <div className="bottom-panel-label">딥 피드백 QR</div>
+      <div className="bottom-panel-body" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+        <button
+          type="button"
+          className="host-confirm-btn"
+          style={{ fontSize: 13, padding: '6px 14px' }}
+          onClick={() => setShow((v) => !v)}
+        >
+          {show ? 'QR 숨기기' : 'QR 표시'}
+        </button>
+        {show && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginTop: 4 }}>
+            <QRCodeSVG value={qrUrl} size={140} bgColor="#ffffff" fgColor="#1a0a3c" />
+            <span style={{ fontSize: 11, color: '#888', wordBreak: 'break-all', maxWidth: 180, textAlign: 'center' }}>
+              오늘 자정 만료
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -187,6 +224,8 @@ function HostBottom({ game, reload }: { game: Game0bRow; reload: () => void }) {
             </span>
           </div>
         </div>
+
+        <QrPanel sessionId={game.session_id ?? ''} />
       </>
     );
   }
@@ -270,6 +309,8 @@ function HostBottom({ game, reload }: { game: Game0bRow; reload: () => void }) {
           </div>
         </div>
       </div>
+
+      <QrPanel sessionId={game.session_id ?? ''} />
     </>
   );
 }

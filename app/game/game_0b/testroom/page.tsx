@@ -16,6 +16,19 @@ export default function Game0bTestroomPage() {
   );
 }
 
+// 한국어 IME 입력 시 hex 문자에 해당하는 키 매핑
+const KR_TO_HEX: Record<string, string> = {
+  'ㅊ': 'c', 'ㅁ': 'a', 'ㅇ': 'd', 'ㄷ': 'e', 'ㄹ': 'f', 'ㅠ': 'b',
+};
+
+function cleanNfcInput(raw: string): string {
+  let s = String(raw);
+  for (const [k, v] of Object.entries(KR_TO_HEX)) {
+    s = s.replaceAll(k, v);
+  }
+  return s.replace(/[^a-fA-F0-9]/g, '').toLowerCase();
+}
+
 function keyCodeToHexChar(e: React.KeyboardEvent): string | null {
   const code = e.code;
   if (code.startsWith('Digit')) return code.replace('Digit', '');
@@ -41,7 +54,7 @@ function NfcGate({ game, onIdentified }: { game: Game0bRow; onIdentified: (num: 
 
   const processNfc = useCallback(
     async (uid: string) => {
-      const trimmed = uid.replace(/[^a-fA-F0-9]/g, '').trim();
+      const trimmed = cleanNfcInput(uid);
       if (!trimmed || trimmed.length < 7) return;
       if (submittingRef.current) return;
       submittingRef.current = true;
@@ -117,7 +130,6 @@ function NfcGate({ game, onIdentified }: { game: Game0bRow; onIdentified: (num: 
                 }
                 return;
               }
-              if (e.nativeEvent.isComposing || e.keyCode === 229) return;
               const char = keyCodeToHexChar(e);
               if (char !== null) {
                 e.preventDefault();
@@ -129,7 +141,7 @@ function NfcGate({ game, onIdentified }: { game: Game0bRow; onIdentified: (num: 
             }}
             onInput={(e) => {
               const val = (e.target as HTMLInputElement).value;
-              const hex = val.replace(/[^a-fA-F0-9]/g, '');
+              const hex = cleanNfcInput(val);
               if (hex.length >= 7) {
                 scheduleAutoSubmit(hex);
               }

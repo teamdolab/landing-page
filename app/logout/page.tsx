@@ -18,17 +18,18 @@ type LogoutData = {
   creditGain: number;
 };
 
+type ReturnIntent = 'yes' | 'maybe' | 'no';
+
 function LogoutContent() {
   const searchParams = useSearchParams();
   const gameId = searchParams.get('gameId') ?? '';
+  const sessionId = searchParams.get('sessionId') ?? '';
 
   const [screen, setScreen] = useState<Screen>('nfc');
   const [nfcError, setNfcError] = useState('');
   const [logoutData, setLogoutData] = useState<LogoutData | null>(null);
-  const [q2Score, setQ2Score] = useState(5);
-  const [q3Score, setQ3Score] = useState(5);
-  const [q2Touched, setQ2Touched] = useState(false);
-  const [q3Touched, setQ3Touched] = useState(false);
+  const [nps, setNps] = useState(7);
+  const [returnIntent, setReturnIntent] = useState<ReturnIntent | null>(null);
   const [showTouchText, setShowTouchText] = useState(false);
   const [lineDrawn, setLineDrawn] = useState(false);
   const [tableOpen, setTableOpen] = useState(false);
@@ -101,40 +102,51 @@ function LogoutContent() {
     showScreen('feedback');
   }, [showScreen]);
 
-  const finishFeedback = useCallback(async () => {
+  // 퀵 피드백 제출 (비차단) + logout-complete 정산
+  const finishFeedback = useCallback(async (skipFeedback = false) => {
+    setShowTouchText(false);
+
+    // 정산: logout-complete
     if (gameId && lastNfcId) {
       try {
         await fetch(`/api/game/${encodeURIComponent(gameId)}/logout-complete`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nfc_id: lastNfcId,
-            q2_score: q2Score,
-            q3_score: q3Score,
-          }),
+          body: JSON.stringify({ nfc_id: lastNfcId }),
         });
       } catch {
         // 무시
       }
     }
-    setShowTouchText(false);
+
+    // 퀵 피드백 저장 (비차단, 실패해도 무시)
+    if (!skipFeedback && gameId) {
+      fetch('/api/feedback/quick', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          game_id: gameId,
+          session_id: sessionId || undefined,
+          nfc_id: lastNfcId || undefined,
+          nps,
+          return_intent: returnIntent,
+        }),
+      }).catch(() => {});
+    }
+
     showScreen('final');
-  }, [gameId, lastNfcId, q2Score, q3Score, showScreen]);
+  }, [gameId, lastNfcId, sessionId, nps, returnIntent, showScreen]);
 
   const resetToStart = useCallback(() => {
     setLogoutData(null);
     setLastNfcId('');
-    setQ2Score(5);
-    setQ3Score(5);
-    setQ2Touched(false);
-    setQ3Touched(false);
+    setNps(7);
+    setReturnIntent(null);
     setShowTouchText(false);
     setLineDrawn(false);
     setTableOpen(false);
     showScreen('nfc');
   }, [showScreen]);
-
-  const canSubmitFeedback = q2Touched && q3Touched;
 
   const keyCodeToHexChar = (e: React.KeyboardEvent): string | null => {
     const code = e.code;
@@ -319,78 +331,89 @@ function LogoutContent() {
               >
                 CONTINUE &gt;&gt;
               </p>
+              <p className="mt-2 text-right text-sm text-[#999]">
+                피드백을 남기면 다음 시즌 운영에 반영됩니다
+              </p>
             </div>
           </motion.div>
         )}
 
-        {/* ========== FEEDBACK ========== */}
+        {/* ========== FEEDBACK (퀵 피드백: NPS + 재방문 의향) ========== */}
         {screen === 'feedback' && logoutData && (
           <motion.div
             key="feedback"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 flex flex-col items-center z-10 overflow-y-auto py-16 px-6"
+            className="fixed inset-0 flex flex-col items-center justify-center z-10 px-6"
           >
-            <div className="w-full max-w-[800px]">
-              <div className="mb-12">
-                <div className="text-2xl font-extrabold mb-5 border-l-4 border-[#FF4F00] pl-4">
-                  오늘 게임({logoutData.gameName})의 만족도는 어떠셨나요?
-                </div>
-                <div className="bg-white p-8 border border-gray-200 flex flex-col gap-2">
-                  <input
-                    type="range"
-                    min={0}
-                    max={10}
-                    value={q2Score}
-                    onChange={(e) => {
-                      setQ2Score(Number(e.target.value));
-                      setQ2Touched(true);
-                    }}
-                    className="w-full h-3 bg-gray-200 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#FF4F00] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(255,79,0,0.5)]"
-                  />
-                  <div className="flex justify-between font-semibold text-[#666] mt-1">
-                    <span>0 (불만족)</span>
-                    <span className="text-[#FF4F00] text-2xl font-extrabold">{q2Score}</span>
-                    <span>10 (매우 만족)</span>
-                  </div>
+            <div className="w-full max-w-[560px]">
+              <div className="text-2xl font-extrabold mb-1 border-l-4 border-[#FF4F00] pl-4">
+                빠른 피드백
+              </div>
+              <p className="text-sm text-[#888] pl-4 mb-8">10초면 됩니다. 건너뛰기도 가능합니다.</p>
+
+              {/* NPS 슬라이더 */}
+              <div className="bg-white border border-gray-200 p-6 mb-5">
+                <p className="font-bold text-[#222] mb-4 text-base">
+                  친구에게 DO:LAB NEON을 추천할 가능성은? (0–10)
+                </p>
+                <input
+                  type="range"
+                  min={0}
+                  max={10}
+                  value={nps}
+                  onChange={(e) => setNps(Number(e.target.value))}
+                  className="w-full h-3 bg-gray-200 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#FF4F00] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(255,79,0,0.5)]"
+                />
+                <div className="flex justify-between text-sm text-[#666] mt-2">
+                  <span>0 (전혀 없음)</span>
+                  <span className="text-[#FF4F00] text-xl font-extrabold">{nps}</span>
+                  <span>10 (강력 추천)</span>
                 </div>
               </div>
 
-              <div className="mb-12">
-                <div className="text-2xl font-extrabold mb-5 border-l-4 border-[#FF4F00] pl-4">
-                  지인들에게 DO:LAB NEON PROJECT를 추천하시겠습니까?
-                </div>
-                <div className="bg-white p-8 border border-gray-200 flex flex-col gap-2">
-                  <input
-                    type="range"
-                    min={0}
-                    max={10}
-                    value={q3Score}
-                    onChange={(e) => {
-                      setQ3Score(Number(e.target.value));
-                      setQ3Touched(true);
-                    }}
-                    className="w-full h-3 bg-gray-200 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#FF4F00] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(255,79,0,0.5)]"
-                  />
-                  <div className="flex justify-between font-semibold text-[#666] mt-1">
-                    <span>0 (비추천)</span>
-                    <span className="text-[#FF4F00] text-2xl font-extrabold">{q3Score}</span>
-                    <span>10 (강력 추천)</span>
-                  </div>
+              {/* 재방문 의향 */}
+              <div className="bg-white border border-gray-200 p-6 mb-8">
+                <p className="font-bold text-[#222] mb-4 text-base">다음 시즌에도 올 의향이 있나요?</p>
+                <div className="flex gap-3">
+                  {([
+                    { value: 'yes', label: '올게요' },
+                    { value: 'maybe', label: '아마도' },
+                    { value: 'no', label: '글쎄요' },
+                  ] as { value: ReturnIntent; label: string }[]).map(({ value, label }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setReturnIntent(value)}
+                      className={`flex-1 py-3 text-base font-bold border-2 transition-all cursor-pointer ${
+                        returnIntent === value
+                          ? 'bg-[#FF4F00] text-white border-[#FF4F00]'
+                          : 'bg-white text-[#444] border-gray-300 hover:border-[#FF4F00] hover:text-[#FF4F00]'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={finishFeedback}
-                disabled={!canSubmitFeedback}
-                className={`w-full py-6 text-3xl font-extrabold border-none transition-all ${
-                  canSubmitFeedback ? 'bg-[#FF4F00] text-white cursor-pointer' : 'bg-gray-300 text-white cursor-not-allowed'
-                }`}
-              >
-                테스트 종료
-              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => finishFeedback(true)}
+                  className="flex-[1] py-4 text-base font-semibold border border-gray-300 text-[#888] bg-white cursor-pointer hover:bg-gray-50"
+                >
+                  건너뛰기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => finishFeedback(false)}
+                  className="flex-[3] py-4 text-xl font-extrabold bg-[#FF4F00] text-white border-none cursor-pointer hover:bg-[#e64700]"
+                >
+                  제출하고 종료
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
