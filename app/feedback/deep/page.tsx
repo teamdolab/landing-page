@@ -88,27 +88,29 @@ function DeepFeedbackContent() {
   // 신원 (선택)
   const [identifier, setIdentifier] = useState('');
 
-  // 문항
-  const [qFun, setQFun] = useState(2);           // a. 게임 재미 1-5 (index 0-4)
-  const [qDiff, setQDiff] = useState(2);         // b. 난이도 1-5
-  const [qMoment, setQMoment] = useState('');    // c. 기억에 남는 순간
-  const [qRegret, setQRegret] = useState('');    // d. 아쉬웠던 점
-  const [qStranger, setQStranger] = useState(2); // e. 낯선 사람과의 경험
-  const [qDiscovery, setQDiscovery] = useState('');     // f. 알게 된 경로
+  // 문항 — null = 미선택
+  const [qFun, setQFun] = useState<number | null>(null);     // a. 게임 재미 (필수)
+  const [qDiff, setQDiff] = useState<number | null>(null);   // b. 난이도 (필수)
+  const [qMoment, setQMoment] = useState('');                // c. 기억에 남는 순간 (선택)
+  const [qRegret, setQRegret] = useState('');                // d. 아쉬웠던 점 (선택)
+  const [qStranger, setQStranger] = useState<number | null>(null); // e. 낯선 사람 경험 (필수)
+  const [qDiscovery, setQDiscovery] = useState('');          // f. 알게 된 경로 (필수)
   const [qDiscoveryOther, setQDiscoveryOther] = useState('');
-  const [qPrice, setQPrice] = useState('');      // g. 적정 가격
-  const [qFriend, setQFriend] = useState('');    // h. 친구 데려올 의향
+  const [qPrice, setQPrice] = useState('');                  // g. 적정 가격 (선택)
+  const [qFriend, setQFriend] = useState('');                // h. 친구 데려올 의향 (선택)
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [creditsGranted, setCreditsGranted] = useState(false);
 
+  const canSubmit = qFun !== null && qDiff !== null && qStranger !== null && qDiscovery !== '';
+
   const buildFeedbackData = () => ({
-    fun_score: qFun + 1,
-    difficulty: qDiff + 1,
+    fun_score: qFun !== null ? qFun + 1 : null,
+    difficulty: qDiff !== null ? qDiff + 1 : null,
     memorable_moment: qMoment.trim() || null,
     regret: qRegret.trim() || null,
-    stranger_experience: qStranger + 1,
+    stranger_experience: qStranger !== null ? qStranger + 1 : null,
     discovery: qDiscovery || null,
     discovery_other: qDiscovery === 'other' ? qDiscoveryOther.trim() || null : null,
     price_preference: qPrice || null,
@@ -214,23 +216,49 @@ function DeepFeedbackContent() {
                 )}
 
                 {/* a. 게임 재미 */}
-                <QuestionBlock title="1. 오늘 게임은 얼마나 재미있었나요?">
-                  <input type="range" min={0} max={4} value={qFun} onChange={(e) => setQFun(Number(e.target.value))} className={SLIDER_CLASS} />
-                  <div className="flex justify-between text-sm text-[#666] mt-2">
-                    <span>매우 재미없음</span>
-                    <span className="text-[#FF4F00] text-xl font-extrabold">{FUN_LABELS[qFun]}</span>
-                    <span>매우 재미있음</span>
-                  </div>
+                <QuestionBlock title="1. 오늘 게임은 얼마나 재미있었나요? *">
+                  {qFun === null ? (
+                    <div className="flex gap-2 flex-wrap">
+                      {FUN_LABELS.map((label, i) => (
+                        <button key={i} type="button" onClick={() => setQFun(i)}
+                          className="flex-1 min-w-[80px] py-2 text-sm font-semibold border border-gray-300 bg-white text-[#444] cursor-pointer hover:border-[#FF4F00] hover:text-[#FF4F00]">
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      <input type="range" min={0} max={4} value={qFun} onChange={(e) => setQFun(Number(e.target.value))} className={SLIDER_CLASS} />
+                      <div className="flex justify-between text-sm text-[#666] mt-2">
+                        <span>매우 재미없음</span>
+                        <span className="text-[#FF4F00] text-xl font-extrabold">{FUN_LABELS[qFun]}</span>
+                        <span>매우 재미있음</span>
+                      </div>
+                    </>
+                  )}
                 </QuestionBlock>
 
                 {/* b. 난이도 */}
-                <QuestionBlock title="2. 오늘 게임의 난이도는 어땠나요?">
-                  <input type="range" min={0} max={4} value={qDiff} onChange={(e) => setQDiff(Number(e.target.value))} className={SLIDER_CLASS} />
-                  <div className="flex justify-between text-sm text-[#666] mt-2">
-                    <span>너무 쉬움</span>
-                    <span className="text-[#FF4F00] text-xl font-extrabold">{DIFF_LABELS[qDiff]}</span>
-                    <span>너무 어려움</span>
-                  </div>
+                <QuestionBlock title="2. 오늘 게임의 난이도는 어땠나요? *">
+                  {qDiff === null ? (
+                    <div className="flex gap-2 flex-wrap">
+                      {DIFF_LABELS.map((label, i) => (
+                        <button key={i} type="button" onClick={() => setQDiff(i)}
+                          className="flex-1 min-w-[80px] py-2 text-sm font-semibold border border-gray-300 bg-white text-[#444] cursor-pointer hover:border-[#FF4F00] hover:text-[#FF4F00]">
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      <input type="range" min={0} max={4} value={qDiff} onChange={(e) => setQDiff(Number(e.target.value))} className={SLIDER_CLASS} />
+                      <div className="flex justify-between text-sm text-[#666] mt-2">
+                        <span>너무 쉬움</span>
+                        <span className="text-[#FF4F00] text-xl font-extrabold">{DIFF_LABELS[qDiff]}</span>
+                        <span>너무 어려움</span>
+                      </div>
+                    </>
+                  )}
                 </QuestionBlock>
 
                 {/* c. 기억에 남는 순간 */}
@@ -260,17 +288,30 @@ function DeepFeedbackContent() {
                 </QuestionBlock>
 
                 {/* e. 낯선 사람 경험 */}
-                <QuestionBlock title="5. 낯선 사람들과 함께한 경험은 어땠나요?">
-                  <input type="range" min={0} max={4} value={qStranger} onChange={(e) => setQStranger(Number(e.target.value))} className={SLIDER_CLASS} />
-                  <div className="flex justify-between text-sm text-[#666] mt-2">
-                    <span>매우 불편</span>
-                    <span className="text-[#FF4F00] text-xl font-extrabold">{STRANGER_LABELS[qStranger]}</span>
-                    <span>매우 좋았음</span>
-                  </div>
+                <QuestionBlock title="5. 낯선 사람들과 함께한 경험은 어땠나요? *">
+                  {qStranger === null ? (
+                    <div className="flex gap-2 flex-wrap">
+                      {STRANGER_LABELS.map((label, i) => (
+                        <button key={i} type="button" onClick={() => setQStranger(i)}
+                          className="flex-1 min-w-[80px] py-2 text-sm font-semibold border border-gray-300 bg-white text-[#444] cursor-pointer hover:border-[#FF4F00] hover:text-[#FF4F00]">
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      <input type="range" min={0} max={4} value={qStranger} onChange={(e) => setQStranger(Number(e.target.value))} className={SLIDER_CLASS} />
+                      <div className="flex justify-between text-sm text-[#666] mt-2">
+                        <span>매우 불편</span>
+                        <span className="text-[#FF4F00] text-xl font-extrabold">{STRANGER_LABELS[qStranger]}</span>
+                        <span>매우 좋았음</span>
+                      </div>
+                    </>
+                  )}
                 </QuestionBlock>
 
                 {/* f. 알게 된 경로 */}
-                <QuestionBlock title="6. DO:LAB을 어떻게 알게 되셨나요?">
+                <QuestionBlock title="6. DO:LAB을 어떻게 알게 되셨나요? *">
                   <div className="flex flex-wrap gap-3">
                     {DISCOVERY_OPTIONS.map((opt) => (
                       <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
@@ -369,10 +410,10 @@ function DeepFeedbackContent() {
                   <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={submitting}
+                    disabled={submitting || !canSubmit}
                     className="flex-[2] py-5 text-xl font-extrabold bg-[#FF4F00] text-white border-none cursor-pointer hover:bg-[#e64700] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {submitting ? '제출 중...' : '제출하기'}
+                    {submitting ? '제출 중...' : !canSubmit ? '필수 항목을 선택해주세요 (1·2·5·6번)' : '제출하기'}
                   </button>
                 </div>
               </motion.div>
