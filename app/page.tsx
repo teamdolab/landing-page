@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Power, MapPin, Info, MessageCircle } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
+import { gtagEvent } from '@/lib/analytics';
 
 const KAKAO_CHANNEL_URL = 'http://pf.kakao.com/_nVsZX'; // DO:LAB 카카오톡 채널
 import { 
@@ -101,6 +103,13 @@ function isSusongseonGameIntro(key: string): boolean {
 }
 
 export default function Home() {
+  const posthog = usePostHog();
+
+  const track = (name: string, props?: Record<string, unknown>) => {
+    gtagEvent(name, props);
+    posthog?.capture(name, props);
+  };
+
   const [isPowerOn, setIsPowerOn] = useState(false);
   const [sweepDone, setSweepDone] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
@@ -253,9 +262,11 @@ export default function Home() {
 
         // 로그인 성공 - 참가 신청 페이지로
         setUserCredits(user.credits);
+        posthog?.identify(String((user as { id?: unknown }).id ?? userId));
         await loadSessionsForSchedule();
         setShowForm(true);
         setShowSchedule(true);
+        track('payment_view');
       } catch (err) {
         console.error('로그인 실패:', err);
         setError('로그인에 실패했습니다.');
@@ -329,11 +340,13 @@ export default function Home() {
       if (result.id) {
         setUserId(result.id);
         setUserCredits(result.credits ?? 0);
+        posthog?.identify(String(result.id));
       }
 
       await loadSessionsForSchedule();
       setShowForm(true);
       setShowSchedule(true);
+      track('payment_view');
     } catch (err) {
       console.error('가입 중 에러:', err);
       setError('가입 처리 중 오류가 발생했습니다.');
@@ -402,6 +415,7 @@ export default function Home() {
 
       // 신청 완료 화면으로
       setShowComplete(true);
+      track('apply_complete', { session_id: selectedSession });
     } catch (err) {
       console.error('신청 중 에러:', err);
       setError('죄송합니다. 신청에 실패했습니다. 잠시 후 다시 시도해주시거나, DO:LAB 카카오톡 채널로 문의주시기 바랍니다.');
@@ -1162,7 +1176,7 @@ export default function Home() {
               </button>
               <button
                 type="button"
-                onClick={() => setShowForm(true)}
+                onClick={() => { setShowForm(true); track('apply_start'); }}
                 className="inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
               >
                 게임 참가하기
