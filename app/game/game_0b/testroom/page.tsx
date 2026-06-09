@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import GameLayout from '../components/GameLayout';
 import { getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
 import { ACTION_CONFIG } from '@/lib/game-0b-action-config';
@@ -472,12 +473,15 @@ function PlayerActionPanel({
             const cfg = ACTION_CONFIG[a.id];
             if (!cfg) return null;
             return (
+              // 액션 심볼 크기 1단계 축소 (testroom 전용)
+              // ActionCard size: md(기본, cardWidth 160 / iconSize 88) → sm (cardWidth 140 / iconSize 76)
               <ActionCard
                 key={a.id}
                 icon={cfg.icon}
                 label={a.label}
                 color={cfg.color}
                 cost={a.cost}
+                size="sm"
                 disabled={disabled}
                 onClick={() => {
                   setModalAction(a);
@@ -487,17 +491,6 @@ function PlayerActionPanel({
               />
             );
           })}
-          {searchResult && (
-            <div style={{
-              padding: '10px 14px', borderRadius: 8, background: 'rgba(90, 50, 184, 0.15)',
-              border: '1px solid #5a32b8', textAlign: 'center', marginTop: 4,
-            }}>
-              <span style={{ fontSize: 11, color: '#aaa' }}>탐색 결과</span>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#e8b84b', marginTop: 2 }}>
-                {searchResult}
-              </div>
-            </div>
-          )}
           {msg && (
             <span style={{ fontSize: 13, color: '#5a32b8', fontWeight: 600, textAlign: 'center', marginTop: 4 }}>
               {msg}
@@ -516,6 +509,56 @@ function PlayerActionPanel({
           <span className="empty-text">종료 후 다음 플레이어가 입장합니다.</span>
         </div>
       </div>
+
+      {/* 탐색 결과 모달 */}
+      <AnimatePresence>
+        {searchResult && (
+          <motion.div
+            key="search-result-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100,
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              style={{
+                background: '#1e1340', padding: '32px 28px', borderRadius: 12,
+                width: 'min(90vw, 420px)', border: '2px solid #5a32b8',
+                textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+              }}
+            >
+              <h3 style={{ color: '#fff', fontSize: 20, fontWeight: 800, marginBottom: 20, letterSpacing: '0.5px' }}>
+                탐색 결과
+              </h3>
+              <p style={{
+                color: '#e8b84b', fontSize: 26, fontWeight: 800, lineHeight: 1.4,
+                marginBottom: 28, wordBreak: 'keep-all',
+              }}>
+                {searchResult}
+              </p>
+              <button
+                type="button"
+                style={{
+                  width: '100%', padding: '14px 0', borderRadius: 8,
+                  background: '#5a32b8', color: '#fff', border: 'none',
+                  fontWeight: 700, fontSize: 17, cursor: 'pointer',
+                }}
+                onClick={() => setSearchResult(null)}
+              >
+                확인
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 액션 모달 */}
       {modalAction && (

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { clampShipHull, playerCoreKey, playerRoleKey, type Game0bRow } from '@/lib/game-0b-types';
+import { clampShipHull, NATURAL_DECAY, playerCoreKey, playerRoleKey, type Game0bRow } from '@/lib/game-0b-types';
 import { resolveNightActions, type NightEvent } from '@/lib/game-0b-resolve';
 import {
   preliminaryGaugeLine,
@@ -114,7 +114,8 @@ export async function POST(req: NextRequest) {
       update.phase_deadline_at = new Date(Date.now() + pc * 60 * 1000).toISOString();
 
       // 1. 자연 부식 먼저 적용 (낮→밤 전환 시)
-      update.ship_hull = clampShipHull(game.ship_hull as number) - 20;
+      // 인원별 자연부식 (game-0b-types.ts NATURAL_DECAY 참조)
+      update.ship_hull = clampShipHull(game.ship_hull as number) - (NATURAL_DECAY[pc] ?? 20);
 
       // 2. 코어 +1 지급
       for (let i = 1; i <= pc; i++) {
