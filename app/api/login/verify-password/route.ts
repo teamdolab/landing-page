@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { hashPassword, verifyPasswordWithMigration } from '@/lib/password';
+import { verifyPasswordWithMigration } from '@/lib/password';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,19 +29,6 @@ export async function POST(request: NextRequest) {
     const result = await verifyPasswordWithMigration(password, user.password as string | null);
     if (!result.valid) {
       return NextResponse.json({ error: '패스워드가 일치하지 않습니다.' }, { status: 401 });
-    }
-
-    if (result.needsRehash) {
-      const hashed = await hashPassword(password);
-      const { error: updateError } = await supabase
-        .from('user_info')
-        .update({ password: hashed })
-        .eq('id', user.id);
-
-      if (updateError) {
-        console.error('Password rehash failed:', updateError.message);
-        return NextResponse.json({ error: '로그인 처리 중 오류가 발생했습니다.' }, { status: 500 });
-      }
     }
 
     return NextResponse.json({
