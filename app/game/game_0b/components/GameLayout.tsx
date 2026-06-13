@@ -1,11 +1,32 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Moon, Sun } from 'lucide-react';
 import { useGame0b } from '@/lib/use-game-0b';
 import { clampShipHull, type Game0bRow } from '@/lib/game-0b-types';
 import '../../display/styles.css';
 import '../display/susongseon-display.css';
+import '../susongseon-cockpit.css';
+
+/** 콕핏 별 필드: 목업 makeStars(70) 그대로 (결정적 의사난수) */
+function makeStars(n: number) {
+  const stars: { left: string; top: string; size: number; opacity: number }[] = [];
+  let seed = 7;
+  const rnd = () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+  for (let i = 0; i < n; i++) {
+    stars.push({
+      left: `${(rnd() * 100).toFixed(2)}%`,
+      top: `${(rnd() * 62).toFixed(2)}%`,
+      size: rnd() > 0.85 ? 3 : 2,
+      opacity: 0.25 + rnd() * 0.55,
+    });
+  }
+  return stars;
+}
 
 export function phaseLabel(phase: string) {
   if (phase === 'setup') return '대기';
@@ -68,10 +89,12 @@ const PAGE_LABEL: Record<PageRole, string> = {
 
 type Props = {
   role: PageRole;
-  children: (game: Game0bRow, reload: () => void) => ReactNode;
+  /** 콕핏(조종석) 스킨 사용 여부. 송출 화면 전용. day/night 페이즈에서만 적용. */
+  cockpit?: boolean;
+  children: (game: Game0bRow, reload: () => void, timerSeconds: number | null) => ReactNode;
 };
 
-function GameLayoutInner({ role, children }: Props) {
+function GameLayoutInner({ role, cockpit, children }: Props) {
   const searchParams = useSearchParams();
   const param = searchParams.get('session')?.trim() || '';
   const [sessionId, setSessionId] = useState(param);
@@ -80,6 +103,7 @@ function GameLayoutInner({ role, children }: Props) {
 
   const row = game as Game0bRow | null;
   const timerSeconds = useCountdown(row?.phase_deadline_at ?? null);
+  const stars = useMemo(() => makeStars(70), []);
 
   // ── 오디오: 페이즈 전환 감지 (display 화면 전용) ──
   const prevPhaseRef = useRef<string | null>(null);
@@ -181,6 +205,59 @@ function GameLayoutInner({ role, children }: Props) {
   const timerExpired = timerSeconds != null && timerSeconds <= 0;
   const status = shipStatus(gameRow.ship_hull);
 
+  // ── 콕핏(조종석) 스킨: 송출 화면의 낮/밤 페이즈에서만. 그 외(대기·역할확인·결과공개)는 기존 콘솔 유지. ──
+  if (cockpit && (gameRow.phase === 'day' || gameRow.phase === 'night')) {
+    const isNight = gameRow.phase === 'night';
+    const PhaseIcon = isNight ? Moon : Sun;
+    const danger = timerSeconds != null && timerSeconds <= 30;
+    return (
+      <div className="ckpt" style={{ '--game-accent': '#6B46D9' } as CSSProperties}>
+        {/* 별 필드 (장식) */}
+        <div className="stars" aria-hidden>
+          {stars.map((s, i) => (
+            <span
+              key={i}
+              style={{ left: s.left, top: s.top, width: s.size, height: s.size, opacity: s.opacity }}
+            />
+          ))}
+        </div>
+
+        {/* ════ 캐노피: 명판 + HUD ════ */}
+        <section className="canopy">
+          <div className="placard-row">
+            <div className="placard placard-brand mono">DO:LAB<small>NEON PROJECT</small></div>
+            <div className="placard placard-title">수송선게임</div>
+            <div className="placard-round mono">ROUND {String(gameRow.current_round).padStart(2, '0')}</div>
+          </div>
+
+          <div className="hud">
+            <div className="phase">
+              <span className="phase-tag mono">PHASE</span>
+              <span className="phase-name">
+                <PhaseIcon size={64} strokeWidth={1.7} />
+                {isNight ? '밤' : '낮'}
+              </span>
+            </div>
+            <div className="clock">
+              <div className={`clock-value mono ${danger ? 'is-danger' : ''}`}>{formatTimer(timerSeconds)}</div>
+              <div className="clock-tag mono">TIME REMAINING</div>
+            </div>
+          </div>
+        </section>
+
+        {/* ════ 콘솔 데크: 계기판 스크린 3개 (콘텐츠는 페이지가 주입) ════ */}
+        <section className="deck">
+          <div className="deck-trim" aria-hidden>
+            <span className="trim-dot a" /><span className="trim-dot c" /><span className="trim-dot g" />
+            <span className="vent" />
+            <span className="trim-dot g" /><span className="trim-dot c" /><span className="trim-dot a" />
+          </div>
+          <div className="deck-grid">{children(gameRow, reload, timerSeconds)}</div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="game-display-root susongseon-display">
       <div className="scanlines" aria-hidden />
@@ -239,7 +316,7 @@ function GameLayoutInner({ role, children }: Props) {
         </section>
 
         {/* ── 하단: 페이지별 콘텐츠 ── */}
-        <section className="bottom-section">{children(gameRow, reload)}</section>
+        <section className="bottom-section">{children(gameRow, reload, timerSeconds)}</section>
       </main>
     </div>
   );

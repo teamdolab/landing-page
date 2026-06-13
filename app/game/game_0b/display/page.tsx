@@ -10,12 +10,11 @@ import {
   type Game0bRow,
 } from '@/lib/game-0b-types';
 import { ACTION_CONFIG } from '@/lib/game-0b-action-config';
-import { ActionCard } from '../components/ActionCard';
 import { lifeboatSeatsFromRow } from '@/lib/game-0b-result';
 
 export default function Game0bDisplayPage() {
   return (
-    <GameLayout role="display">
+    <GameLayout role="display" cockpit>
       {(game: Game0bRow) => <DisplayBottom game={game} />}
     </GameLayout>
   );
@@ -209,144 +208,79 @@ function DisplayBottom({ game }: { game: Game0bRow }) {
     );
   }
 
+  // ── 콕핏 데크: 계기판 스크린 3개 (목업 transport-display-cockpit.jsx 구조) ──
+  const hull = clampShipHull(game.ship_hull);
+  const hullStatus = hull > 50 ? 'ok' : hull > 0 ? 'warn' : 'danger';
+  const { label: hullLabel, Icon: HullIcon } = HULL_META[hullStatus];
+
   return (
     <>
-      {/* 좌측: 감지된 액션 */}
-      <div className="bottom-panel">
-        <div className="bottom-panel-label">감지된 액션</div>
-        <div className="bottom-panel-body action-icon-grid">
-          {detectedActions.length > 0
-            ? detectedActions.map((a, i) => {
-                const item = a as Record<string, unknown>;
-                const actionId = item.action as string;
-                const actionName = ACTION_LABEL[actionId] ?? actionId;
-                const cfg = ACTION_CONFIG[actionId];
-                if (!cfg) return <span key={i} className="empty-text">{actionName}</span>;
-                return (
-                  <ActionCard
-                    key={i}
-                    icon={cfg.icon}
-                    label={actionName}
-                    color={cfg.color}
-                    size="sm"
-                  />
-                );
-              })
-            : <span className="empty-text">감지 결과 없음</span>}
-        </div>
-      </div>
-
-      {/* 중앙: 수송선 상태 */}
-      <div className="bottom-panel">
-        <div className="bottom-panel-label">수송선 상태</div>
-        <div className="bottom-panel-body" style={{ gap: 8 }}>
-          <ShipStatusCards currentStatus={status.className} />
-        </div>
-      </div>
-
-      {/* 우측: 코어 교환 알림 */}
-      <div className="bottom-panel">
-        <div className="bottom-panel-label">코어 교환</div>
-        <div className="bottom-panel-body" style={{ justifyContent: 'flex-start', alignItems: 'stretch' }}>
-          {transferLog.length > 0
-            ? transferLog.map((num, i) => (
-                <div key={i} className="transfer-log-item">
-                  PLAYER {num}
+      {/* 좌 스크린: 감지된 액션 */}
+      <div className="scope">
+        <div className="scope-label mono"><span className="scope-tick" />감지된 액션</div>
+        {detectedActions.length > 0 ? (
+          <div className="chips">
+            {detectedActions.map((a, i) => {
+              const item = a as Record<string, unknown>;
+              const actionId = item.action as string;
+              const actionName = ACTION_LABEL[actionId] ?? actionId;
+              const cfg = ACTION_CONFIG[actionId];
+              const Icon = cfg?.icon;
+              return (
+                <div key={i} className="chip">
+                  {Icon && <Icon size={26} strokeWidth={1.8} />}
+                  <b>{actionName}</b>
                 </div>
-              ))
-            : <span className="empty-text">교환 기록 없음</span>}
+              );
+            })}
+          </div>
+        ) : (
+          <span className="log-empty">감지 결과 없음</span>
+        )}
+      </div>
+
+      {/* 중앙 계기: 수송선 선체 (% 숫자 비노출 — 송출 규칙) */}
+      <div className="scope">
+        <div className="scope-label mono"><span className="scope-tick" />수송선 선체</div>
+        <div className={`hull-head ${hullStatus}`}>
+          <div className="hull-icon"><HullIcon size={34} strokeWidth={1.8} /></div>
+          <div className="hull-name">
+            <small className="mono">HULL STATUS</small>
+            <b>{hullLabel}</b>
+          </div>
         </div>
+        <div className="hull-scale">
+          <span className="z-d">0% = 파괴</span>
+          <span className="z-w">50% 이하 = 위험</span>
+          <span className="z-o">50% 초과 = 안전</span>
+        </div>
+        <div className="hull-track">
+          <div className={`hull-fill ${hullStatus}`} style={{ width: `${hull}%` }} />
+          <span className="hull-marker" />
+        </div>
+      </div>
+
+      {/* 우 스크린: 코어 교환 (현행 데이터 그대로 — PLAYER n) */}
+      <div className="scope">
+        <div className="scope-label mono"><span className="scope-tick" />코어 교환</div>
+        {transferLog.length > 0 ? (
+          <div className="log mono">
+            {transferLog.map((num, i) => (
+              <div key={i} className="log-row">
+                <span className="log-pid">PLAYER {num}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="log-empty">아직 교환 기록이 없습니다</div>
+        )}
       </div>
     </>
   );
 }
 
-const SHIP_STATUS_CARDS = [
-  {
-    key: 'ship-safe',
-    label: '안전',
-    icon: Anchor,
-    color: '#22C55E',
-    activeGlow: '0 0 18px #22C55E99, 0 0 40px #22C55E44',
-    pulseClass: undefined,
-  },
-  {
-    key: 'ship-danger',
-    label: '위험',
-    icon: Siren,
-    color: '#F59E0B',
-    activeGlow: '0 0 18px #F59E0B99, 0 0 40px #F59E0B44',
-    pulseClass: 'ship-status-card-pulse-danger',
-  },
-  {
-    key: 'ship-destroy',
-    label: '파괴',
-    icon: Skull,
-    color: '#EF4444',
-    activeGlow: '0 0 18px #EF444499, 0 0 40px #EF444444',
-    pulseClass: 'ship-status-card-pulse-destroy',
-  },
-] as const;
-
-function ShipStatusCards({ currentStatus }: { currentStatus: string }) {
-  return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
-      {SHIP_STATUS_CARDS.map(({ key, label, icon: Icon, color, activeGlow, pulseClass }) => {
-        const isActive = currentStatus === key;
-        return (
-          <div
-            key={key}
-            className={isActive && pulseClass ? pulseClass : undefined}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              width: 140,
-              borderRadius: 8,
-              overflow: 'hidden',
-              border: `2px solid ${isActive ? color : '#333'}`,
-              boxShadow: isActive ? activeGlow : 'none',
-              opacity: isActive ? 1 : 0.25,
-              transition: 'opacity 0.4s, border-color 0.4s, box-shadow 0.4s',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '22px 14px 14px',
-                background: isActive
-                  ? `linear-gradient(160deg, ${color}2e 0%, ${color}0d 100%)`
-                  : '#0a0a0a',
-                width: '100%',
-              }}
-            >
-              <Icon size={76} color={isActive ? color : '#555'} strokeWidth={1.6} />
-            </div>
-            <div
-              style={{
-                background: '#111',
-                borderTop: `1px solid ${isActive ? color + '55' : '#222'}`,
-                padding: '7px 6px 8px',
-                textAlign: 'center',
-                width: '100%',
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 15,
-                  fontWeight: 800,
-                  color: isActive ? color : '#444',
-                  letterSpacing: '0.3px',
-                }}
-              >
-                {label}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+const HULL_META = {
+  ok: { label: '안전', Icon: Anchor },
+  warn: { label: '위험', Icon: Siren },
+  danger: { label: '파괴', Icon: Skull },
+} as const;
