@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Game0bRow } from '@/lib/game-0b-types';
-import { isSessionGame0b } from '@/lib/session-game-kind';
 import './control-styles.css';
 
 const ADMIN_STORAGE_KEY = 'admin_authenticated';
@@ -22,12 +21,17 @@ async function adminFetch(url: string, options?: RequestInit) {
 type Session = {
   session_id: string;
   game_name: string;
+  game_kind: string;
   session_date: string;
   session_time: string;
   max_capacity: number;
   current_capacity: number;
   status: string;
 };
+
+function isGame0b(session: Session): boolean {
+  return session.game_kind === 'game_0b';
+}
 
 type GamePlayer = {
   player_number: number;
@@ -60,6 +64,8 @@ export default function ControlPage() {
   const [authError, setAuthError] = useState('');
 
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessionPage, setSessionPage] = useState(1);
+  const [sessionTotal, setSessionTotal] = useState(0);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [game, setGame] = useState<Game | null>(null);
   const [game0b, setGame0b] = useState<Game0bRow | null>(null);
@@ -102,14 +108,19 @@ export default function ControlPage() {
     }
   }
 
-  async function loadSessions() {
-    const res = await adminFetch('/api/admin/sessions');
+  async function loadSessions(page = 1) {
+    const res = await adminFetch(`/api/admin/sessions?page=${page}`);
     const data = await res.json();
-    if (Array.isArray(data)) setSessions(data);
+    if (data && Array.isArray(data.sessions)) {
+      setSessions(data.sessions);
+      setSessionTotal(data.total ?? 0);
+      setSessionPage(data.page ?? page);
+    }
   }
 
-  async function loadGameState(sessionId: string) {
-    if (isSessionGame0b(sessionId)) {
+  async function loadGameState(session: Session) {
+    const sessionId = session.session_id;
+    if (isGame0b(session)) {
       setGame(null);
       const res = await fetch(`/api/game/game_0b/session/${encodeURIComponent(sessionId)}`);
       const data = await res.json();
@@ -141,7 +152,7 @@ export default function ControlPage() {
 
   async function selectSession(session: Session) {
     setSelectedSession(session);
-    await loadGameState(session.session_id);
+    await loadGameState(session);
   }
 
   function handleGameStartClick() {
@@ -152,7 +163,7 @@ export default function ControlPage() {
   async function handleConfirmYes() {
     setConfirmOpen(false);
     if (!selectedSession) return;
-    if (isSessionGame0b(selectedSession.session_id)) {
+    if (isGame0b(selectedSession)) {
       await createGame0bAndNavigate();
     } else {
       await createGameAndNavigate();
@@ -264,7 +275,7 @@ export default function ControlPage() {
         <div className="control-card">
           <h2 className="control-card-title">
             <i className="fa-solid fa-list" />
-            게임 선택 ({sessions.length})
+            게임 선택 ({sessionTotal})
           </h2>
           {sessions.length === 0 ? (
             <div className="control-empty">
@@ -293,6 +304,31 @@ export default function ControlPage() {
               ))}
             </div>
           )}
+          {sessionTotal > 20 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 14 }}>
+              <button
+                type="button"
+                className="control-btn-secondary"
+                disabled={sessionPage <= 1}
+                style={{ padding: '6px 18px', opacity: sessionPage <= 1 ? 0.35 : 1 }}
+                onClick={() => loadSessions(sessionPage - 1)}
+              >
+                이전
+              </button>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#666' }}>
+                {sessionPage} / {Math.max(1, Math.ceil(sessionTotal / 20))}
+              </span>
+              <button
+                type="button"
+                className="control-btn-secondary"
+                disabled={sessionPage >= Math.ceil(sessionTotal / 20)}
+                style={{ padding: '6px 18px', opacity: sessionPage >= Math.ceil(sessionTotal / 20) ? 0.35 : 1 }}
+                onClick={() => loadSessions(sessionPage + 1)}
+              >
+                다음
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 선택된 세션: 게임 생성 또는 진행 */}
@@ -304,7 +340,7 @@ export default function ControlPage() {
             </h2>
             {!game && !game0b ? (
               <div className="control-create-section">
-                {selectedSession && !isSessionGame0b(selectedSession.session_id) && (
+                {selectedSession && !isGame0b(selectedSession) && (
                   <div className="control-form-group">
                     <label>플레이어 수 (8~12명)</label>
                     <select
@@ -317,7 +353,7 @@ export default function ControlPage() {
                     </select>
                   </div>
                 )}
-                {selectedSession && isSessionGame0b(selectedSession.session_id) && (
+                {selectedSession && isGame0b(selectedSession) && (
                   <>
                     <div className="control-form-group">
                       <label>플레이어 수 (8~12명)</label>

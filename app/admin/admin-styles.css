@@ -58,6 +58,89 @@ body {
   color: #aaa;
 }
 
+/* === 탭 바 === */
+.admin-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 16px 30px 0;
+  max-width: 1800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.admin-tab {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 10px 10px 0 0;
+  background: #e6e9f0;
+  color: var(--text-gray);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.admin-tab:hover {
+  background: #dde1ea;
+}
+
+.admin-tab.active {
+  background: var(--bg-card);
+  color: var(--primary);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* === 단일 컬럼 컨테이너 (정산/마스터/로그 탭) === */
+.admin-single-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 30px;
+  max-width: 1800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* === 페이지네이션 === */
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.admin-pagination button {
+  padding: 8px 20px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.admin-pagination button:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.admin-pagination button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.admin-pagination span {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-gray);
+}
+
 /* === 메인 컨테이너 === */
 .admin-container {
   flex: 1;
