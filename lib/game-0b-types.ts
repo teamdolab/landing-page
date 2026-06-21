@@ -7,8 +7,25 @@ export type Game0bEventSource = 'host' | 'testroom' | 'system';
 /** 수송선 게이지 상한 (%) */
 export const SHIP_HULL_MAX = 100;
 
+/**
+ * 선체 상태 경계 (%). 이 값 '초과'면 안전, '이하'면 위험.
+ * 게임 규칙(result.ts: hull <= 50 외계인 승)과 화면 문구를 한곳에서 맞추기 위한 상수.
+ */
+export const SHIP_HULL_DANGER_THRESHOLD = 50;
+
 export function clampShipHull(value: number): number {
   return Math.min(SHIP_HULL_MAX, value);
+}
+
+/** 송출 화면용 선체 상태 키 (콕핏 색상 클래스와 동일: ok=안전 / warn=위험 / danger=파괴) */
+export type ShipHullDisplayStatus = 'ok' | 'warn' | 'danger';
+
+/** ship_hull → 3단계 상태. 숫자/퍼센트 노출 없이 상태만 보여줄 때 사용. */
+export function shipHullDisplayStatus(value: number): ShipHullDisplayStatus {
+  const h = clampShipHull(value);
+  if (h <= 0) return 'danger';
+  if (h > SHIP_HULL_DANGER_THRESHOLD) return 'ok';
+  return 'warn';
 }
 
 export type Game0bRow = {

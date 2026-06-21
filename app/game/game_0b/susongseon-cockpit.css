@@ -224,6 +224,35 @@
   font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: #EAFBFF;
 }
 
+/* 선체: 숫자/게이지 없이 3단계 상태만 (멀리서도 인지되도록 대형 + 색상) */
+.hull-status-only {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; min-height: 150px; padding: 8px 0 4px;
+}
+.hull-status-only .hull-status-icon { display: flex; align-items: center; justify-content: center; }
+.hull-status-only .hull-status-word {
+  font-size: clamp(52px, 6vw, 92px); font-weight: 800; line-height: 1; letter-spacing: .02em;
+}
+.hull-status-only.ok     { color: var(--ok); }
+.hull-status-only.warn   { color: var(--warn); }
+.hull-status-only.danger { color: var(--danger); }
+.hull-status-only.ok .hull-status-word   { text-shadow: 0 0 24px rgba(47,211,122,.5); }
+.hull-status-only.warn .hull-status-word { text-shadow: 0 0 26px rgba(255,178,62,.6); }
+.hull-status-only.danger {
+  filter: drop-shadow(0 0 18px rgba(255,82,82,.55));
+}
+.hull-status-only.danger .hull-status-word {
+  text-shadow: 0 0 32px rgba(255,82,82,.85), 0 0 80px rgba(255,82,82,.4);
+  animation: hull-danger-pulse 1s ease-in-out infinite;
+}
+@keyframes hull-danger-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.06); opacity: .82; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hull-status-only.danger .hull-status-word { animation: none; }
+}
+
 /* 우: 코어 교환 로그 */
 .log { display: flex; flex-direction: column; }
 .log-row {

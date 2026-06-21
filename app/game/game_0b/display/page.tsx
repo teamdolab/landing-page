@@ -2,11 +2,13 @@
 
 import type { CSSProperties } from 'react';
 import { Anchor, Siren, Skull } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import GameLayout, { shipStatus } from '../components/GameLayout';
 import {
   ACTION_LABEL,
   clampShipHull,
   getPlayerRoleCore,
+  shipHullDisplayStatus,
   type Game0bRow,
 } from '@/lib/game-0b-types';
 import { ACTION_CONFIG } from '@/lib/game-0b-action-config';
@@ -105,10 +107,13 @@ function ResultRevealDisplay({ game }: { game: Game0bRow }) {
   });
 
   return (
-    <div className="ss-result-reveal-root">
+    <div
+      className="ss-result-reveal-root"
+      style={{ flexDirection: 'row', alignItems: 'stretch', gap: 16 } as CSSProperties}
+    >
       <section
         className="final-result-section ss-final-result-section"
-        style={{ '--bottom-content-width': `${bottomWidth}px` } as CSSProperties}
+        style={{ '--bottom-content-width': `${bottomWidth}px`, flex: 1, minWidth: 0 } as CSSProperties}
       >
         <div className="ss-result-podium-wrap">
           {sections.map((sec) => (
@@ -160,7 +165,52 @@ function ResultRevealDisplay({ game }: { game: Game0bRow }) {
           })}
         </div>
       </section>
+
+      <ResultFeedbackQr sessionId={game.session_id ?? ''} />
     </div>
+  );
+}
+
+/** 최종 결과 송출 시 우측에 표시되는 딥 피드백 QR (host의 QR과 동일 주소/만료 규칙). */
+function ResultFeedbackQr({ sessionId }: { sessionId: string }) {
+  if (!sessionId) return null;
+
+  // 오늘 자정 만료 (host/page.tsx와 동일 로직)
+  const todayMidnightUnix = (() => {
+    const d = new Date();
+    d.setHours(23, 59, 59, 0);
+    return Math.floor(d.getTime() / 1000);
+  })();
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const qrUrl = `${origin}/feedback/deep?session=${encodeURIComponent(sessionId)}&expires=${todayMidnightUnix}`;
+
+  return (
+    <aside
+      style={{
+        flex: '0 0 auto',
+        width: 220,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+        padding: '18px 14px',
+        borderLeft: '1px dashed rgba(74, 61, 107, 0.25)',
+      }}
+    >
+      <span style={{ fontSize: 18, fontWeight: 800, color: '#1c1538', textAlign: 'center', lineHeight: 1.35 }}>
+        게임 어땠나요?
+      </span>
+      <span style={{ fontSize: 14, fontWeight: 600, color: '#4a3d6b', textAlign: 'center', lineHeight: 1.4 }}>
+        QR을 스캔하고
+        <br />
+        피드백을 남겨주세요
+      </span>
+      <div style={{ background: '#fff', padding: 10, borderRadius: 10, boxShadow: '0 2px 12px rgba(28,21,56,0.18)' }}>
+        <QRCodeSVG value={qrUrl} size={150} bgColor="#ffffff" fgColor="#1a0a3c" />
+      </div>
+    </aside>
   );
 }
 
@@ -209,8 +259,8 @@ function DisplayBottom({ game }: { game: Game0bRow }) {
   }
 
   // ── 콕핏 데크: 계기판 스크린 3개 (목업 transport-display-cockpit.jsx 구조) ──
-  const hull = clampShipHull(game.ship_hull);
-  const hullStatus = hull > 50 ? 'ok' : hull > 0 ? 'warn' : 'danger';
+  // 선체는 숫자/게이지 없이 안전·위험·파괴 3단계 상태만 노출 (송출 규칙)
+  const hullStatus = shipHullDisplayStatus(game.ship_hull);
   const { label: hullLabel, Icon: HullIcon } = HULL_META[hullStatus];
 
   return (
@@ -239,24 +289,14 @@ function DisplayBottom({ game }: { game: Game0bRow }) {
         )}
       </div>
 
-      {/* 중앙 계기: 수송선 선체 (% 숫자 비노출 — 송출 규칙) */}
+      {/* 중앙 계기: 수송선 선체 — 게이지/숫자 없이 안전·위험·파괴 상태만 크게 표시 */}
       <div className="scope">
         <div className="scope-label mono"><span className="scope-tick" />수송선 선체</div>
-        <div className={`hull-head ${hullStatus}`}>
-          <div className="hull-icon"><HullIcon size={34} strokeWidth={1.8} /></div>
-          <div className="hull-name">
-            <small className="mono">HULL STATUS</small>
-            <b>{hullLabel}</b>
+        <div className={`hull-status-only ${hullStatus}`}>
+          <div className="hull-status-icon">
+            <HullIcon size={hullStatus === 'danger' ? 100 : 84} strokeWidth={1.7} />
           </div>
-        </div>
-        <div className="hull-scale">
-          <span className="z-d">0% = 파괴</span>
-          <span className="z-w">50% 이하 = 위험</span>
-          <span className="z-o">50% 초과 = 안전</span>
-        </div>
-        <div className="hull-track">
-          <div className={`hull-fill ${hullStatus}`} style={{ width: `${hull}%` }} />
-          <span className="hull-marker" />
+          <div className="hull-status-word">{hullLabel}</div>
         </div>
       </div>
 
