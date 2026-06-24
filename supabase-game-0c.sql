@@ -48,7 +48,7 @@ CREATE TABLE game_0c_public (
   session_id TEXT PRIMARY KEY,
   round INT,
   phase TEXT CHECK (
-    phase IS NULL OR phase IN ('ROUND_OPEN', 'BIDDING', 'FORCE', 'OPEN', 'CLOSED')
+    phase IS NULL OR phase IN ('WAITING', 'ROUND_OPEN', 'BIDDING', 'FORCE', 'OPEN', 'CLOSED')
   ),
   timer_end TIMESTAMPTZ,
   force_candidates JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -84,7 +84,7 @@ CREATE TABLE game_0c_snapshot (
   session_id TEXT PRIMARY KEY,
   round INT,
   phase TEXT CHECK (
-    phase IS NULL OR phase IN ('ROUND_OPEN', 'BIDDING', 'FORCE', 'OPEN', 'CLOSED')
+    phase IS NULL OR phase IN ('WAITING', 'ROUND_OPEN', 'BIDDING', 'FORCE', 'OPEN', 'CLOSED')
   ),
   players JSONB NOT NULL DEFAULT '[]'::jsonb,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
