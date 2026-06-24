@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { Game0cBoothState, Game0cVariationChoice } from '@/lib/game-0c-types';
-import './game-0c-testroom.css';
+import '../game-0c-testroom.css';
 
 type Screen = 'home' | 'variation' | 'contact' | 'force';
 type ResultKind = 'success' | 'error' | 'info';
