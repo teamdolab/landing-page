@@ -134,7 +134,7 @@ export default function ControlPage() {
         `/api/game/game_0c/snapshot?session_id=${encodeURIComponent(sessionId)}`,
       );
       const data = await res.json();
-      if (res.ok && data.snapshot) {
+      if (res.ok && data.snapshot && data.snapshot.status !== '완료') {
         setGame0c(data.snapshot as Game0cSnapshotRow);
         if (typeof window !== 'undefined') {
           setDisplayUrl(`${window.location.origin}/game/game_0c/display?session=${encodeURIComponent(sessionId)}`);
@@ -474,6 +474,14 @@ export default function ControlPage() {
                     <i className="fa-solid fa-gamepad" /> 진행자 화면
                   </a>
                   <a
+                    href={`/game/game_0c/testroom?session=${encodeURIComponent(selectedSession.session_id)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="control-btn-secondary"
+                  >
+                    <i className="fa-solid fa-door-open" /> 테스트룸 화면
+                  </a>
+                  <a
                     href={displayUrl}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -481,14 +489,64 @@ export default function ControlPage() {
                   >
                     <i className="fa-solid fa-external-link-alt" /> 송출 화면
                   </a>
-                  <a
-                    href={`/game/game_0c/testroom?session=${encodeURIComponent(selectedSession.session_id)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
                     className="control-btn-secondary"
+                    style={{ color: '#c62828', borderColor: '#c62828' }}
+                    onClick={async () => {
+                      if (!confirm('게임을 종료하시겠습니까?')) return;
+                      try {
+                        const res = await fetch('/api/game/game_0c/finish', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            session_id: selectedSession.session_id,
+                          }),
+                        });
+                        if (res.ok) {
+                          setGame0c(null);
+                          setDisplayUrl('');
+                          alert('게임이 종료되었습니다.');
+                        } else {
+                          const data = await res.json();
+                          alert(data.error || '종료 실패');
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        alert('종료 중 오류가 발생했습니다.');
+                      }
+                    }}
                   >
-                    <i className="fa-solid fa-door-open" /> 부스 화면
-                  </a>
+                    <i className="fa-solid fa-stop" /> 게임 종료
+                  </button>
+                  <button
+                    type="button"
+                    className="control-btn-secondary"
+                    style={{ color: '#b71c1c', borderColor: '#b71c1c' }}
+                    onClick={async () => {
+                      if (!confirm('게임을 초기화하시겠습니까? 모든 진행 데이터가 삭제되고 처음부터 다시 시작합니다.')) return;
+                      try {
+                        const res = await fetch('/api/game/game_0c/reset', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ session_id: selectedSession.session_id }),
+                        });
+                        if (res.ok) {
+                          setGame0c(null);
+                          setDisplayUrl('');
+                          alert('게임이 초기화되었습니다. 다시 생성할 수 있습니다.');
+                        } else {
+                          const data = await res.json();
+                          alert(data.error || '초기화 실패');
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        alert('초기화 중 오류가 발생했습니다.');
+                      }
+                    }}
+                  >
+                    <i className="fa-solid fa-rotate-left" /> 게임 초기화
+                  </button>
                 </div>
               </div>
             ) : game0b && selectedSession ? (

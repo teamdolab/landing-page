@@ -65,6 +65,7 @@ export async function GET(req: NextRequest) {
         if (!at) return null;
         return { type: 'normal_contact' as const, player_a: playerA, at };
       })(),
+      status: data.status === '완료' ? '완료' as const : '진행중' as const,
     };
 
     const { data: publicData, error: publicErr } = await supabase

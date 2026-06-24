@@ -128,11 +128,13 @@ function parsePending(raw: unknown): Game0cPendingContact | null {
 }
 
 function mapSnapshotRow(data: Record<string, unknown>): Game0cSnapshotRow {
+  const status = data.status === '완료' ? '완료' : '진행중';
   return {
     ...data,
     players: (data.players ?? []) as Game0cPlayer[],
     phase: data.phase as Game0cPhase | null,
     pending: parsePending(data.pending),
+    status,
   } as Game0cSnapshotRow;
 }
 
@@ -315,7 +317,7 @@ async function saveSnapshot(
 
   const { data: existing } = await supabase
     .from('game_0c_snapshot')
-    .select('pending')
+    .select('pending, status')
     .eq('session_id', sid)
     .maybeSingle();
 
@@ -327,6 +329,7 @@ async function saveSnapshot(
       phase,
       players,
       pending: existing?.pending ?? null,
+      status: existing?.status ?? '진행중',
     })
     .select('*')
     .single();
@@ -511,6 +514,7 @@ export async function initGame(
       round: 0,
       phase: 'WAITING',
       players,
+      status: '진행중',
     })
     .select('*')
     .single();
@@ -1214,4 +1218,53 @@ export async function clearPending(sessionId: string): Promise<Game0cSnapshotRow
   }
 
   return mapSnapshotRow(data);
+}
+
+/** control 게임 종료 → status 완료 (game_0b advance-phase finish와 동일 개념) */
+export async function finishGame(sessionId: string): Promise<Game0cSnapshotRow> {
+  await assertGame0cSession(sessionId);
+  await loadSnapshot(sessionId);
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('game_0c_snapshot')
+    .update({ status: '완료' })
+    .eq('session_id', sessionId.trim())
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('game_0c_snapshot finish:', error);
+    throw new Game0cEngineError(error.message, 500);
+  }
+
+  return mapSnapshotRow(data);
+}
+
+/** control 게임 초기화 → 스냅샷·이벤트 삭제 (game_0b reset와 동일 개념) */
+export async function resetGame(sessionId: string): Promise<void> {
+  await assertGame0cSession(sessionId);
+
+  const supabase = getSupabaseAdmin();
+  const sid = sessionId.trim();
+
+  const { data: snapshot } = await supabase
+    .from('game_0c_snapshot')
+    .select('session_id')
+    .eq('session_id', sid)
+    .maybeSingle();
+
+  if (!snapshot) {
+    throw new Game0cEngineError('게임 없음', 404);
+  }
+
+  await supabase
+    .from('game_participants')
+    .update({ status: 'completed' })
+    .eq('game_id', sid)
+    .eq('status', 'active');
+
+  await supabase.from('game_0c_event').delete().eq('session_id', sid);
+  await supabase.from('game_0c_public').delete().eq('session_id', sid);
+  await supabase.from('game_0c_snapshot').delete().eq('session_id', sid);
 }

@@ -62,12 +62,15 @@ export type Game0cContactResult = {
   score_deltas: Record<string, number>;
 };
 
+export type Game0cGameStatus = '진행중' | '완료';
+
 export type Game0cSnapshotRow = {
   session_id: string;
   round: number | null;
   phase: Game0cPhase | null;
   players: Game0cPlayer[];
   pending: Game0cPendingContact | null;
+  status: Game0cGameStatus;
   updated_at: string;
 };
 
