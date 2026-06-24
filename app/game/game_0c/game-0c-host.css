@@ -277,3 +277,35 @@
   border-color: #666;
   color: #fff;
 }
+
+.game0c-host-timer {
+  color: #22d3ee !important;
+  border-color: #22d3ee55 !important;
+}
+
+.game0c-host-bid-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.game0c-host-bid-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: #1a1a1a;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.game0c-host-bid-item select {
+  padding: 0.35rem 0.5rem;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #fff;
+}

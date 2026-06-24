@@ -1,9 +1,11 @@
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { isGame0c, resolveGameKind } from '@/lib/session-game-kind';
 import type {
+  Game0cBidResult,
   Game0cContactResult,
   Game0cContactType,
   Game0cEventRow,
+  Game0cForceCandidate,
   Game0cForcePair,
   Game0cPhase,
   Game0cPlayer,
@@ -12,6 +14,45 @@ import type {
   Game0cSnapshotRow,
   Game0cVariationChoice,
 } from '@/lib/game-0c-types';
+
+const FORCE_CANDIDATE_COUNT: Record<number, number> = {
+  8: 2,
+  9: 3,
+  10: 3,
+  11: 3,
+  12: 4,
+};
+
+function addMinutes(date: Date, minutes: number): string {
+  return new Date(date.getTime() + minutes * 60 * 1000).toISOString();
+}
+
+/** 점수 하위 N명 선정. 동점 그룹이 N 초과면 해당 그룹 통째 제외 */
+export function selectForceCandidates(players: Game0cPlayer[]): Game0cPlayer[] {
+  const n = FORCE_CANDIDATE_COUNT[players.length];
+  if (!n) {
+    throw new Game0cEngineError(`지원하지 않는 인원수: ${players.length}`, 400);
+  }
+
+  const sorted = [...players].sort((a, b) => a.score - b.score || a.num - b.num);
+  const selected: Game0cPlayer[] = [];
+
+  let i = 0;
+  while (i < sorted.length) {
+    const score = sorted[i].score;
+    const group: Game0cPlayer[] = [];
+    while (i < sorted.length && sorted[i].score === score) {
+      group.push(sorted[i]);
+      i += 1;
+    }
+    if (selected.length + group.length > n) {
+      break;
+    }
+    selected.push(...group);
+  }
+
+  return selected;
+}
 
 export class Game0cEngineError extends Error {
   constructor(
@@ -276,7 +317,12 @@ async function saveSnapshot(
 
 async function savePublic(
   sessionId: string,
-  patch: Partial<Pick<Game0cPublicRow, 'round' | 'phase' | 'force_pairs'>>,
+  patch: Partial<
+    Pick<
+      Game0cPublicRow,
+      'round' | 'phase' | 'timer_end' | 'force_candidates' | 'bid_results' | 'force_pairs'
+    >
+  >,
 ): Promise<Game0cPublicRow> {
   const supabase = getSupabaseAdmin();
   const existing = await loadPublic(sessionId);
@@ -284,8 +330,9 @@ async function savePublic(
     session_id: sessionId.trim(),
     round: patch.round ?? existing?.round ?? null,
     phase: patch.phase ?? existing?.phase ?? null,
-    force_candidates: existing?.force_candidates ?? [],
-    bid_results: existing?.bid_results ?? [],
+    timer_end: patch.timer_end !== undefined ? patch.timer_end : (existing?.timer_end ?? null),
+    force_candidates: patch.force_candidates ?? existing?.force_candidates ?? [],
+    bid_results: patch.bid_results ?? existing?.bid_results ?? [],
     force_pairs: patch.force_pairs ?? existing?.force_pairs ?? [],
   };
 
@@ -367,6 +414,15 @@ export async function rebuildSnapshot(sessionId: string): Promise<{
       if (priv.success === true) {
         player.state = priv.choice as Game0cPlayerState;
       }
+      round = ev.round;
+      continue;
+    }
+
+    if (ev.event_type === 'BID_SUBMIT') {
+      const playerNum = priv.player as number;
+      const bids = priv.bids as number;
+      const player = findPlayer(players, playerNum);
+      player.slots_left -= bids;
       round = ev.round;
     }
   }
@@ -489,7 +545,13 @@ export async function initRound(sessionId: string, round: number): Promise<{
   });
 
   const snapshot = await saveSnapshot(sessionId, round, 'ROUND_OPEN', players);
-  const publicRow = await savePublic(sessionId, { round, phase: 'ROUND_OPEN' });
+  const publicRow = await savePublic(sessionId, {
+    round,
+    phase: 'ROUND_OPEN',
+    timer_end: null,
+    force_candidates: [],
+    bid_results: [],
+  });
 
   return { snapshot, public: publicRow, event };
 }
@@ -513,6 +575,13 @@ export async function processContact(
   }
 
   const current = await loadSnapshot(sessionId);
+  if (contactType === 'normal' && current.phase !== 'OPEN') {
+    throw new Game0cEngineError('일반 접촉은 자유시간(OPEN)에만 가능합니다', 400);
+  }
+  if (contactType === 'force' && current.phase !== 'FORCE') {
+    throw new Game0cEngineError('강제 접촉은 FORCE 단계에만 가능합니다', 400);
+  }
+
   const players = clonePlayers(current.players);
   const a = findPlayer(players, playerA);
   const b = findPlayer(players, playerB);
@@ -579,6 +648,10 @@ export async function processVariation(
   await assertGame0cSession(sessionId);
 
   const current = await loadSnapshot(sessionId);
+  if (current.phase !== 'OPEN') {
+    throw new Game0cEngineError('변신은 자유시간(OPEN)에만 가능합니다', 400);
+  }
+
   const players = clonePlayers(current.players);
   const target = findPlayer(players, player);
   const probedState = target.state;
@@ -667,4 +740,271 @@ export async function revertEvent(
 
   const rebuilt = await rebuildSnapshot(sessionId);
   return { revertEvent: revertEv, ...rebuilt };
+}
+
+function parseForceCandidates(raw: unknown): Game0cForceCandidate[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null;
+      const o = item as Record<string, unknown>;
+      const player = Number(o.player);
+      if (!Number.isInteger(player)) return null;
+      const order = o.order == null ? null : Number(o.order);
+      if (order != null && !Number.isInteger(order)) return null;
+      return { player, order };
+    })
+    .filter((x): x is Game0cForceCandidate => x != null);
+}
+
+async function loadBidSubmits(sessionId: string, round: number): Promise<Game0cEventRow[]> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('game_0c_event')
+    .select('*')
+    .eq('session_id', sessionId.trim())
+    .eq('round', round)
+    .eq('event_type', 'BID_SUBMIT')
+    .eq('is_reverted', false);
+
+  if (error) {
+    console.error('BID_SUBMIT 조회:', error);
+    throw new Game0cEngineError('입찰 이벤트 조회 실패', 500);
+  }
+  return (data ?? []) as Game0cEventRow[];
+}
+
+function consumePlayerSlots(player: Game0cPlayer, count: number): void {
+  if (count < 0) {
+    throw new Game0cEngineError('슬롯 소모량이 올바르지 않습니다', 400);
+  }
+  if (player.slots_left < count) {
+    throw new Game0cEngineError(`플레이어 ${player.num} 슬롯 부족 (필요: ${count}, 잔여: ${player.slots_left})`, 400);
+  }
+  player.slots_left -= count;
+}
+
+/** 2라운드~ 입찰 시작: 후보 선정 + BIDDING phase */
+export async function startBidding(sessionId: string, round: number): Promise<{
+  snapshot: Game0cSnapshotRow;
+  public: Game0cPublicRow;
+  event: Game0cEventRow;
+}> {
+  await assertGame0cSession(sessionId);
+
+  if (round < 2) {
+    throw new Game0cEngineError('입찰은 2라운드부터 가능합니다', 400);
+  }
+
+  const snapshot = await loadSnapshot(sessionId);
+  if (snapshot.phase !== 'ROUND_OPEN') {
+    throw new Game0cEngineError(`현재 phase(${snapshot.phase})에서는 입찰을 시작할 수 없습니다`, 400);
+  }
+  if (snapshot.round !== round) {
+    throw new Game0cEngineError('라운드가 일치하지 않습니다', 400);
+  }
+
+  const candidates = selectForceCandidates(snapshot.players);
+  const forceCandidates: Game0cForceCandidate[] = candidates.map((p) => ({
+    player: p.num,
+    order: null,
+  }));
+
+  const timerEnd = addMinutes(new Date(), 4);
+
+  const event = await insertEvent(sessionId, round, 'FORCE_CANDIDATES_SET', {
+    payload_public: { candidates: forceCandidates },
+    payload_private: { candidate_players: candidates.map((p) => p.num) },
+    created_by: 'admin',
+  });
+
+  const publicRow = await savePublic(sessionId, {
+    round,
+    phase: 'BIDDING',
+    timer_end: timerEnd,
+    force_candidates: forceCandidates,
+    bid_results: [],
+  });
+
+  const updatedSnapshot = await saveSnapshot(sessionId, round, 'BIDDING', snapshot.players);
+
+  return { snapshot: updatedSnapshot, public: publicRow, event };
+}
+
+/** 입찰 제출 (후보만, 슬롯 bids개 서버에서 소모) */
+export async function submitBid(
+  sessionId: string,
+  round: number,
+  player: number,
+  bids: number,
+): Promise<{
+  snapshot: Game0cSnapshotRow;
+  event: Game0cEventRow;
+}> {
+  await assertGame0cSession(sessionId);
+
+  if (!Number.isInteger(bids) || bids < 0 || bids > 2) {
+    throw new Game0cEngineError('bids는 0~2 정수여야 합니다', 400);
+  }
+
+  const snapshot = await loadSnapshot(sessionId);
+  if (snapshot.phase !== 'BIDDING') {
+    throw new Game0cEngineError('입찰 단계가 아닙니다', 400);
+  }
+  if (snapshot.round !== round) {
+    throw new Game0cEngineError('라운드가 일치하지 않습니다', 400);
+  }
+
+  const publicRow = await loadPublic(sessionId);
+  const candidates = parseForceCandidates(publicRow?.force_candidates);
+  if (!candidates.some((c) => c.player === player)) {
+    throw new Game0cEngineError(`플레이어 ${player}은(는) 강제접촉 후보가 아닙니다`, 400);
+  }
+
+  const existingBids = await loadBidSubmits(sessionId, round);
+  if (existingBids.some((ev) => ev.payload_private?.player === player)) {
+    throw new Game0cEngineError(`플레이어 ${player}은(는) 이미 입찰했습니다`, 400);
+  }
+
+  const players = clonePlayers(snapshot.players);
+  const target = findPlayer(players, player);
+  consumePlayerSlots(target, bids);
+
+  const event = await insertEvent(sessionId, round, 'BID_SUBMIT', {
+    actor_player: player,
+    payload_private: { player, bids },
+    created_by: 'admin',
+  });
+
+  const updatedSnapshot = await saveSnapshot(sessionId, round, 'BIDDING', players);
+  return { snapshot: updatedSnapshot, event };
+}
+
+/** 입찰 종료: 순서 결정 + FORCE phase */
+export async function closeBidding(sessionId: string, round: number): Promise<{
+  snapshot: Game0cSnapshotRow;
+  public: Game0cPublicRow;
+  event: Game0cEventRow;
+}> {
+  await assertGame0cSession(sessionId);
+
+  const snapshot = await loadSnapshot(sessionId);
+  if (snapshot.phase !== 'BIDDING') {
+    throw new Game0cEngineError('입찰 단계가 아닙니다', 400);
+  }
+  if (snapshot.round !== round) {
+    throw new Game0cEngineError('라운드가 일치하지 않습니다', 400);
+  }
+
+  const publicRow = await loadPublic(sessionId);
+  const candidates = parseForceCandidates(publicRow?.force_candidates);
+  const bidEvents = await loadBidSubmits(sessionId, round);
+  const bidMap = new Map<number, number>();
+  for (const ev of bidEvents) {
+    bidMap.set(ev.payload_private.player as number, ev.payload_private.bids as number);
+  }
+
+  const scored = candidates.map((c) => {
+    const p = findPlayer(snapshot.players, c.player);
+    return {
+      player: c.player,
+      score: p.score,
+      bids: bidMap.get(c.player) ?? 0,
+      tiebreak: Math.random(),
+    };
+  });
+
+  scored.sort((a, b) => a.score - b.score || b.bids - a.bids || a.tiebreak - b.tiebreak);
+
+  const bidResults: Game0cBidResult[] = scored.map((s) => ({
+    player: s.player,
+    bids: s.bids,
+  }));
+
+  const orderedCandidates: Game0cForceCandidate[] = scored.map((s, idx) => ({
+    player: s.player,
+    order: idx + 1,
+  }));
+
+  const timerEnd = addMinutes(new Date(), 3);
+
+  const event = await insertEvent(sessionId, round, 'BID_RESULT', {
+    payload_public: { bid_results: bidResults, ordered_candidates: orderedCandidates },
+    payload_private: { tiebreaks: scored.map((s) => ({ player: s.player, tiebreak: s.tiebreak })) },
+    created_by: 'admin',
+  });
+
+  const updatedPublic = await savePublic(sessionId, {
+    round,
+    phase: 'FORCE',
+    timer_end: timerEnd,
+    bid_results: bidResults,
+    force_candidates: orderedCandidates,
+  });
+
+  const updatedSnapshot = await saveSnapshot(sessionId, round, 'FORCE', snapshot.players);
+  return { snapshot: updatedSnapshot, public: updatedPublic, event };
+}
+
+/** 강제접촉 종료(또는 1라운드 자유시간 시작) → OPEN phase */
+export async function closeForce(sessionId: string, round: number): Promise<{
+  snapshot: Game0cSnapshotRow;
+  public: Game0cPublicRow;
+  event: Game0cEventRow;
+}> {
+  await assertGame0cSession(sessionId);
+
+  const snapshot = await loadSnapshot(sessionId);
+  if (snapshot.round !== round) {
+    throw new Game0cEngineError('라운드가 일치하지 않습니다', 400);
+  }
+  if (snapshot.phase !== 'FORCE' && snapshot.phase !== 'ROUND_OPEN') {
+    throw new Game0cEngineError(`현재 phase(${snapshot.phase})에서는 자유시간을 시작할 수 없습니다`, 400);
+  }
+
+  const timerEnd = addMinutes(new Date(), 10);
+
+  const event = await insertEvent(sessionId, round, 'ROUND_OPEN', {
+    payload_public: { phase: 'OPEN' },
+    created_by: 'admin',
+  });
+
+  const updatedPublic = await savePublic(sessionId, {
+    round,
+    phase: 'OPEN',
+    timer_end: timerEnd,
+  });
+
+  const updatedSnapshot = await saveSnapshot(sessionId, round, 'OPEN', snapshot.players);
+  return { snapshot: updatedSnapshot, public: updatedPublic, event };
+}
+
+/** 라운드 종료 → CLOSED phase */
+export async function closeRound(sessionId: string, round: number): Promise<{
+  snapshot: Game0cSnapshotRow;
+  public: Game0cPublicRow;
+}> {
+  await assertGame0cSession(sessionId);
+
+  const snapshot = await loadSnapshot(sessionId);
+  if (snapshot.phase !== 'OPEN') {
+    throw new Game0cEngineError('자유시간(OPEN) 단계가 아닙니다', 400);
+  }
+  if (snapshot.round !== round) {
+    throw new Game0cEngineError('라운드가 일치하지 않습니다', 400);
+  }
+
+  await insertEvent(sessionId, round, 'ROUND_CLOSED', {
+    payload_public: { phase: 'CLOSED' },
+    created_by: 'admin',
+  });
+
+  const updatedPublic = await savePublic(sessionId, {
+    round,
+    phase: 'CLOSED',
+    timer_end: null,
+  });
+
+  const updatedSnapshot = await saveSnapshot(sessionId, round, 'CLOSED', snapshot.players);
+  return { snapshot: updatedSnapshot, public: updatedPublic };
 }
