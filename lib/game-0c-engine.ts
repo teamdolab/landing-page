@@ -978,7 +978,7 @@ export async function closeBidding(sessionId: string, round: number): Promise<{
     order: idx + 1,
   }));
 
-  const timerEnd = addMinutes(new Date(), 3);
+  const timerEnd = addMinutes(new Date(), 4);
 
   const event = await insertEvent(sessionId, round, 'BID_RESULT', {
     payload_public: { bid_results: bidResults, ordered_candidates: orderedCandidates },
