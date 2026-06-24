@@ -1,0 +1,279 @@
+.game0c-host-root {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #e8e8e8;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+}
+
+.game0c-host-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.game0c-host-login-box {
+  width: 100%;
+  max-width: 360px;
+  background: #141414;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+.game0c-host-login-box h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.game0c-host-login-box input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.game0c-host-login-box button {
+  width: 100%;
+  padding: 0.75rem;
+  background: #6b46d9;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.game0c-host-login-box button:hover {
+  background: #5a3ab8;
+}
+
+.game0c-host-error {
+  color: #ff6b6b;
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
+.game0c-host-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #222;
+  background: #111;
+  flex-wrap: wrap;
+}
+
+.game0c-host-title {
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.game0c-host-session {
+  font-size: 0.8rem;
+  color: #888;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.game0c-host-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.game0c-host-badge {
+  padding: 0.35rem 0.75rem;
+  background: #1f1f2e;
+  border: 1px solid #3d3d5c;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.game0c-host-main {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.game0c-host-panel {
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+}
+
+.game0c-host-panel h2 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #aaa;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.game0c-host-btn {
+  padding: 0.5rem 1rem;
+  background: #6b46d9;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.game0c-host-btn:hover:not(:disabled) {
+  background: #5a3ab8;
+}
+
+.game0c-host-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.game0c-host-btn-secondary {
+  background: #2a2a3a;
+  border: 1px solid #444;
+}
+
+.game0c-host-btn-danger {
+  background: #8b2635;
+}
+
+.game0c-host-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.game0c-host-table th,
+.game0c-host-table td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #222;
+}
+
+.game0c-host-table th {
+  color: #888;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.game0c-host-table tr:hover td {
+  background: #1a1a1a;
+}
+
+.game0c-state-human { color: #7dd3fc; }
+.game0c-state-doctor { color: #86efac; }
+.game0c-state-zombie { color: #fca5a5; }
+
+.game0c-host-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.game0c-host-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.game0c-host-field label {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.game0c-host-field select,
+.game0c-host-field input {
+  padding: 0.45rem 0.6rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #fff;
+  min-width: 80px;
+}
+
+.game0c-host-msg {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  color: #fbbf24;
+}
+
+.game0c-host-msg.error {
+  color: #f87171;
+}
+
+.game0c-host-msg.success {
+  color: #86efac;
+}
+
+.game0c-host-events {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.game0c-host-event-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.game0c-host-event-item.selected {
+  border-color: #6b46d9;
+  background: #1f1a2e;
+}
+
+.game0c-host-event-item.reverted {
+  opacity: 0.5;
+}
+
+.game0c-host-event-meta {
+  color: #888;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+}
+
+.game0c-host-init-box {
+  max-width: 400px;
+}
+
+.game0c-host-logout {
+  padding: 0.35rem 0.75rem;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #aaa;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.game0c-host-logout:hover {
+  border-color: #666;
+  color: #fff;
+}

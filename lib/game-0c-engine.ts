@@ -380,6 +380,98 @@ export async function rebuildSnapshot(sessionId: string): Promise<{
   return { snapshot, public: publicRow };
 }
 
+/** 게임 초기화: 스냅샷·공개 스냅샷 생성 (중복 시 에러) */
+export async function initGame(
+  sessionId: string,
+  playerCount: number,
+): Promise<{
+  snapshot: Game0cSnapshotRow;
+  public: Game0cPublicRow;
+}> {
+  await assertGame0cSession(sessionId);
+
+  if (!Number.isInteger(playerCount) || playerCount < 8 || playerCount > 12) {
+    throw new Game0cEngineError('player_count는 8~12 사이 정수여야 합니다', 400);
+  }
+
+  const supabase = getSupabaseAdmin();
+  const sid = sessionId.trim();
+
+  const { data: existingSnap } = await supabase
+    .from('game_0c_snapshot')
+    .select('session_id')
+    .eq('session_id', sid)
+    .maybeSingle();
+
+  if (existingSnap) {
+    throw new Game0cEngineError('이미 초기화된 게임입니다', 400);
+  }
+
+  const { data: existingPublic } = await supabase
+    .from('game_0c_public')
+    .select('session_id')
+    .eq('session_id', sid)
+    .maybeSingle();
+
+  if (existingPublic) {
+    throw new Game0cEngineError('이미 초기화된 게임입니다', 400);
+  }
+
+  const players: Game0cPlayer[] = Array.from({ length: playerCount }, (_, i) => ({
+    num: i + 1,
+    state: 'human',
+    score: 0,
+    slots_left: 3,
+  }));
+
+  const { data: snapshotData, error: snapErr } = await supabase
+    .from('game_0c_snapshot')
+    .insert({
+      session_id: sid,
+      round: 0,
+      phase: 'WAITING',
+      players,
+    })
+    .select('*')
+    .single();
+
+  if (snapErr) {
+    console.error('game_0c_snapshot insert:', snapErr);
+    throw new Game0cEngineError(snapErr.message, 500);
+  }
+
+  const { data: publicData, error: pubErr } = await supabase
+    .from('game_0c_public')
+    .insert({
+      session_id: sid,
+      round: 0,
+      phase: 'WAITING',
+      force_candidates: [],
+      bid_results: [],
+      force_pairs: [],
+    })
+    .select('*')
+    .single();
+
+  if (pubErr) {
+    console.error('game_0c_public insert:', pubErr);
+    throw new Game0cEngineError(pubErr.message, 500);
+  }
+
+  return {
+    snapshot: {
+      ...snapshotData,
+      players: (snapshotData.players ?? []) as Game0cPlayer[],
+      phase: snapshotData.phase as Game0cPhase | null,
+    },
+    public: {
+      ...publicData,
+      force_pairs: (publicData.force_pairs ?? []) as Game0cForcePair[],
+      phase: publicData.phase as Game0cPhase | null,
+    },
+  };
+}
+
 /** 라운드 시작: 슬롯 3으로 초기화, phase ROUND_OPEN, 이벤트 기록 */
 export async function initRound(sessionId: string, round: number): Promise<{
   snapshot: Game0cSnapshotRow;

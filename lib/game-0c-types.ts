@@ -2,7 +2,7 @@
 
 export type Game0cPlayerState = 'human' | 'doctor' | 'zombie';
 
-export type Game0cPhase = 'ROUND_OPEN' | 'BIDDING' | 'FORCE' | 'OPEN' | 'CLOSED';
+export type Game0cPhase = 'WAITING' | 'ROUND_OPEN' | 'BIDDING' | 'FORCE' | 'OPEN' | 'CLOSED';
 
 export type Game0cContactType = 'normal' | 'force';
 
