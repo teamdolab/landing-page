@@ -16,7 +16,7 @@ import type {
   Game0cVariationChoice,
 } from '@/lib/game-0c-types';
 import { useTimerCountdown } from '@/lib/use-game-0c-public';
-import './game-0c-host.css';
+import '../game-0c-host.css';
 
 const ADMIN_STORAGE_KEY = 'admin_authenticated';
 
