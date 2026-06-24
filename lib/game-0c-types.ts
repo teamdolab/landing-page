@@ -27,6 +27,20 @@ export type Game0cPlayer = {
   slots_left: number;
 };
 
+export type Game0cPendingContact = {
+  type: 'normal_contact';
+  player_a: number;
+  at: string;
+};
+
+export type Game0cBoothState = {
+  phase: Game0cPhase | null;
+  round: number | null;
+  pending: Game0cPendingContact | null;
+  force_candidates: Game0cForceCandidate[];
+  player_numbers: number[];
+};
+
 export type Game0cForcePair = {
   round: number;
   pair: [number, number];
@@ -53,6 +67,7 @@ export type Game0cSnapshotRow = {
   round: number | null;
   phase: Game0cPhase | null;
   players: Game0cPlayer[];
+  pending: Game0cPendingContact | null;
   updated_at: string;
 };
 

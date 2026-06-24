@@ -144,6 +144,7 @@ function HostPageInner() {
   const [nominatedPlayer, setNominatedPlayer] = useState<number | null>(null);
   const [finalLoading, setFinalLoading] = useState(false);
   const [finalizeLoading, setFinalizeLoading] = useState(false);
+  const [manualContactOpen, setManualContactOpen] = useState(false);
 
   const timerSeconds = useTimerCountdown(publicData?.timer_end);
   const playerOptions = snapshot?.players.map((p) => p.num) ?? [];
@@ -762,112 +763,123 @@ function HostPageInner() {
               </section>
             )}
 
-            {phase === 'FORCE' && (
+            {(phase === 'FORCE' || phase === 'OPEN') && (
               <section className="game0c-host-panel">
-                <h2>강제접촉 입력</h2>
-                {nextForcePlayer != null && (
-                  <p style={{ fontSize: 13, color: '#888', marginBottom: 8 }}>
-                    현재 순서: {completedForceCount + 1}번째 — 실행자 #{nextForcePlayer}
-                  </p>
+                <button
+                  type="button"
+                  className="game0c-host-btn game0c-host-btn-secondary"
+                  style={{ width: '100%', marginBottom: manualContactOpen ? 12 : 0 }}
+                  onClick={() => setManualContactOpen((v) => !v)}
+                >
+                  비상 수동 입력 {manualContactOpen ? '▲' : '▼'}
+                </button>
+                {manualContactOpen && phase === 'FORCE' && (
+                  <>
+                    <h2 style={{ marginTop: 12 }}>강제접촉 입력</h2>
+                    {nextForcePlayer != null && (
+                      <p style={{ fontSize: 13, color: '#888', marginBottom: 8 }}>
+                        현재 순서: {completedForceCount + 1}번째 — 실행자 #{nextForcePlayer}
+                      </p>
+                    )}
+                    <div className="game0c-host-form-row">
+                      <div className="game0c-host-field">
+                        <label>실행자 (후보)</label>
+                        <select value={contactA} onChange={(e) => setContactA(Number(e.target.value))}>
+                          {orderedForceCandidates.map((c) => (
+                            <option key={c.player} value={c.player}>
+                              {c.order}순위 · #{c.player}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="game0c-host-field">
+                        <label>대상 플레이어</label>
+                        <select value={contactB} onChange={(e) => setContactB(Number(e.target.value))}>
+                          {playerOptions.filter((n) => n !== contactA).map((n) => (
+                            <option key={n} value={n}>#{n}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        type="button"
+                        className="game0c-host-btn"
+                        disabled={contactLoading}
+                        onClick={() => handleContact('force')}
+                      >
+                        {contactLoading ? '처리 중...' : '강제접촉 실행'}
+                      </button>
+                    </div>
+                  </>
                 )}
+                {manualContactOpen && phase === 'OPEN' && (
+                  <>
+                    <h2 style={{ marginTop: 12 }}>접촉 입력 (일반)</h2>
+                    <div className="game0c-host-form-row">
+                      <div className="game0c-host-field">
+                        <label>플레이어 A</label>
+                        <select value={contactA} onChange={(e) => setContactA(Number(e.target.value))}>
+                          {playerOptions.map((n) => (
+                            <option key={n} value={n}>#{n}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="game0c-host-field">
+                        <label>플레이어 B</label>
+                        <select value={contactB} onChange={(e) => setContactB(Number(e.target.value))}>
+                          {playerOptions.map((n) => (
+                            <option key={n} value={n}>#{n}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        type="button"
+                        className="game0c-host-btn"
+                        disabled={contactLoading}
+                        onClick={() => handleContact('normal')}
+                      >
+                        {contactLoading ? '처리 중...' : '접촉 실행'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </section>
+            )}
+
+            {phase === 'OPEN' && (
+              <section className="game0c-host-panel">
+                <h2>변신 입력</h2>
                 <div className="game0c-host-form-row">
                   <div className="game0c-host-field">
-                    <label>실행자 (후보)</label>
-                    <select value={contactA} onChange={(e) => setContactA(Number(e.target.value))}>
-                      {orderedForceCandidates.map((c) => (
-                        <option key={c.player} value={c.player}>
-                          {c.order}순위 · #{c.player}
-                        </option>
+                    <label>플레이어</label>
+                    <select
+                      value={variationPlayer}
+                      onChange={(e) => setVariationPlayer(Number(e.target.value))}
+                    >
+                      {playerOptions.map((n) => (
+                        <option key={n} value={n}>#{n}</option>
                       ))}
                     </select>
                   </div>
                   <div className="game0c-host-field">
-                    <label>대상 플레이어</label>
-                    <select value={contactB} onChange={(e) => setContactB(Number(e.target.value))}>
-                      {playerOptions.filter((n) => n !== contactA).map((n) => (
-                        <option key={n} value={n}>#{n}</option>
-                      ))}
+                    <label>변신 선택</label>
+                    <select
+                      value={variationChoice}
+                      onChange={(e) => setVariationChoice(e.target.value as Game0cVariationChoice)}
+                    >
+                      <option value="doctor">의사</option>
+                      <option value="zombie">좀비</option>
                     </select>
                   </div>
                   <button
                     type="button"
                     className="game0c-host-btn"
-                    disabled={contactLoading}
-                    onClick={() => handleContact('force')}
+                    disabled={variationLoading}
+                    onClick={handleVariation}
                   >
-                    {contactLoading ? '처리 중...' : '강제접촉 실행'}
+                    {variationLoading ? '처리 중...' : '변신 실행'}
                   </button>
                 </div>
               </section>
-            )}
-
-            {phase === 'OPEN' && (
-              <>
-                <section className="game0c-host-panel">
-                  <h2>접촉 입력 (일반)</h2>
-                  <div className="game0c-host-form-row">
-                    <div className="game0c-host-field">
-                      <label>플레이어 A</label>
-                      <select value={contactA} onChange={(e) => setContactA(Number(e.target.value))}>
-                        {playerOptions.map((n) => (
-                          <option key={n} value={n}>#{n}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="game0c-host-field">
-                      <label>플레이어 B</label>
-                      <select value={contactB} onChange={(e) => setContactB(Number(e.target.value))}>
-                        {playerOptions.map((n) => (
-                          <option key={n} value={n}>#{n}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <button
-                      type="button"
-                      className="game0c-host-btn"
-                      disabled={contactLoading}
-                      onClick={() => handleContact('normal')}
-                    >
-                      {contactLoading ? '처리 중...' : '접촉 실행'}
-                    </button>
-                  </div>
-                </section>
-
-                <section className="game0c-host-panel">
-                  <h2>변신 입력</h2>
-                  <div className="game0c-host-form-row">
-                    <div className="game0c-host-field">
-                      <label>플레이어</label>
-                      <select
-                        value={variationPlayer}
-                        onChange={(e) => setVariationPlayer(Number(e.target.value))}
-                      >
-                        {playerOptions.map((n) => (
-                          <option key={n} value={n}>#{n}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="game0c-host-field">
-                      <label>변신 선택</label>
-                      <select
-                        value={variationChoice}
-                        onChange={(e) => setVariationChoice(e.target.value as Game0cVariationChoice)}
-                      >
-                        <option value="doctor">의사</option>
-                        <option value="zombie">좀비</option>
-                      </select>
-                    </div>
-                    <button
-                      type="button"
-                      className="game0c-host-btn"
-                      disabled={variationLoading}
-                      onClick={handleVariation}
-                    >
-                      {variationLoading ? '처리 중...' : '변신 실행'}
-                    </button>
-                  </div>
-                </section>
-              </>
             )}
 
             <section className="game0c-host-panel">
