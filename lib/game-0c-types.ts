@@ -23,7 +23,7 @@ export type Game0cForcePair = {
 
 export type Game0cForceCandidate = {
   player: number;
-  order: number;
+  order: number | null;
 };
 
 export type Game0cBidResult = {
@@ -49,8 +49,8 @@ export type Game0cPublicRow = {
   round: number | null;
   phase: Game0cPhase | null;
   timer_end: string | null;
-  force_candidates: unknown[];
-  bid_results: unknown[];
+  force_candidates: Game0cForceCandidate[] | unknown[];
+  bid_results: Game0cBidResult[] | unknown[];
   force_pairs: Game0cForcePair[];
   updated_at: string;
 };

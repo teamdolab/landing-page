@@ -14,12 +14,18 @@ function parseForceCandidates(raw: unknown): Game0cForceCandidate[] {
       if (!item || typeof item !== 'object') return null;
       const o = item as Record<string, unknown>;
       const player = Number(o.player);
-      const order = Number(o.order);
-      if (!Number.isInteger(player) || !Number.isInteger(order)) return null;
+      if (!Number.isInteger(player)) return null;
+      const order = o.order == null ? null : Number(o.order);
+      if (order != null && !Number.isInteger(order)) return null;
       return { player, order };
     })
     .filter((x): x is Game0cForceCandidate => x != null)
-    .sort((a, b) => a.order - b.order);
+    .sort((a, b) => {
+      if (a.order != null && b.order != null) return a.order - b.order;
+      if (a.order != null) return -1;
+      if (b.order != null) return 1;
+      return a.player - b.player;
+    });
 }
 
 function parseBidResults(raw: unknown): Game0cBidResult[] {
@@ -129,8 +135,8 @@ function DisplayContent() {
                 <div>
                   <ul className="game0c-display-list">
                     {forceCandidates.map((c) => (
-                      <li key={`${c.player}-${c.order}`}>
-                        {c.order}순위 · {c.player}번
+                      <li key={`${c.player}-${c.order ?? 'x'}`}>
+                        {c.order != null ? `${c.order}순위 · ` : ''}{c.player}번
                       </li>
                     ))}
                   </ul>

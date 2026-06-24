@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminSession } from '@/lib/admin-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { isGame0c, resolveGameKind } from '@/lib/session-game-kind';
-import type { Game0cPhase, Game0cPlayer, Game0cSnapshotRow } from '@/lib/game-0c-types';
+import type { Game0cForcePair, Game0cPhase, Game0cPlayer, Game0cPublicRow, Game0cSnapshotRow } from '@/lib/game-0c-types';
 import { handleGame0cRouteError } from '../_helpers';
 
 export async function GET(req: NextRequest) {
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (!data) {
-      return NextResponse.json({ snapshot: null });
+      return NextResponse.json({ snapshot: null, public: null });
     }
 
     const snapshot: Game0cSnapshotRow = {
@@ -56,7 +56,26 @@ export async function GET(req: NextRequest) {
       phase: data.phase as Game0cPhase | null,
     };
 
-    return NextResponse.json({ snapshot });
+    const { data: publicData, error: publicErr } = await supabase
+      .from('game_0c_public')
+      .select('*')
+      .eq('session_id', sessionId)
+      .maybeSingle();
+
+    if (publicErr) {
+      console.error('game_0c_public 조회:', publicErr);
+      return NextResponse.json({ error: publicErr.message }, { status: 500 });
+    }
+
+    const publicRow: Game0cPublicRow | null = publicData
+      ? {
+          ...publicData,
+          force_pairs: (publicData.force_pairs ?? []) as Game0cForcePair[],
+          phase: publicData.phase as Game0cPhase | null,
+        }
+      : null;
+
+    return NextResponse.json({ snapshot, public: publicRow });
   } catch (e) {
     return handleGame0cRouteError(e);
   }
