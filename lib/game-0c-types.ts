@@ -2,7 +2,19 @@
 
 export type Game0cPlayerState = 'human' | 'doctor' | 'zombie';
 
-export type Game0cPhase = 'WAITING' | 'ROUND_OPEN' | 'BIDDING' | 'FORCE' | 'OPEN' | 'CLOSED';
+export type Game0cPhase =
+  | 'WAITING'
+  | 'ROUND_OPEN'
+  | 'BIDDING'
+  | 'FORCE'
+  | 'OPEN'
+  | 'CLOSED'
+  | 'FINISHED';
+
+export type Game0cFinalResult =
+  | { result: 'no_winner' }
+  | { result: 'co_winner'; winners: number[] }
+  | { result: 'sole_winner'; winner: number; eligible: number[] };
 
 export type Game0cContactType = 'normal' | 'force';
 

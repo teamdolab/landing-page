@@ -12,6 +12,7 @@ import type {
   Game0cPlayerState,
   Game0cPublicRow,
   Game0cSnapshotRow,
+  Game0cFinalResult,
   Game0cVariationChoice,
 } from '@/lib/game-0c-types';
 
@@ -1035,4 +1036,91 @@ export async function closeRound(sessionId: string, round: number): Promise<{
 
   const updatedSnapshot = await saveSnapshot(sessionId, round, 'CLOSED', snapshot.players);
   return { snapshot: updatedSnapshot, public: updatedPublic };
+}
+
+/** 6라운드 종료 후 최종 승리 판정 (미확정) */
+export async function getFinalResult(sessionId: string): Promise<Game0cFinalResult> {
+  await assertGame0cSession(sessionId);
+
+  const snapshot = await loadSnapshot(sessionId);
+  const humans = snapshot.players.filter((p) => p.state === 'human');
+
+  if (humans.length === 0) {
+    return { result: 'no_winner' };
+  }
+
+  const topScore = Math.max(...humans.map((p) => p.score));
+  const winners = humans.filter((p) => p.score === topScore).map((p) => p.num).sort((a, b) => a - b);
+
+  if (winners.length >= 2) {
+    return { result: 'co_winner', winners };
+  }
+
+  const winner = winners[0];
+  const sortedAll = [...snapshot.players].sort((a, b) => a.score - b.score || a.num - b.num);
+  const bottom3 = new Set(sortedAll.slice(0, 3).map((p) => p.num));
+  const eligible = humans
+    .filter((p) => p.num !== winner && !bottom3.has(p.num))
+    .map((p) => p.num)
+    .sort((a, b) => a - b);
+
+  return { result: 'sole_winner', winner, eligible };
+}
+
+/** 최종 결과 확정 → FINISHED phase */
+export async function finalizeGame(
+  sessionId: string,
+  nominatedPlayer?: number,
+): Promise<{
+  snapshot: Game0cSnapshotRow;
+  public: Game0cPublicRow;
+  event: Game0cEventRow;
+  finalResult: Game0cFinalResult;
+}> {
+  await assertGame0cSession(sessionId);
+
+  const snapshot = await loadSnapshot(sessionId);
+  if (snapshot.round !== 6) {
+    throw new Game0cEngineError('6라운드 종료 후에만 최종 결과를 확정할 수 있습니다', 400);
+  }
+  if (snapshot.phase !== 'CLOSED') {
+    throw new Game0cEngineError('6라운드가 종료된 상태가 아닙니다', 400);
+  }
+
+  const finalResult = await getFinalResult(sessionId);
+
+  let winners: number[] = [];
+  let nominated: number | undefined;
+
+  if (finalResult.result === 'co_winner') {
+    winners = finalResult.winners;
+  } else if (finalResult.result === 'sole_winner') {
+    if (nominatedPlayer == null || !Number.isInteger(nominatedPlayer)) {
+      throw new Game0cEngineError('지목 대상을 선택해주세요', 400);
+    }
+    if (!finalResult.eligible.includes(nominatedPlayer)) {
+      throw new Game0cEngineError('지목할 수 없는 플레이어입니다', 400);
+    }
+    winners = [finalResult.winner, nominatedPlayer];
+    nominated = nominatedPlayer;
+  }
+
+  const event = await insertEvent(sessionId, 6, 'GAME_FINALIZED', {
+    payload_public: { phase: 'FINISHED' },
+    payload_private: {
+      result: finalResult.result,
+      winners,
+      nominated,
+    },
+    created_by: 'admin',
+  });
+
+  const updatedPublic = await savePublic(sessionId, {
+    round: 6,
+    phase: 'FINISHED',
+    timer_end: null,
+  });
+
+  const updatedSnapshot = await saveSnapshot(sessionId, 6, 'FINISHED', snapshot.players);
+  return { snapshot: updatedSnapshot, public: updatedPublic, event, finalResult };
 }
