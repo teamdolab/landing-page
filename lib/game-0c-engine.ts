@@ -582,6 +582,34 @@ export async function processContact(
     throw new Game0cEngineError('강제 접촉은 FORCE 단계에만 가능합니다', 400);
   }
 
+  if (contactType === 'force') {
+    const publicRow = await loadPublic(sessionId);
+    const candidates = parseForceCandidates(publicRow?.force_candidates);
+    if (!candidates.some((c) => c.player === playerA)) {
+      throw new Game0cEngineError('강제접촉 권한이 없는 플레이어입니다', 400);
+    }
+
+    const supabase = getSupabaseAdmin();
+    const { data: existingForce, error: forceErr } = await supabase
+      .from('game_0c_event')
+      .select('id')
+      .eq('session_id', sessionId.trim())
+      .eq('round', round)
+      .eq('event_type', 'CONTACT_RESOLVE')
+      .eq('actor_player', playerA)
+      .eq('is_reverted', false)
+      .filter('payload_private->>contact_type', 'eq', 'force')
+      .limit(1);
+
+    if (forceErr) {
+      console.error('강제접촉 이력 조회:', forceErr);
+      throw new Game0cEngineError('이벤트 조회 실패', 500);
+    }
+    if (existingForce && existingForce.length > 0) {
+      throw new Game0cEngineError('이미 이번 라운드에 강제접촉을 사용했습니다', 400);
+    }
+  }
+
   const players = clonePlayers(current.players);
   const a = findPlayer(players, playerA);
   const b = findPlayer(players, playerB);
