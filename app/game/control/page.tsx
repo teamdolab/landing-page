@@ -481,6 +481,14 @@ export default function ControlPage() {
                   >
                     <i className="fa-solid fa-external-link-alt" /> 송출 화면
                   </a>
+                  <a
+                    href={`/game/game_0c/testroom?session=${encodeURIComponent(selectedSession.session_id)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="control-btn-secondary"
+                  >
+                    <i className="fa-solid fa-door-open" /> 부스 화면
+                  </a>
                 </div>
               </div>
             ) : game0b && selectedSession ? (
