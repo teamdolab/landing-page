@@ -13,6 +13,8 @@ import type {
   Game0cPublicRow,
   Game0cSnapshotRow,
   Game0cFinalResult,
+  Game0cPendingContact,
+  Game0cBoothState,
   Game0cVariationChoice,
 } from '@/lib/game-0c-types';
 
@@ -114,6 +116,26 @@ function findPlayer(players: Game0cPlayer[], num: number): Game0cPlayer {
   return player;
 }
 
+function parsePending(raw: unknown): Game0cPendingContact | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+  if (o.type !== 'normal_contact') return null;
+  const playerA = Number(o.player_a);
+  if (!Number.isInteger(playerA)) return null;
+  const at = typeof o.at === 'string' ? o.at : null;
+  if (!at) return null;
+  return { type: 'normal_contact', player_a: playerA, at };
+}
+
+function mapSnapshotRow(data: Record<string, unknown>): Game0cSnapshotRow {
+  return {
+    ...data,
+    players: (data.players ?? []) as Game0cPlayer[],
+    phase: data.phase as Game0cPhase | null,
+    pending: parsePending(data.pending),
+  } as Game0cSnapshotRow;
+}
+
 async function assertGame0cSession(sessionId: string): Promise<void> {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
@@ -150,11 +172,7 @@ async function loadSnapshot(sessionId: string): Promise<Game0cSnapshotRow> {
     throw new Game0cEngineError('스냅샷 없음. 게임 초기화가 필요합니다.', 404);
   }
 
-  return {
-    ...data,
-    players: (data.players ?? []) as Game0cPlayer[],
-    phase: data.phase as Game0cPhase | null,
-  };
+  return mapSnapshotRow(data);
 }
 
 async function loadPublic(sessionId: string): Promise<Game0cPublicRow | null> {
@@ -293,13 +311,22 @@ async function saveSnapshot(
   players: Game0cPlayer[],
 ): Promise<Game0cSnapshotRow> {
   const supabase = getSupabaseAdmin();
+  const sid = sessionId.trim();
+
+  const { data: existing } = await supabase
+    .from('game_0c_snapshot')
+    .select('pending')
+    .eq('session_id', sid)
+    .maybeSingle();
+
   const { data, error } = await supabase
     .from('game_0c_snapshot')
     .upsert({
-      session_id: sessionId.trim(),
+      session_id: sid,
       round,
       phase,
       players,
+      pending: existing?.pending ?? null,
     })
     .select('*')
     .single();
@@ -309,11 +336,7 @@ async function saveSnapshot(
     throw new Game0cEngineError(error.message, 500);
   }
 
-  return {
-    ...data,
-    players: (data.players ?? []) as Game0cPlayer[],
-    phase: data.phase as Game0cPhase | null,
-  };
+  return mapSnapshotRow(data);
 }
 
 async function savePublic(
@@ -516,11 +539,7 @@ export async function initGame(
   }
 
   return {
-    snapshot: {
-      ...snapshotData,
-      players: (snapshotData.players ?? []) as Game0cPlayer[],
-      phase: snapshotData.phase as Game0cPhase | null,
-    },
+    snapshot: mapSnapshotRow(snapshotData),
     public: {
       ...publicData,
       force_pairs: (publicData.force_pairs ?? []) as Game0cForcePair[],
@@ -1123,4 +1142,76 @@ export async function finalizeGame(
 
   const updatedSnapshot = await saveSnapshot(sessionId, 6, 'FINISHED', snapshot.players);
   return { snapshot: updatedSnapshot, public: updatedPublic, event, finalResult };
+}
+
+/** 부스 화면용 상태 (점수·플레이어 상태 미포함) */
+export async function getBoothState(sessionId: string): Promise<Game0cBoothState> {
+  await assertGame0cSession(sessionId);
+
+  const snapshot = await loadSnapshot(sessionId);
+  const publicRow = await loadPublic(sessionId);
+
+  return {
+    phase: snapshot.phase,
+    round: snapshot.round,
+    pending: snapshot.pending,
+    force_candidates: parseForceCandidates(publicRow?.force_candidates),
+    player_numbers: snapshot.players.map((p) => p.num),
+  };
+}
+
+/** 일반접촉 1차 태그 대기 상태 저장 */
+export async function setPendingContact(
+  sessionId: string,
+  playerNumber: number,
+): Promise<Game0cSnapshotRow> {
+  await assertGame0cSession(sessionId);
+
+  const snapshot = await loadSnapshot(sessionId);
+  findPlayer(snapshot.players, playerNumber);
+
+  const pending: Game0cPendingContact = {
+    type: 'normal_contact',
+    player_a: playerNumber,
+    at: new Date().toISOString(),
+  };
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('game_0c_snapshot')
+    .update({ pending })
+    .eq('session_id', sessionId.trim())
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('game_0c_snapshot pending 저장:', error);
+    throw new Game0cEngineError(error.message, 500);
+  }
+
+  return mapSnapshotRow(data);
+}
+
+/** 부스 대기 상태 초기화 */
+export async function clearPending(sessionId: string): Promise<Game0cSnapshotRow> {
+  await assertGame0cSession(sessionId);
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('game_0c_snapshot')
+    .update({ pending: null })
+    .eq('session_id', sessionId.trim())
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('game_0c_snapshot pending 초기화:', error);
+    throw new Game0cEngineError(error.message, 500);
+  }
+
+  if (!data) {
+    throw new Game0cEngineError('스냅샷 없음', 404);
+  }
+
+  return mapSnapshotRow(data);
 }

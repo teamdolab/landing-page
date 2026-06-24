@@ -1,0 +1,206 @@
+/* 좀비게임(game_0c) 부스 태블릿 — 어두운 풀스크린 */
+
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+
+.game0c-testroom-root {
+  --accent: #a855f7;
+  --accent-dim: #7c3aed;
+  --cyan: #22d3ee;
+  --bg: #07070f;
+  --panel: #12121f;
+  --border: #2a2a40;
+  --text: #f0f0f5;
+  --text-dim: #8888a0;
+  --danger: #f87171;
+
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  min-height: 100vh;
+  width: 100vw;
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(168, 85, 247, 0.12), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(34, 211, 238, 0.06), transparent 50%);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.game0c-testroom-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(10, 10, 18, 0.85);
+}
+
+.game0c-testroom-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.game0c-testroom-session {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.game0c-testroom-back {
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.game0c-testroom-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  gap: 1.5rem;
+}
+
+.game0c-testroom-prompt {
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.35;
+  max-width: 640px;
+}
+
+.game0c-testroom-sub {
+  font-size: 1rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.game0c-testroom-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: min(100%, 420px);
+}
+
+.game0c-testroom-btn {
+  width: 100%;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  border: 2px solid var(--accent);
+  background: rgba(168, 85, 247, 0.15);
+  color: var(--text);
+  font-size: 1.35rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.game0c-testroom-btn:active {
+  transform: scale(0.98);
+}
+
+.game0c-testroom-btn-secondary {
+  border-color: var(--cyan);
+  background: rgba(34, 211, 238, 0.1);
+}
+
+.game0c-testroom-btn-choice {
+  font-size: 1.75rem;
+  padding: 1.5rem;
+}
+
+.game0c-testroom-target-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  max-width: 560px;
+}
+
+.game0c-testroom-target-btn {
+  min-width: 72px;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 1.5rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.game0c-testroom-target-btn:active {
+  border-color: var(--accent);
+  background: rgba(168, 85, 247, 0.2);
+}
+
+.game0c-testroom-nfc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  padding: 2rem;
+}
+
+.game0c-testroom-nfc-icon {
+  font-size: 4rem;
+}
+
+.game0c-testroom-nfc-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--cyan);
+}
+
+.game0c-testroom-hidden-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.game0c-testroom-result {
+  font-size: clamp(1.25rem, 4vw, 1.75rem);
+  font-weight: 700;
+  text-align: center;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  max-width: 560px;
+}
+
+.game0c-testroom-result-success {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.game0c-testroom-result-error {
+  color: var(--danger);
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
+.game0c-testroom-result-info {
+  color: #fde68a;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.game0c-testroom-empty {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-dim);
+}

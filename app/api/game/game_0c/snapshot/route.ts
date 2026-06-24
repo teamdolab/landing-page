@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminSession } from '@/lib/admin-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { isGame0c, resolveGameKind } from '@/lib/session-game-kind';
-import type { Game0cForcePair, Game0cPhase, Game0cPlayer, Game0cPublicRow, Game0cSnapshotRow } from '@/lib/game-0c-types';
+import type { Game0cForcePair, Game0cPendingContact, Game0cPhase, Game0cPlayer, Game0cPublicRow, Game0cSnapshotRow } from '@/lib/game-0c-types';
 import { handleGame0cRouteError } from '../_helpers';
 
 export async function GET(req: NextRequest) {
@@ -54,6 +54,17 @@ export async function GET(req: NextRequest) {
       ...data,
       players: (data.players ?? []) as Game0cPlayer[],
       phase: data.phase as Game0cPhase | null,
+      pending: (() => {
+        const raw = data.pending;
+        if (!raw || typeof raw !== 'object') return null;
+        const o = raw as Record<string, unknown>;
+        if (o.type !== 'normal_contact') return null;
+        const playerA = Number(o.player_a);
+        if (!Number.isInteger(playerA)) return null;
+        const at = typeof o.at === 'string' ? o.at : null;
+        if (!at) return null;
+        return { type: 'normal_contact' as const, player_a: playerA, at };
+      })(),
     };
 
     const { data: publicData, error: publicErr } = await supabase
