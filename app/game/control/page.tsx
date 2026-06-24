@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Game0bRow } from '@/lib/game-0b-types';
+import type { Game0cSnapshotRow } from '@/lib/game-0c-types';
 import './control-styles.css';
 
 const ADMIN_STORAGE_KEY = 'admin_authenticated';
@@ -31,6 +32,10 @@ type Session = {
 
 function isGame0b(session: Session): boolean {
   return session.game_kind === 'game_0b';
+}
+
+function isGame0c(session: Session): boolean {
+  return session.game_kind === 'game_0c';
 }
 
 type GamePlayer = {
@@ -69,8 +74,10 @@ export default function ControlPage() {
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [game, setGame] = useState<Game | null>(null);
   const [game0b, setGame0b] = useState<Game0bRow | null>(null);
+  const [game0c, setGame0c] = useState<Game0cSnapshotRow | null>(null);
   const [playerCount, setPlayerCount] = useState(8);
   const [game0bPlayerCount, setGame0bPlayerCount] = useState(12);
+  const [game0cPlayerCount, setGame0cPlayerCount] = useState(12);
   const [game0bFirstPlayer, setGame0bFirstPlayer] = useState(1);
   const [creating, setCreating] = useState(false);
   const [displayUrl, setDisplayUrl] = useState('');
@@ -120,8 +127,27 @@ export default function ControlPage() {
 
   async function loadGameState(session: Session) {
     const sessionId = session.session_id;
+    if (isGame0c(session)) {
+      setGame(null);
+      setGame0b(null);
+      const res = await adminFetch(
+        `/api/game/game_0c/snapshot?session_id=${encodeURIComponent(sessionId)}`,
+      );
+      const data = await res.json();
+      if (res.ok && data.snapshot) {
+        setGame0c(data.snapshot as Game0cSnapshotRow);
+        if (typeof window !== 'undefined') {
+          setDisplayUrl(`${window.location.origin}/game/game_0c/display?session=${encodeURIComponent(sessionId)}`);
+        }
+      } else {
+        setGame0c(null);
+        setDisplayUrl('');
+      }
+      return;
+    }
     if (isGame0b(session)) {
       setGame(null);
+      setGame0c(null);
       const res = await fetch(`/api/game/game_0b/session/${encodeURIComponent(sessionId)}`);
       const data = await res.json();
       if (res.ok && data && data.game_id) {
@@ -137,6 +163,7 @@ export default function ControlPage() {
     }
 
     setGame0b(null);
+    setGame0c(null);
     const res = await fetch(`/api/game/session/${encodeURIComponent(sessionId)}`);
     const data = await res.json();
     if (res.ok && data) {
@@ -163,10 +190,40 @@ export default function ControlPage() {
   async function handleConfirmYes() {
     setConfirmOpen(false);
     if (!selectedSession) return;
-    if (isGame0b(selectedSession)) {
+    if (isGame0c(selectedSession)) {
+      await createGame0c();
+    } else if (isGame0b(selectedSession)) {
       await createGame0bAndNavigate();
     } else {
       await createGameAndNavigate();
+    }
+  }
+
+  async function createGame0c() {
+    if (!selectedSession) return;
+    setCreating(true);
+    try {
+      const res = await adminFetch('/api/game/game_0c/init-game', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: selectedSession.session_id,
+          player_count: game0cPlayerCount,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data?.snapshot) {
+        setGame0c(data.snapshot as Game0cSnapshotRow);
+        const sid = selectedSession.session_id;
+        setDisplayUrl(`${window.location.origin}/game/game_0c/display?session=${encodeURIComponent(sid)}`);
+      } else {
+        alert(data?.error || '좀비게임 생성 실패');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('게임 생성 중 오류가 발생했습니다.');
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -338,14 +395,27 @@ export default function ControlPage() {
               <i className="fa-solid fa-play" />
               {selectedSession.session_id} · {selectedSession.game_name}
             </h2>
-            {!game && !game0b ? (
+            {!game && !game0b && !game0c ? (
               <div className="control-create-section">
-                {selectedSession && !isGame0b(selectedSession) && (
+                {selectedSession && !isGame0b(selectedSession) && !isGame0c(selectedSession) && (
                   <div className="control-form-group">
                     <label>플레이어 수 (8~12명)</label>
                     <select
                       value={playerCount}
                       onChange={(e) => setPlayerCount(Number(e.target.value))}
+                    >
+                      {[8, 9, 10, 11, 12].map((n) => (
+                        <option key={n} value={n}>{n}명</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {selectedSession && isGame0c(selectedSession) && (
+                  <div className="control-form-group">
+                    <label>플레이어 수 (8~12명)</label>
+                    <select
+                      value={game0cPlayerCount}
+                      onChange={(e) => setGame0cPlayerCount(Number(e.target.value))}
                     >
                       {[8, 9, 10, 11, 12].map((n) => (
                         <option key={n} value={n}>{n}명</option>
@@ -390,6 +460,28 @@ export default function ControlPage() {
                 >
                   {creating ? '생성 중...' : '게임 시작'}
                 </button>
+              </div>
+            ) : game0c && selectedSession ? (
+              <div className="control-create-section">
+                <p style={{ color: '#2e7d32', fontWeight: 600, marginBottom: 12 }}>좀비게임 진행 중</p>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <a
+                    href={`/game/game_0c/host?session=${encodeURIComponent(selectedSession.session_id)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="control-btn-primary"
+                  >
+                    <i className="fa-solid fa-gamepad" /> 진행자 화면
+                  </a>
+                  <a
+                    href={displayUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="control-btn-secondary"
+                  >
+                    <i className="fa-solid fa-external-link-alt" /> 송출 화면
+                  </a>
+                </div>
               </div>
             ) : game0b && selectedSession ? (
               <div className="control-create-section">

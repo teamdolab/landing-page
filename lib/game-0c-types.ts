@@ -21,6 +21,16 @@ export type Game0cForcePair = {
   at: string;
 };
 
+export type Game0cForceCandidate = {
+  player: number;
+  order: number;
+};
+
+export type Game0cBidResult = {
+  player: number;
+  bids: number;
+};
+
 export type Game0cContactResult = {
   state_changes: Record<string, Game0cPlayerState>;
   score_deltas: Record<string, number>;
