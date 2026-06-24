@@ -1,0 +1,252 @@
+/* 좀비게임(game_0c) 송출 화면 — 어두운 풀스크린 */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+
+.game0c-display-root {
+  --accent: #a855f7;
+  --accent-dim: #7c3aed;
+  --cyan: #22d3ee;
+  --bg: #07070f;
+  --panel: #12121f;
+  --border: #2a2a40;
+  --text: #f0f0f5;
+  --text-dim: #8888a0;
+  --title-font: 'Orbitron', sans-serif;
+  --mono-font: 'Share Tech Mono', monospace;
+  --main-font: 'Pretendard Variable', Pretendard, sans-serif;
+
+  font-family: var(--main-font);
+  min-height: 100vh;
+  width: 100vw;
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(168, 85, 247, 0.12), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(34, 211, 238, 0.06), transparent 50%);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.game0c-display-scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+}
+
+.game0c-display-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2.5rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(10, 10, 18, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+.game0c-display-brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  font-family: var(--title-font);
+}
+
+.game0c-display-brand-main {
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.game0c-display-brand-sub {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.2em;
+}
+
+.game0c-display-title {
+  font-family: var(--title-font);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.game0c-display-meta {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.game0c-display-round {
+  font-family: var(--title-font);
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--cyan);
+  letter-spacing: 0.05em;
+}
+
+.game0c-display-phase {
+  font-size: 1.35rem;
+  font-weight: 700;
+  padding: 0.5rem 1.25rem;
+  background: linear-gradient(135deg, var(--accent-dim), var(--accent));
+  border-radius: 8px;
+  letter-spacing: 0.04em;
+}
+
+.game0c-display-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 3rem;
+  gap: 2.5rem;
+}
+
+.game0c-display-timer {
+  text-align: center;
+}
+
+.game0c-display-timer-value {
+  font-family: var(--mono-font);
+  font-size: clamp(4rem, 12vw, 8rem);
+  font-weight: 700;
+  color: var(--cyan);
+  text-shadow: 0 0 40px rgba(34, 211, 238, 0.35);
+  line-height: 1;
+}
+
+.game0c-display-timer-value.is-low {
+  color: #f87171;
+  text-shadow: 0 0 40px rgba(248, 113, 113, 0.4);
+  animation: pulse-timer 1s ease-in-out infinite;
+}
+
+@keyframes pulse-timer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.game0c-display-timer-label {
+  margin-top: 0.75rem;
+  font-size: 1rem;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.game0c-display-sections {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.game0c-display-section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+}
+
+.game0c-display-section h2 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.game0c-display-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.game0c-display-list li {
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border-left: 4px solid var(--accent);
+}
+
+.game0c-display-pair {
+  font-family: var(--mono-font);
+  color: var(--cyan);
+}
+
+.game0c-display-empty {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.game0c-display-empty h1 {
+  font-family: var(--title-font);
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.game0c-display-empty input {
+  width: 100%;
+  max-width: 360px;
+  padding: 0.75rem 1rem;
+  background: #1a1a2a;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.game0c-display-empty button {
+  padding: 0.75rem 2rem;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.game0c-display-waiting {
+  font-size: 1.5rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.game0c-display-subsection {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.game0c-display-subsection h3 {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.75rem;
+}
