@@ -88,6 +88,7 @@ CREATE TABLE game_0c_snapshot (
   ),
   players JSONB NOT NULL DEFAULT '[]'::jsonb,
   pending JSONB,
+  status TEXT NOT NULL DEFAULT '진행중' CHECK (status IN ('진행중', '완료')),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -99,6 +100,7 @@ CREATE TRIGGER update_game_0c_snapshot_updated_at
 COMMENT ON TABLE game_0c_snapshot IS '좀비게임(game_0c) 운영자 전용 풀 상태 스냅샷';
 COMMENT ON COLUMN game_0c_snapshot.players IS '[{num, state, score, slots_left}]';
 COMMENT ON COLUMN game_0c_snapshot.pending IS '부스 대기 상태 예: {type:"normal_contact", player_a:3, at:"..."}';
+COMMENT ON COLUMN game_0c_snapshot.status IS '진행중 | 완료 (control 게임 종료)';
 
 ALTER TABLE game_0c_snapshot ENABLE ROW LEVEL SECURITY;
 
