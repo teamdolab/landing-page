@@ -1,4 +1,13 @@
-.game0c-host-root {
+.game0c-host-final-panel {
+  border-color: #4a6fa5;
+}
+
+.game0c-host-final-msg {
+  font-size: 15px;
+  margin-bottom: 12px;
+  color: #cce0ff;
+}
+
   min-height: 100vh;
   background: #0a0a0a;
   color: #e8e8e8;

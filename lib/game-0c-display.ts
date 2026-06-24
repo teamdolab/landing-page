@@ -7,6 +7,7 @@ const PHASE_LABELS: Record<Game0cPhase, string> = {
   FORCE: '강제접촉',
   OPEN: '자유시간',
   CLOSED: '종료',
+  FINISHED: '게임 종료',
 };
 
 export function game0cPhaseLabel(phase: Game0cPhase | null | undefined): string {

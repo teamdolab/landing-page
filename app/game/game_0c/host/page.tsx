@@ -7,6 +7,7 @@ import type {
   Game0cContactType,
   Game0cEventRow,
   Game0cForceCandidate,
+  Game0cFinalResult,
   Game0cPhase,
   Game0cPlayer,
   Game0cPlayerState,
@@ -65,6 +66,7 @@ function phaseLabel(phase: Game0cPhase | null): string {
     FORCE: '강제접촉',
     OPEN: '자유시간',
     CLOSED: '종료',
+    FINISHED: '게임 종료',
   };
   return map[phase] ?? phase;
 }
@@ -92,6 +94,10 @@ function eventSummary(ev: Game0cEventRow): string {
   }
   if (ev.event_type === 'ROUND_CLOSED') {
     return `라운드 ${ev.round} 종료`;
+  }
+  if (ev.event_type === 'GAME_FINALIZED') {
+    const winners = Array.isArray(priv.winners) ? (priv.winners as number[]).join(', ') : '-';
+    return `게임 종료 — 우승: ${winners}`;
   }
   if (ev.event_type === 'REVERT') {
     return `되돌림 #${priv.target_event_id}`;
@@ -132,6 +138,12 @@ function HostPageInner() {
   const [revertReason, setRevertReason] = useState('');
   const [revertLoading, setRevertLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+
+  const [finalResult, setFinalResult] = useState<Game0cFinalResult | null>(null);
+  const [finalPanelOpen, setFinalPanelOpen] = useState(false);
+  const [nominatedPlayer, setNominatedPlayer] = useState<number | null>(null);
+  const [finalLoading, setFinalLoading] = useState(false);
+  const [finalizeLoading, setFinalizeLoading] = useState(false);
 
   const timerSeconds = useTimerCountdown(publicData?.timer_end);
   const playerOptions = snapshot?.players.map((p) => p.num) ?? [];
@@ -345,6 +357,55 @@ function HostPageInner() {
     }
   }
 
+  async function handleLoadFinalResult() {
+    setFinalLoading(true);
+    setMsg(null);
+    try {
+      const res = await adminFetch(
+        `/api/game/game_0c/final-result?session_id=${encodeURIComponent(sessionId)}`,
+      );
+      const j = (await res.json()) as Game0cFinalResult & { error?: string };
+      if (!res.ok) {
+        throw new Error(j.error || '최종 결과 조회 실패');
+      }
+      setFinalResult(j);
+      setFinalPanelOpen(true);
+      if (j.result === 'sole_winner' && j.eligible.length > 0) {
+        setNominatedPlayer(j.eligible[0]);
+      } else {
+        setNominatedPlayer(null);
+      }
+    } catch (e) {
+      showMsg(e instanceof Error ? e.message : '최종 결과 조회 실패', 'error');
+    } finally {
+      setFinalLoading(false);
+    }
+  }
+
+  async function handleFinalize() {
+    setFinalizeLoading(true);
+    setMsg(null);
+    try {
+      const body: Record<string, unknown> = { session_id: sessionId };
+      if (finalResult?.result === 'sole_winner') {
+        if (nominatedPlayer == null) {
+          showMsg('지목 대상을 선택해주세요', 'error');
+          return;
+        }
+        body.nominated_player = nominatedPlayer;
+      }
+      await postAdmin('/api/game/game_0c/finalize', body);
+      showMsg('게임 종료 — 최종 결과가 확정되었습니다', 'success');
+      setFinalPanelOpen(false);
+      setFinalResult(null);
+      await reload();
+    } catch (e) {
+      showMsg(e instanceof Error ? e.message : '결과 확정 실패', 'error');
+    } finally {
+      setFinalizeLoading(false);
+    }
+  }
+
   async function handleContact(contactType: Game0cContactType) {
     if (!snapshot) return;
     if (contactA === contactB) {
@@ -476,7 +537,10 @@ function HostPageInner() {
     );
   }
 
-  const canStartRound = phase === 'CLOSED' || phase === 'WAITING';
+  const canStartRound =
+    phase === 'WAITING' || (phase === 'CLOSED' && round > 0 && round < 6);
+  const showFinalResultAction = phase === 'CLOSED' && round === 6;
+  const isGameFinished = phase === 'FINISHED';
   const showTimer = publicData?.timer_end != null && timerSeconds != null;
 
   return (
@@ -599,8 +663,67 @@ function HostPageInner() {
                     라운드 종료
                   </button>
                 )}
+                {showFinalResultAction && !finalPanelOpen && (
+                  <button
+                    type="button"
+                    className="game0c-host-btn"
+                    disabled={finalLoading}
+                    onClick={handleLoadFinalResult}
+                  >
+                    {finalLoading ? '조회 중...' : '최종 결과 확인'}
+                  </button>
+                )}
               </div>
             </section>
+
+            {showFinalResultAction && finalPanelOpen && finalResult && (
+              <section className="game0c-host-panel game0c-host-final-panel">
+                <h2>최종 결과</h2>
+                {finalResult.result === 'no_winner' && (
+                  <p className="game0c-host-final-msg">인간 생존자 없음 — 우승자 없습니다</p>
+                )}
+                {finalResult.result === 'co_winner' && (
+                  <p className="game0c-host-final-msg">
+                    공동 우승: {finalResult.winners.map((n) => `${n}번`).join(', ')}
+                  </p>
+                )}
+                {finalResult.result === 'sole_winner' && (
+                  <>
+                    <p className="game0c-host-final-msg">
+                      단독 우승: {finalResult.winner}번 — 지목 대상을 선택하세요
+                    </p>
+                    <div className="game0c-host-form-row">
+                      <div className="game0c-host-field">
+                        <label>지목 대상 (인간)</label>
+                        <select
+                          value={nominatedPlayer ?? ''}
+                          onChange={(e) => setNominatedPlayer(Number(e.target.value))}
+                        >
+                          {finalResult.eligible.map((n) => (
+                            <option key={n} value={n}>#{n}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </>
+                )}
+                <button
+                  type="button"
+                  className="game0c-host-btn"
+                  disabled={finalizeLoading}
+                  onClick={handleFinalize}
+                >
+                  {finalizeLoading ? '처리 중...' : '결과 확정'}
+                </button>
+              </section>
+            )}
+
+            {isGameFinished && (
+              <section className="game0c-host-panel game0c-host-final-panel">
+                <h2>게임 종료</h2>
+                <p className="game0c-host-final-msg">6라운드가 종료되었습니다. 최종 결과가 확정되었습니다.</p>
+              </section>
+            )}
 
             <section className="game0c-host-panel">
               <h2>플레이어 상태</h2>
