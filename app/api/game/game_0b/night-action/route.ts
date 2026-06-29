@@ -16,6 +16,17 @@ const ACTION_COSTS: Record<string, number> = {
   skip: 0,
 };
 
+/** 통제와 같은 라운드에 함께 쓸 수 없는 일반 액션 */
+const MAIN_NIGHT_ACTIONS = new Set([
+  'mine',
+  'repair_survivor',
+  'repair_rebel',
+  'search',
+  'assassinate',
+  'plunder',
+  'destroy',
+]);
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -80,6 +91,36 @@ export async function POST(req: NextRequest) {
         .limit(1);
       if (existingHt && existingHt.length > 0) {
         return NextResponse.json({ error: '은닉거래는 라운드당 1회만 가능합니다.' }, { status: 400 });
+      }
+    }
+
+    if (actionType === 'control' || MAIN_NIGHT_ACTIONS.has(actionType)) {
+      const { data: roundActions } = await supabase
+        .from('game_0b_event')
+        .select('event_data')
+        .eq('game_id', game.game_id)
+        .eq('event_type', 'night_action')
+        .eq('actor_player_number', playerNumber)
+        .filter('event_data->>round', 'eq', String(game.current_round));
+
+      const usedTypes = (roundActions ?? []).map(
+        (row) => (row.event_data as Record<string, unknown>)?.action_type as string,
+      );
+      const usedControl = usedTypes.includes('control');
+      const usedMain = usedTypes.some((t) => MAIN_NIGHT_ACTIONS.has(t));
+      const actorRole = (game as Record<string, unknown>)[playerRoleKey(playerNumber)] as string | null;
+
+      if (actionType === 'control' && actorRole === '혁명가' && usedControl) {
+        return NextResponse.json({ error: '혁명가의 통제는 라운드당 1회만 가능합니다.' }, { status: 400 });
+      }
+      if (actionType === 'control' && usedMain) {
+        return NextResponse.json({ error: '일반 액션 후에는 통제를 사용할 수 없습니다.' }, { status: 400 });
+      }
+      if (MAIN_NIGHT_ACTIONS.has(actionType) && usedControl) {
+        return NextResponse.json({ error: '통제 후에는 일반 액션을 사용할 수 없습니다.' }, { status: 400 });
+      }
+      if (MAIN_NIGHT_ACTIONS.has(actionType) && usedMain) {
+        return NextResponse.json({ error: '일반 액션은 라운드당 1회만 가능합니다.' }, { status: 400 });
       }
     }
 
