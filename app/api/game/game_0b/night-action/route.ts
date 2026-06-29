@@ -83,7 +83,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const isNonConsuming = actionType === 'detect' || actionType === 'hidden_trade';
+    const isNonConsuming =
+      actionType === 'detect' || actionType === 'hidden_trade' || actionType === 'control';
 
     const eventData: Record<string, unknown> = {
       action_type: actionType,

@@ -400,7 +400,8 @@ function PlayerActionPanel({
       if (!res.ok) {
         setMsg(j.error || '액션 실패');
       } else {
-        const isNonConsuming = actionId === 'detect' || actionId === 'hidden_trade';
+        const isNonConsuming =
+          actionId === 'detect' || actionId === 'hidden_trade' || actionId === 'control';
         if (!isNonConsuming) {
           setActionDone(true);
         }
@@ -675,7 +676,7 @@ function getActionsForRole(role: string | null, game: Game0bRow): ActionDef[] {
     case '사령관':
       return [
         { id: 'detect', label: '감지', cost: 0, needsTarget: false, nonConsuming: true },
-        { id: 'control', label: '통제', cost: 5, needsTarget: true },
+        { id: 'control', label: '통제', cost: 5, needsTarget: true, nonConsuming: true },
         { id: 'mine', label: '채굴', cost: 0, needsTarget: false },
         { id: 'repair_survivor', label: '수리', cost: 1, needsTarget: false },
       ];
