@@ -38,16 +38,9 @@ export function validateLifeboatSeats(game: Game0bRow, seats: number[]): string 
   for (const s of seats) {
     if (!Number.isInteger(s) || s < 1 || s > pc) return `유효하지 않은 번호: ${s}`;
   }
-  const useRebel = game.revolutionary_player_number != null;
   for (const s of seats) {
     const { role } = getPlayerRoleCore(game, s);
     if (!role) return `${s}번 역할 정보 없음`;
-    if (useRebel && !REBEL_ROLES.has(role)) {
-      return `${s}번은 반군 진영이 아닙니다`;
-    }
-    if (!useRebel && !SURVIVOR_ROLES.has(role)) {
-      return `${s}번은 생존자 진영이 아닙니다`;
-    }
   }
   return null;
 }
