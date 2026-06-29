@@ -510,6 +510,12 @@ export default function AdminPage() {
       <header className="admin-header">
         <div className="logo-area">DO:LAB <span>ADMIN</span></div>
         <div className="user-area">
+          <a
+            href="/manager"
+            style={{ color: '#ff4f00', fontSize: 13, marginRight: 16, textDecoration: 'none' }}
+          >
+            매니저 화면 열기 →
+          </a>
           <button
             type="button"
             onClick={async () => {
