@@ -23,7 +23,13 @@ type ReturnIntent = 'yes' | 'maybe' | 'no';
 function LogoutContent() {
   const searchParams = useSearchParams();
   const gameId = searchParams.get('gameId') ?? '';
-  const sessionId = searchParams.get('sessionId') ?? '';
+  const sessionIdParam = searchParams.get('sessionId') ?? '';
+  const stationId = searchParams.get('station_id') ?? '';
+  const gameKindParam = searchParams.get('game_kind') ?? '';
+
+  const [resolvedSessionId, setResolvedSessionId] = useState(sessionIdParam);
+  const [gameKind, setGameKind] = useState(gameKindParam || 'game_0a');
+  const [creditClaimMessage, setCreditClaimMessage] = useState('');
 
   const [screen, setScreen] = useState<Screen>('nfc');
   const [nfcError, setNfcError] = useState('');
@@ -35,6 +41,49 @@ function LogoutContent() {
   const [tableOpen, setTableOpen] = useState(false);
   const [lastNfcId, setLastNfcId] = useState('');
   const nfcInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function resolveContext() {
+      if (gameKindParam) {
+        setGameKind(gameKindParam);
+      }
+
+      if (stationId) {
+        try {
+          const res = await fetch(`/api/stations/${encodeURIComponent(stationId)}`);
+          const data = await res.json();
+          if (cancelled) return;
+          if (res.ok && data.active) {
+            setResolvedSessionId(data.session_id);
+            setGameKind(data.game_kind ?? 'game_0b');
+            return;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      const sid = sessionIdParam.trim();
+      if (sid) {
+        setResolvedSessionId(sid);
+        if (!gameKindParam) {
+          try {
+            const res = await fetch(`/api/game/game_0b/session/${encodeURIComponent(sid)}`);
+            if (!cancelled && res.ok) setGameKind('game_0b');
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+
+    resolveContext();
+    return () => {
+      cancelled = true;
+    };
+  }, [stationId, sessionIdParam, gameKindParam]);
 
   const showScreen = useCallback((id: Screen) => setScreen(id), []);
 
@@ -126,7 +175,7 @@ function LogoutContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           game_id: gameId,
-          session_id: sessionId || undefined,
+          session_id: resolvedSessionId || undefined,
           nfc_id: lastNfcId || undefined,
           nps,
           return_intent: returnIntent,
@@ -134,14 +183,32 @@ function LogoutContent() {
       }).catch(() => {});
     }
 
+    if (gameKind === 'game_0b' && resolvedSessionId && logoutData) {
+      try {
+        const res = await fetch('/api/game/game_0b/claim-credit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: resolvedSessionId,
+            player_number: logoutData.playerNumber,
+          }),
+        });
+        const data = await res.json();
+        if (data.message) setCreditClaimMessage(data.message);
+      } catch {
+        // 무시
+      }
+    }
+
     showScreen('final');
-  }, [gameId, lastNfcId, sessionId, nps, returnIntent, showScreen]);
+  }, [gameId, lastNfcId, resolvedSessionId, gameKind, logoutData, nps, returnIntent, showScreen]);
 
   const resetToStart = useCallback(() => {
     setLogoutData(null);
     setLastNfcId('');
     setNps(7);
     setReturnIntent(null);
+    setCreditClaimMessage('');
     setShowTouchText(false);
     setLineDrawn(false);
     setTableOpen(false);
@@ -436,6 +503,9 @@ function LogoutContent() {
                 <br />
                 모든 테스트가 종료되었습니다.
               </p>
+              {creditClaimMessage && (
+                <p className="text-base font-semibold text-[#FF4F00] mb-4">{creditClaimMessage}</p>
+              )}
               <p className="text-sm text-gray-500 mt-5">화면을 터치하면 초기화면으로 이동합니다.</p>
             </div>
           </motion.div>
