@@ -31,7 +31,7 @@ export async function runGame0bSettleSession(params: {
   const { data: participants } = await supabase
     .from('game_participants')
     .select('player_number, user_id')
-    .eq('game_id', game.game_id);
+    .eq('session_id', sessionId);
 
   const userIdByPlayer = new Map<number, string>();
   for (const row of participants ?? []) {
