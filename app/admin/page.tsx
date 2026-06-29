@@ -80,6 +80,14 @@ type AuditLog = {
   created_at: string;
 };
 
+type Station = {
+  id: string;
+  store_name: string;
+  name: string;
+  active_session_id: string | null;
+  created_at: string;
+};
+
 type Tab = 'sessions' | 'settlement' | 'masters' | 'logs';
 
 const TAB_LABELS: Record<Tab, string> = {
@@ -108,6 +116,12 @@ export default function AdminPage() {
   // 정산 / 로그
   const [settlement, setSettlement] = useState<{ rows: SettlementRow[]; total: SettlementTotal } | null>(null);
   const [logs, setLogs] = useState<AuditLog[]>([]);
+
+  // 팀 자리 관리
+  const [stations, setStations] = useState<Station[]>([]);
+  const [stationForm, setStationForm] = useState({ store_name: '강남점', name: '' });
+  const [stationError, setStationError] = useState('');
+  const [stationLoading, setStationLoading] = useState(false);
 
   // 게임 생성 폼
   const [formData, setFormData] = useState({
@@ -172,6 +186,64 @@ export default function AdminPage() {
     if (tab === 'settlement') loadSettlement();
     if (tab === 'logs') loadLogs();
   }, [tab, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadStations = useCallback(async () => {
+    const res = await adminFetch('/api/admin/stations');
+    const data = await res.json();
+    if (Array.isArray(data.stations)) setStations(data.stations);
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    loadStations();
+  }, [isAuthenticated, loadStations]);
+
+  async function createStation(e: React.FormEvent) {
+    e.preventDefault();
+    setStationError('');
+    setStationLoading(true);
+    try {
+      const res = await adminFetch('/api/admin/stations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          store_name: stationForm.store_name.trim(),
+          name: stationForm.name.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setStationError(data.error || '등록에 실패했습니다.');
+        return;
+      }
+      setStationForm((prev) => ({ ...prev, name: '' }));
+      await loadStations();
+    } catch (err) {
+      console.error('팀 자리 등록 오류:', err);
+      setStationError('등록 중 오류가 발생했습니다.');
+    } finally {
+      setStationLoading(false);
+    }
+  }
+
+  async function deleteStation(station: Station) {
+    if (station.active_session_id) return;
+    if (!confirm(`"${station.name}" 팀 자리를 삭제하시겠습니까?`)) return;
+    try {
+      const res = await adminFetch(`/api/admin/stations/${encodeURIComponent(station.id)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || '삭제에 실패했습니다.');
+        return;
+      }
+      await loadStations();
+    } catch (err) {
+      console.error('팀 자리 삭제 오류:', err);
+      alert('삭제 중 오류가 발생했습니다.');
+    }
+  }
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -907,6 +979,88 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* ════ 팀 자리 관리 ════ */}
+      <div className="admin-single-container" style={{ marginTop: 32 }}>
+        <div className="admin-card">
+          <h2 className="card-title">
+            <i className="fa-solid fa-chair"></i> 팀 자리 관리
+          </h2>
+
+          <form onSubmit={createStation} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, alignItems: 'flex-end' }}>
+            <div className="form-section" style={{ flex: '1 1 160px', marginBottom: 0 }}>
+              <label className="form-label">매장</label>
+              <input
+                type="text"
+                className="form-input"
+                value={stationForm.store_name}
+                onChange={(e) => setStationForm({ ...stationForm, store_name: e.target.value })}
+              />
+            </div>
+            <div className="form-section" style={{ flex: '1 1 160px', marginBottom: 0 }}>
+              <label className="form-label">팀 이름</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="예: 블랙팀"
+                value={stationForm.name}
+                onChange={(e) => setStationForm({ ...stationForm, name: e.target.value })}
+              />
+            </div>
+            <button
+              type="submit"
+              className="btn-action btn-primary"
+              style={{ flex: 'none', padding: '12px 20px' }}
+              disabled={stationLoading || !stationForm.name.trim()}
+            >
+              {stationLoading ? '등록 중...' : '등록'}
+            </button>
+          </form>
+
+          {stationError && (
+            <p style={{ color: '#ef4444', fontSize: 14, marginBottom: 16 }}>{stationError}</p>
+          )}
+
+          {stations.length === 0 ? (
+            <div className="empty-state">등록된 팀 자리가 없습니다</div>
+          ) : (
+            <table className="apply-table">
+              <thead>
+                <tr>
+                  <th>매장</th>
+                  <th>팀 이름</th>
+                  <th>현재 세션</th>
+                  <th>삭제</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stations.map((station) => {
+                  const inProgress = station.active_session_id != null && station.active_session_id.trim() !== '';
+                  return (
+                    <tr key={station.id}>
+                      <td>{station.store_name}</td>
+                      <td style={{ fontWeight: 700 }}>{station.name}</td>
+                      <td>{inProgress ? station.active_session_id : '-'}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="btn-action btn-danger"
+                          style={{ flex: 'none', padding: '6px 12px', fontSize: 12 }}
+                          disabled={inProgress}
+                          title={inProgress ? '게임 종료 후 삭제 가능' : undefined}
+                          onClick={() => deleteStation(station)}
+                        >
+                          삭제
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
