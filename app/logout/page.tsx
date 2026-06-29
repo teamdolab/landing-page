@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import './logout-styles.css';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { resolveStationAccess, type StationAccessState } from '@/lib/station-access';
 
 type Screen = 'nfc' | 'terminal' | 'result' | 'feedback' | 'final';
 
@@ -20,16 +21,37 @@ type LogoutData = {
 
 type ReturnIntent = 'yes' | 'maybe' | 'no';
 
+function LogoutBlockedMessage({ message }: { message: string }) {
+  return (
+    <main className="min-h-screen w-screen overflow-hidden bg-[#F2F4F6] relative font-body flex items-center justify-center">
+      <p className="text-xl font-semibold text-[#222] px-6 text-center">{message}</p>
+    </main>
+  );
+}
+
 function LogoutContent() {
   const searchParams = useSearchParams();
-  const gameId = searchParams.get('gameId') ?? '';
-  const sessionIdParam = searchParams.get('sessionId') ?? '';
+  const urlGameId = searchParams.get('gameId') ?? '';
   const stationId = searchParams.get('station_id') ?? '';
+  const urlSessionId = searchParams.get('sessionId') ?? '';
   const gameKindParam = searchParams.get('game_kind') ?? '';
 
-  const [resolvedSessionId, setResolvedSessionId] = useState(sessionIdParam);
+  const [gameId, setGameId] = useState(urlGameId);
+  const [sessionId, setSessionId] = useState(urlSessionId);
   const [gameKind, setGameKind] = useState(gameKindParam || 'game_0a');
   const [creditClaimMessage, setCreditClaimMessage] = useState('');
+  const [accessState, setAccessState] = useState<StationAccessState>(() => {
+    if (stationId) return { status: 'loading' };
+    if (urlGameId) {
+      return {
+        status: 'ready',
+        gameId: urlGameId,
+        sessionId: urlSessionId,
+        gameKind: gameKindParam || 'game_0a',
+      };
+    }
+    return { status: 'invalid' };
+  });
 
   const [screen, setScreen] = useState<Screen>('nfc');
   const [nfcError, setNfcError] = useState('');
@@ -43,47 +65,47 @@ function LogoutContent() {
   const nfcInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function resolveContext() {
-      if (gameKindParam) {
-        setGameKind(gameKindParam);
-      }
-
-      if (stationId) {
-        try {
-          const res = await fetch(`/api/stations/${encodeURIComponent(stationId)}`);
-          const data = await res.json();
-          if (cancelled) return;
-          if (res.ok && data.active) {
-            setResolvedSessionId(data.session_id);
-            setGameKind(data.game_kind ?? 'game_0b');
-            return;
-          }
-        } catch {
-          // ignore
+    if (!stationId) {
+      if (urlGameId) {
+        setGameId(urlGameId);
+        setSessionId(urlSessionId);
+        const kind = gameKindParam || 'game_0a';
+        setGameKind(kind);
+        setAccessState({
+          status: 'ready',
+          gameId: urlGameId,
+          sessionId: urlSessionId,
+          gameKind: kind,
+        });
+        if (!gameKindParam && urlSessionId) {
+          fetch(`/api/game/game_0b/session/${encodeURIComponent(urlSessionId)}`)
+            .then((res) => {
+              if (res.ok) setGameKind('game_0b');
+            })
+            .catch(() => {});
         }
+      } else {
+        setAccessState({ status: 'invalid' });
       }
-
-      const sid = sessionIdParam.trim();
-      if (sid) {
-        setResolvedSessionId(sid);
-        if (!gameKindParam) {
-          try {
-            const res = await fetch(`/api/game/game_0b/session/${encodeURIComponent(sid)}`);
-            if (!cancelled && res.ok) setGameKind('game_0b');
-          } catch {
-            // ignore
-          }
-        }
-      }
+      return;
     }
 
-    resolveContext();
+    let cancelled = false;
+    (async () => {
+      const resolved = await resolveStationAccess(stationId);
+      if (cancelled) return;
+      setAccessState(resolved);
+      if (resolved.status === 'ready') {
+        setGameId(resolved.gameId);
+        setSessionId(resolved.sessionId);
+        setGameKind(resolved.gameKind);
+      }
+    })();
+
     return () => {
       cancelled = true;
     };
-  }, [stationId, sessionIdParam, gameKindParam]);
+  }, [stationId, urlGameId, urlSessionId, gameKindParam]);
 
   const showScreen = useCallback((id: Screen) => setScreen(id), []);
 
@@ -175,7 +197,7 @@ function LogoutContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           game_id: gameId,
-          session_id: resolvedSessionId || undefined,
+          session_id: sessionId || undefined,
           nfc_id: lastNfcId || undefined,
           nps,
           return_intent: returnIntent,
@@ -183,13 +205,13 @@ function LogoutContent() {
       }).catch(() => {});
     }
 
-    if (gameKind === 'game_0b' && resolvedSessionId && logoutData) {
+    if (gameKind === 'game_0b' && sessionId && logoutData) {
       try {
         const res = await fetch('/api/game/game_0b/claim-credit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            session_id: resolvedSessionId,
+            session_id: sessionId,
             player_number: logoutData.playerNumber,
           }),
         });
@@ -201,7 +223,7 @@ function LogoutContent() {
     }
 
     showScreen('final');
-  }, [gameId, lastNfcId, resolvedSessionId, gameKind, logoutData, nps, returnIntent, showScreen]);
+  }, [gameId, lastNfcId, sessionId, gameKind, logoutData, nps, returnIntent, showScreen]);
 
   const resetToStart = useCallback(() => {
     setLogoutData(null);
@@ -221,6 +243,16 @@ function LogoutContent() {
     const map: Record<string, string> = { KeyA: 'a', KeyB: 'b', KeyC: 'c', KeyD: 'd', KeyE: 'e', KeyF: 'f' };
     return map[code ?? ''] ?? null;
   };
+
+  if (accessState.status === 'loading') {
+    return <LogoutBlockedMessage message="로딩 중..." />;
+  }
+  if (accessState.status === 'invalid') {
+    return <LogoutBlockedMessage message="잘못된 접근입니다" />;
+  }
+  if (accessState.status === 'no_game') {
+    return <LogoutBlockedMessage message="켜진 게임이 없습니다" />;
+  }
 
   return (
     <main className="min-h-screen w-screen overflow-hidden bg-[#F2F4F6] relative font-body">

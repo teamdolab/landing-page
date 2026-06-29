@@ -220,8 +220,9 @@ export default function ManagerPage() {
     }
   }
 
-  function openScreen(path: '/login' | '/logout') {
-    window.open(path, '_blank', 'noopener,noreferrer');
+  function openScreen(path: '/login' | '/logout', stationId: string) {
+    const url = `${path}?station_id=${encodeURIComponent(stationId)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 
   if (!isAuthenticated) {
@@ -316,7 +317,7 @@ export default function ManagerPage() {
                     <button
                       type="button"
                       disabled={!active || busy}
-                      onClick={() => openScreen('/login')}
+                      onClick={() => openScreen('/login', station.id)}
                       className="min-h-12 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       로그인 화면
@@ -324,7 +325,7 @@ export default function ManagerPage() {
                     <button
                       type="button"
                       disabled={!active || busy}
-                      onClick={() => openScreen('/logout')}
+                      onClick={() => openScreen('/logout', station.id)}
                       className="min-h-12 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       로그아웃 화면

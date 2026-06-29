@@ -4,12 +4,28 @@ import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase, type UserInfo } from '@/lib/supabase';
+import { resolveStationAccess, type StationAccessState } from '@/lib/station-access';
 
 type Screen = 'intro' | 'pin' | 'nickname' | 'password' | 'nfc' | 'success';
 
+function LoginBlockedMessage({ message }: { message: string }) {
+  return (
+    <main className="min-h-screen w-screen overflow-hidden bg-[#F2F4F6] relative font-body flex items-center justify-center">
+      <p className="text-xl font-semibold text-[#222] px-6 text-center">{message}</p>
+    </main>
+  );
+}
+
 function LoginContent() {
   const searchParams = useSearchParams();
-  const gameId = searchParams.get('gameId') ?? '';
+  const urlGameId = searchParams.get('gameId') ?? '';
+  const stationId = searchParams.get('station_id') ?? '';
+  const [gameId, setGameId] = useState(urlGameId);
+  const [accessState, setAccessState] = useState<StationAccessState>(() => {
+    if (stationId) return { status: 'loading' };
+    if (urlGameId) return { status: 'ready', gameId: urlGameId, sessionId: '', gameKind: 'game_0a' };
+    return { status: 'invalid' };
+  });
   const [screen, setScreen] = useState<Screen>('intro');
   const [pin, setPin] = useState('');
   const [users, setUsers] = useState<UserInfo[]>([]);
@@ -26,6 +42,32 @@ function LoginContent() {
   const [nfcError, setNfcError] = useState('');
   const nfcInputRef = useRef<HTMLInputElement>(null);
   const nfcAutoSubmitRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!stationId) {
+      if (urlGameId) {
+        setGameId(urlGameId);
+        setAccessState({ status: 'ready', gameId: urlGameId, sessionId: '', gameKind: 'game_0a' });
+      } else {
+        setAccessState({ status: 'invalid' });
+      }
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const resolved = await resolveStationAccess(stationId);
+      if (cancelled) return;
+      setAccessState(resolved);
+      if (resolved.status === 'ready') {
+        setGameId(resolved.gameId);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [stationId, urlGameId]);
 
   const showScreen = useCallback((id: Screen) => {
     setScreen(id);
@@ -218,6 +260,16 @@ function LoginContent() {
     const map: Record<string, string> = { KeyA: 'a', KeyB: 'b', KeyC: 'c', KeyD: 'd', KeyE: 'e', KeyF: 'f' };
     return map[code ?? ''] ?? null;
   };
+
+  if (accessState.status === 'loading') {
+    return <LoginBlockedMessage message="로딩 중..." />;
+  }
+  if (accessState.status === 'invalid') {
+    return <LoginBlockedMessage message="잘못된 접근입니다" />;
+  }
+  if (accessState.status === 'no_game') {
+    return <LoginBlockedMessage message="켜진 게임이 없습니다" />;
+  }
 
   return (
     <main className="min-h-screen w-screen overflow-hidden bg-[#F2F4F6] relative font-body">
