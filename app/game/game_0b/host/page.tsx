@@ -388,7 +388,7 @@ function HostResultRevealBlock({
     body = (
       <div className="host-lifeboat-block">
         <p className="host-lifeboat-hint">
-          탑승 인원 {slots}명 선택 (현재 진영 인원만 선택 가능)
+          탑승 인원 {slots}명 선택 (진영 무관)
         </p>
         <div className="host-lifeboat-checks">
           {Array.from({ length: game.player_count }, (_, i) => i + 1).map((n) => {
