@@ -6,6 +6,7 @@ import GameLayout from '../components/GameLayout';
 import { getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
 import { ACTION_CONFIG } from '@/lib/game-0b-action-config';
 import { ActionCard } from '../components/ActionCard';
+import './testroom-actions.css';
 
 /** 밤에 라운드당 1회만 선택 가능한 일반 액션 (통제·감지·은닉거래와 배타) */
 const MAIN_NIGHT_ACTIONS = new Set([
@@ -476,44 +477,40 @@ function PlayerActionPanel({
       </div>
 
       {/* 중앙: 액션 목록 */}
-      <div className="bottom-panel">
+      <div className="bottom-panel testroom-actions-panel">
         <div className="bottom-panel-label">액션</div>
-        <div className="bottom-panel-body action-icon-grid">
-          {actions.map((a) => {
-            const disabled =
-              submitting ||
-              core < a.cost ||
-              (a.id === 'control' && (actionDone || (a.oncePerRound && controlActive))) ||
-              (isMainNightAction(a.id) && (actionDone || controlActive)) ||
-              (a.id !== 'control' && !isMainNightAction(a.id) && actionDone && !a.nonConsuming) ||
-              (a.id === 'detect' && detectUsed) ||
-              (a.id === 'hidden_trade' && hiddenTradeUsed);
-            const cfg = ACTION_CONFIG[a.id];
-            if (!cfg) return null;
-            return (
-              // 액션 심볼 크기 1단계 축소 (testroom 전용)
-              // ActionCard size: md(기본, cardWidth 160 / iconSize 88) → sm (cardWidth 140 / iconSize 76)
-              <ActionCard
-                key={a.id}
-                icon={cfg.icon}
-                label={a.label}
-                color={cfg.color}
-                cost={a.cost}
-                size="sm"
-                disabled={disabled}
-                onClick={() => {
-                  setModalAction(a);
-                  setTargetPlayer(playerOptions[0] ?? 1);
-                  setDetectTargets([]);
-                }}
-              />
-            );
-          })}
-          {msg && (
-            <span style={{ fontSize: 13, color: '#5a32b8', fontWeight: 600, textAlign: 'center', marginTop: 4 }}>
-              {msg}
-            </span>
-          )}
+        <div className="bottom-panel-body testroom-actions-panel-body">
+          <div className="testroom-action-icon-grid">
+            {actions.map((a) => {
+              const disabled =
+                submitting ||
+                core < a.cost ||
+                (a.id === 'control' && (actionDone || (a.oncePerRound && controlActive))) ||
+                (isMainNightAction(a.id) && (actionDone || controlActive)) ||
+                (a.id !== 'control' && !isMainNightAction(a.id) && actionDone && !a.nonConsuming) ||
+                (a.id === 'detect' && detectUsed) ||
+                (a.id === 'hidden_trade' && hiddenTradeUsed);
+              const cfg = ACTION_CONFIG[a.id];
+              if (!cfg) return null;
+              return (
+                <ActionCard
+                  key={a.id}
+                  icon={cfg.icon}
+                  label={a.label}
+                  color={cfg.color}
+                  cost={a.cost}
+                  size="sm"
+                  disabled={disabled}
+                  onClick={() => {
+                    setModalAction(a);
+                    setTargetPlayer(playerOptions[0] ?? 1);
+                    setDetectTargets([]);
+                  }}
+                />
+              );
+            })}
+          </div>
+          {msg && <span className="testroom-action-msg">{msg}</span>}
         </div>
       </div>
 
