@@ -8,6 +8,7 @@ import {
   finalOutcomeInfoText,
 } from '@/lib/game-0b-result';
 import { insertSessionResult, playerNumbersToUserIds } from '@/lib/session-result';
+import { runGame0bSettleSession } from '@/lib/game-0b-settlement-run';
 
 export async function POST(req: NextRequest) {
   try {
@@ -158,6 +159,16 @@ export async function POST(req: NextRequest) {
                 alien_player_numbers: alienNums,
               },
             });
+            await runGame0bSettleSession({
+              game: game as Game0bRow,
+              winnerUserIds,
+              winnerPlayerNumbers: alienNums,
+              resultSummary: {
+                ship_hull_final: hull,
+                winning_faction: '외계인',
+                alien_player_numbers: alienNums,
+              },
+            });
           } catch (e) {
             console.error('advance-phase reveal_gauge: session_results 저장 실패 (무시)', e);
           }
@@ -206,6 +217,21 @@ export async function POST(req: NextRequest) {
             endedAt: new Date().toISOString(),
             playerCount: game.player_count as number,
             winnerUserIds,
+            resultSummary: {
+              ship_hull_final: hull,
+              winning_faction: winningFaction,
+              lifeboat_seats: seatNums,
+              lifeboat_count: seatNums.length,
+            },
+          });
+          const gameWithSeats = { ...row } as Game0bRow;
+          for (let i = 0; i < 5; i++) {
+            (gameWithSeats as unknown as Record<string, number | null>)[`lifeboat_seat_${i + 1}`] = seatNums[i] ?? null;
+          }
+          await runGame0bSettleSession({
+            game: gameWithSeats,
+            winnerUserIds,
+            winnerPlayerNumbers: seatNums,
             resultSummary: {
               ship_hull_final: hull,
               winning_faction: winningFaction,

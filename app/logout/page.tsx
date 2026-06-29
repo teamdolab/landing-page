@@ -34,11 +34,22 @@ function LogoutContent() {
   const urlGameId = searchParams.get('gameId') ?? '';
   const stationId = searchParams.get('station_id') ?? '';
   const urlSessionId = searchParams.get('sessionId') ?? '';
+  const gameKindParam = searchParams.get('game_kind') ?? '';
+
   const [gameId, setGameId] = useState(urlGameId);
   const [sessionId, setSessionId] = useState(urlSessionId);
+  const [gameKind, setGameKind] = useState(gameKindParam || 'game_0a');
+  const [creditClaimMessage, setCreditClaimMessage] = useState('');
   const [accessState, setAccessState] = useState<StationAccessState>(() => {
     if (stationId) return { status: 'loading' };
-    if (urlGameId) return { status: 'ready', gameId: urlGameId, sessionId: urlSessionId };
+    if (urlGameId) {
+      return {
+        status: 'ready',
+        gameId: urlGameId,
+        sessionId: urlSessionId,
+        gameKind: gameKindParam || 'game_0a',
+      };
+    }
     return { status: 'invalid' };
   });
 
@@ -58,7 +69,21 @@ function LogoutContent() {
       if (urlGameId) {
         setGameId(urlGameId);
         setSessionId(urlSessionId);
-        setAccessState({ status: 'ready', gameId: urlGameId, sessionId: urlSessionId });
+        const kind = gameKindParam || 'game_0a';
+        setGameKind(kind);
+        setAccessState({
+          status: 'ready',
+          gameId: urlGameId,
+          sessionId: urlSessionId,
+          gameKind: kind,
+        });
+        if (!gameKindParam && urlSessionId) {
+          fetch(`/api/game/game_0b/session/${encodeURIComponent(urlSessionId)}`)
+            .then((res) => {
+              if (res.ok) setGameKind('game_0b');
+            })
+            .catch(() => {});
+        }
       } else {
         setAccessState({ status: 'invalid' });
       }
@@ -73,13 +98,14 @@ function LogoutContent() {
       if (resolved.status === 'ready') {
         setGameId(resolved.gameId);
         setSessionId(resolved.sessionId);
+        setGameKind(resolved.gameKind);
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [stationId, urlGameId, urlSessionId]);
+  }, [stationId, urlGameId, urlSessionId, gameKindParam]);
 
   const showScreen = useCallback((id: Screen) => setScreen(id), []);
 
@@ -179,14 +205,32 @@ function LogoutContent() {
       }).catch(() => {});
     }
 
+    if (gameKind === 'game_0b' && sessionId && logoutData) {
+      try {
+        const res = await fetch('/api/game/game_0b/claim-credit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sessionId,
+            player_number: logoutData.playerNumber,
+          }),
+        });
+        const data = await res.json();
+        if (data.message) setCreditClaimMessage(data.message);
+      } catch {
+        // 무시
+      }
+    }
+
     showScreen('final');
-  }, [gameId, lastNfcId, sessionId, nps, returnIntent, showScreen]);
+  }, [gameId, lastNfcId, sessionId, gameKind, logoutData, nps, returnIntent, showScreen]);
 
   const resetToStart = useCallback(() => {
     setLogoutData(null);
     setLastNfcId('');
     setNps(7);
     setReturnIntent(null);
+    setCreditClaimMessage('');
     setShowTouchText(false);
     setLineDrawn(false);
     setTableOpen(false);
@@ -491,6 +535,9 @@ function LogoutContent() {
                 <br />
                 모든 테스트가 종료되었습니다.
               </p>
+              {creditClaimMessage && (
+                <p className="text-base font-semibold text-[#FF4F00] mb-4">{creditClaimMessage}</p>
+              )}
               <p className="text-sm text-gray-500 mt-5">화면을 터치하면 초기화면으로 이동합니다.</p>
             </div>
           </motion.div>

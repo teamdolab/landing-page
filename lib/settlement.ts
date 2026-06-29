@@ -76,7 +76,6 @@ export async function settleSession(payload: SettlementResult): Promise<SettleSe
     .maybeSingle();
 
   if (summaryCheckError) throw summaryCheckError;
-  if (existingSummary) return { created: false, reason: 'already_exists' };
 
   const settledAt = payload.ended_at;
   const playerRows = payload.players.map((player) => ({
@@ -105,20 +104,25 @@ export async function settleSession(payload: SettlementResult): Promise<SettleSe
     }
   }
 
-  const { error: summaryInsertError } = await supabase
-    .from('session_results')
-    .insert({
-      session_id: payload.session_id,
-      game_type: payload.game_type,
-      started_at: payload.started_at,
-      ended_at: payload.ended_at,
-      duration_seconds: getDurationSeconds(payload.started_at, payload.ended_at),
-      player_count: payload.player_count,
-      winner_user_ids: payload.winner_user_ids,
-      result_summary: payload.result_summary,
-    });
+  if (!existingSummary) {
+    const { error: summaryInsertError } = await supabase
+      .from('session_results')
+      .insert({
+        session_id: payload.session_id,
+        game_type: payload.game_type,
+        started_at: payload.started_at,
+        ended_at: payload.ended_at,
+        duration_seconds: getDurationSeconds(payload.started_at, payload.ended_at),
+        player_count: payload.player_count,
+        winner_user_ids: payload.winner_user_ids,
+        result_summary: payload.result_summary,
+      });
 
-  if (summaryInsertError) throw summaryInsertError;
+    if (summaryInsertError) {
+      if (summaryInsertError.code === '23505') return { created: false, reason: 'already_exists' };
+      throw summaryInsertError;
+    }
+  }
 
   return { created: true };
 }

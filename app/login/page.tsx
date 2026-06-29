@@ -23,7 +23,7 @@ function LoginContent() {
   const [gameId, setGameId] = useState(urlGameId);
   const [accessState, setAccessState] = useState<StationAccessState>(() => {
     if (stationId) return { status: 'loading' };
-    if (urlGameId) return { status: 'ready', gameId: urlGameId, sessionId: '' };
+    if (urlGameId) return { status: 'ready', gameId: urlGameId, sessionId: '', gameKind: 'game_0a' };
     return { status: 'invalid' };
   });
   const [screen, setScreen] = useState<Screen>('intro');
@@ -47,7 +47,7 @@ function LoginContent() {
     if (!stationId) {
       if (urlGameId) {
         setGameId(urlGameId);
-        setAccessState({ status: 'ready', gameId: urlGameId, sessionId: '' });
+        setAccessState({ status: 'ready', gameId: urlGameId, sessionId: '', gameKind: 'game_0a' });
       } else {
         setAccessState({ status: 'invalid' });
       }

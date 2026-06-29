@@ -6,7 +6,7 @@ export type StationAccessState =
   | { status: 'loading' }
   | { status: 'invalid' }
   | { status: 'no_game' }
-  | { status: 'ready'; gameId: string; sessionId: string };
+  | { status: 'ready'; gameId: string; sessionId: string; gameKind: string };
 
 export async function fetchStationActiveInfo(
   stationId: string,
@@ -52,5 +52,6 @@ export async function resolveStationAccess(stationId: string): Promise<StationAc
     status: 'ready',
     gameId,
     sessionId: info.session_id,
+    gameKind: info.game_kind,
   };
 }
