@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import './logout-styles.css';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { resolveStationAccess, type StationAccessState } from '@/lib/station-access';
 
 type Screen = 'nfc' | 'terminal' | 'result' | 'feedback' | 'final';
 
@@ -20,10 +21,26 @@ type LogoutData = {
 
 type ReturnIntent = 'yes' | 'maybe' | 'no';
 
+function LogoutBlockedMessage({ message }: { message: string }) {
+  return (
+    <main className="min-h-screen w-screen overflow-hidden bg-[#F2F4F6] relative font-body flex items-center justify-center">
+      <p className="text-xl font-semibold text-[#222] px-6 text-center">{message}</p>
+    </main>
+  );
+}
+
 function LogoutContent() {
   const searchParams = useSearchParams();
-  const gameId = searchParams.get('gameId') ?? '';
-  const sessionId = searchParams.get('sessionId') ?? '';
+  const urlGameId = searchParams.get('gameId') ?? '';
+  const stationId = searchParams.get('station_id') ?? '';
+  const urlSessionId = searchParams.get('sessionId') ?? '';
+  const [gameId, setGameId] = useState(urlGameId);
+  const [sessionId, setSessionId] = useState(urlSessionId);
+  const [accessState, setAccessState] = useState<StationAccessState>(() => {
+    if (stationId) return { status: 'loading' };
+    if (urlGameId) return { status: 'ready', gameId: urlGameId, sessionId: urlSessionId };
+    return { status: 'invalid' };
+  });
 
   const [screen, setScreen] = useState<Screen>('nfc');
   const [nfcError, setNfcError] = useState('');
@@ -35,6 +52,34 @@ function LogoutContent() {
   const [tableOpen, setTableOpen] = useState(false);
   const [lastNfcId, setLastNfcId] = useState('');
   const nfcInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!stationId) {
+      if (urlGameId) {
+        setGameId(urlGameId);
+        setSessionId(urlSessionId);
+        setAccessState({ status: 'ready', gameId: urlGameId, sessionId: urlSessionId });
+      } else {
+        setAccessState({ status: 'invalid' });
+      }
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const resolved = await resolveStationAccess(stationId);
+      if (cancelled) return;
+      setAccessState(resolved);
+      if (resolved.status === 'ready') {
+        setGameId(resolved.gameId);
+        setSessionId(resolved.sessionId);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [stationId, urlGameId, urlSessionId]);
 
   const showScreen = useCallback((id: Screen) => setScreen(id), []);
 
@@ -154,6 +199,16 @@ function LogoutContent() {
     const map: Record<string, string> = { KeyA: 'a', KeyB: 'b', KeyC: 'c', KeyD: 'd', KeyE: 'e', KeyF: 'f' };
     return map[code ?? ''] ?? null;
   };
+
+  if (accessState.status === 'loading') {
+    return <LogoutBlockedMessage message="로딩 중..." />;
+  }
+  if (accessState.status === 'invalid') {
+    return <LogoutBlockedMessage message="잘못된 접근입니다" />;
+  }
+  if (accessState.status === 'no_game') {
+    return <LogoutBlockedMessage message="켜진 게임이 없습니다" />;
+  }
 
   return (
     <main className="min-h-screen w-screen overflow-hidden bg-[#F2F4F6] relative font-body">
