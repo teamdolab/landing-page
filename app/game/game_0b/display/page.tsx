@@ -12,7 +12,108 @@ import {
   type Game0bRow,
 } from '@/lib/game-0b-types';
 import { ACTION_CONFIG } from '@/lib/game-0b-action-config';
-import { lifeboatSeatsFromRow } from '@/lib/game-0b-result';
+import { lifeboatSeatsFromRow, REBEL_ROLES } from '@/lib/game-0b-result';
+
+type PodiumSection = { label: string; nums: number[]; badgeLabel: string };
+
+type BoardingOutcome =
+  | { kind: 'hull_destroyed_alien'; winners: number[] }
+  | { kind: 'alien_win'; winners: number[] }
+  | { kind: 'rebel_split'; first: number[]; second: number[] }
+  | { kind: 'survivor_win'; winners: number[] }
+  | { kind: 'pending' };
+
+/** calcGame0bCredits와 동일한 탑승 명단·진영 분류 */
+function resolveBoardingOutcome(game: Game0bRow): BoardingOutcome {
+  const hull = clampShipHull(game.ship_hull);
+  if (hull <= 50) {
+    const winners: number[] = [];
+    for (let i = 1; i <= game.player_count; i++) {
+      if (getPlayerRoleCore(game, i).role === '외계인') winners.push(i);
+    }
+    return { kind: 'hull_destroyed_alien', winners };
+  }
+
+  const seats = lifeboatSeatsFromRow(game);
+  if (seats.length === 0) return { kind: 'pending' };
+
+  const hasAlien = seats.some((s) => getPlayerRoleCore(game, s).role === '외계인');
+  if (hasAlien) {
+    const winners = seats
+      .filter((s) => getPlayerRoleCore(game, s).role === '외계인')
+      .sort((a, b) => a - b);
+    return { kind: 'alien_win', winners };
+  }
+
+  const boardingRebels = seats
+    .filter((s) => {
+      const role = getPlayerRoleCore(game, s).role;
+      return role != null && REBEL_ROLES.has(role);
+    })
+    .sort((a, b) => a - b);
+
+  if (boardingRebels.length > 0) {
+    const rebelSet = new Set(boardingRebels);
+    const second = seats.filter((s) => !rebelSet.has(s)).sort((a, b) => a - b);
+    return { kind: 'rebel_split', first: boardingRebels, second };
+  }
+
+  return { kind: 'survivor_win', winners: [...seats].sort((a, b) => a - b) };
+}
+
+/** 최종 단상에 올릴 승리자 번호·등수 라벨 */
+function podiumSections(game: Game0bRow): PodiumSection[] {
+  const outcome = resolveBoardingOutcome(game);
+  switch (outcome.kind) {
+    case 'hull_destroyed_alien':
+    case 'alien_win':
+      return [{ label: '승리 · 외계인 진영', nums: outcome.winners, badgeLabel: '승리' }];
+    case 'rebel_split': {
+      const sections: PodiumSection[] = [];
+      if (outcome.first.length > 0) {
+        sections.push({ label: '1등 · 반군 진영', nums: outcome.first, badgeLabel: '1등' });
+      }
+      if (outcome.second.length > 0) {
+        sections.push({ label: '2등 · 생존자 진영', nums: outcome.second, badgeLabel: '2등' });
+      }
+      return sections;
+    }
+    case 'survivor_win':
+      return [{ label: '승리 · 탑승자', nums: outcome.winners, badgeLabel: '승리' }];
+    default:
+      return [];
+  }
+}
+
+/** 전원 역할 공개용 등수: 1·2등(탑승) 또는 null(패배) */
+function getPlayerBoardingRank(game: Game0bRow, playerNum: number): 1 | 2 | null {
+  const outcome = resolveBoardingOutcome(game);
+  switch (outcome.kind) {
+    case 'hull_destroyed_alien':
+    case 'alien_win':
+      return outcome.winners.includes(playerNum) ? 1 : null;
+    case 'rebel_split':
+      if (outcome.first.includes(playerNum)) return 1;
+      if (outcome.second.includes(playerNum)) return 2;
+      return null;
+    case 'survivor_win':
+      return outcome.winners.includes(playerNum) ? 1 : null;
+    default:
+      return null;
+  }
+}
+
+function playerOutcomeLabel(game: Game0bRow, playerNum: number): string {
+  const outcome = resolveBoardingOutcome(game);
+  const rank = getPlayerBoardingRank(game, playerNum);
+  if (rank === null) return '패배';
+  if (outcome.kind === 'rebel_split') return rank === 1 ? '1등' : '2등';
+  return '승리';
+}
+
+function playerOutcomeIsWinner(rank: 1 | 2 | null): boolean {
+  return rank !== null;
+}
 
 export default function Game0bDisplayPage() {
   return (
@@ -20,49 +121,6 @@ export default function Game0bDisplayPage() {
       {(game: Game0bRow) => <DisplayBottom game={game} />}
     </GameLayout>
   );
-}
-
-/** 최종 단상에 올릴 승리자 번호. 외계인 승(위험/파괴 또는 탑승에 외계인): 외계인만. 인간 측 승(탑승 확정): 탑승자 전원만. */
-function podiumSections(game: Game0bRow): { label: string; nums: number[] }[] {
-  const hull = clampShipHull(game.ship_hull);
-  if (hull <= 50) {
-    const nums: number[] = [];
-    for (let i = 1; i <= game.player_count; i++) {
-      if (getPlayerRoleCore(game, i).role === '외계인') nums.push(i);
-    }
-    return [{ label: '승리 · 외계인 진영', nums }];
-  }
-  const seats = lifeboatSeatsFromRow(game);
-  if (seats.length === 0) return [];
-  const numsSorted = [...seats].sort((a, b) => a - b);
-  const hasAlien = seats.some((s) => getPlayerRoleCore(game, s).role === '외계인');
-  if (hasAlien) {
-    return [
-      {
-        label: '승리 · 외계인 진영',
-        nums: numsSorted.filter((s) => getPlayerRoleCore(game, s).role === '외계인'),
-      },
-    ];
-  }
-  // 인간 진영 승리: 탑승자만 승리(나머지는 패배). 1·2등 서사는 상단 info_text에만 반영.
-  return [{ label: '승리 · 탑승자', nums: numsSorted }];
-}
-
-function getWinnerPlayerNumbers(game: Game0bRow): Set<number> {
-  const hull = clampShipHull(game.ship_hull);
-  if (hull <= 50) {
-    const s = new Set<number>();
-    for (let i = 1; i <= game.player_count; i++) {
-      if (getPlayerRoleCore(game, i).role === '외계인') s.add(i);
-    }
-    return s;
-  }
-  const seats = lifeboatSeatsFromRow(game);
-  const hasAlien = seats.some((s) => getPlayerRoleCore(game, s).role === '외계인');
-  if (hasAlien) {
-    return new Set(seats.filter((s) => getPlayerRoleCore(game, s).role === '외계인'));
-  }
-  return new Set(seats);
 }
 
 function ResultRevealDisplay({ game }: { game: Game0bRow }) {
@@ -99,7 +157,6 @@ function ResultRevealDisplay({ game }: { game: Game0bRow }) {
   const sections = podiumSections(game);
   const maxRow = Math.max(1, ...sections.map((s) => s.nums.length));
   const bottomWidth = maxRow * 76 + Math.max(0, maxRow - 1) * 16;
-  const winnerNums = getWinnerPlayerNumbers(game);
   const allPlayers = Array.from({ length: game.player_count }, (_, i) => {
     const n = i + 1;
     const { role } = getPlayerRoleCore(game, n);
@@ -132,7 +189,7 @@ function ResultRevealDisplay({ game }: { game: Game0bRow }) {
                           </div>
                         </div>
                         <div className="score-box ss-result-role-box">{role ?? '—'}</div>
-                        <div className="final-badge final-badge-winner">승리</div>
+                        <div className="final-badge final-badge-winner">{sec.badgeLabel}</div>
                       </div>
                     );
                   })}
@@ -145,7 +202,11 @@ function ResultRevealDisplay({ game }: { game: Game0bRow }) {
         <div className="ss-result-all-label">전원 역할 공개</div>
         <div className="final-result-bottom ss-final-result-bottom">
           {allPlayers.map((p) => {
-            const won = winnerNums.has(p.num);
+            const rank = getPlayerBoardingRank(game, p.num);
+            const won = playerOutcomeIsWinner(rank);
+            const outcomeLabel = playerOutcomeLabel(game, p.num);
+            const outcomeClass =
+              rank === 2 ? 'ss-result-outcome-second' : won ? 'ss-result-outcome-win' : 'ss-result-outcome-lose';
             return (
               <div
                 key={p.num}
@@ -157,8 +218,8 @@ function ResultRevealDisplay({ game }: { game: Game0bRow }) {
                   </div>
                 </div>
                 <div className="score-box ss-result-role-box">{p.role ?? '—'}</div>
-                <div className={`ss-result-outcome-badge ${won ? 'ss-result-outcome-win' : 'ss-result-outcome-lose'}`}>
-                  {won ? '승리' : '패배'}
+                <div className={`ss-result-outcome-badge ${outcomeClass}`}>
+                  {outcomeLabel}
                 </div>
               </div>
             );

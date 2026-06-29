@@ -628,6 +628,12 @@
   border: 1px solid #6d42d0;
 }
 
+.game-display-root.susongseon-display .ss-result-outcome-second {
+  background: linear-gradient(135deg, #f3eeff 0%, #ddd0f8 100%);
+  color: #3a2d5c;
+  border: 1px solid #8a72c8;
+}
+
 .game-display-root.susongseon-display .ss-result-outcome-lose {
   background: rgba(60, 50, 90, 0.12);
   color: #5c5478;
