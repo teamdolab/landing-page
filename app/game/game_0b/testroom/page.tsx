@@ -7,6 +7,21 @@ import { getPlayerRoleCore, type Game0bRow } from '@/lib/game-0b-types';
 import { ACTION_CONFIG } from '@/lib/game-0b-action-config';
 import { ActionCard } from '../components/ActionCard';
 
+/** 밤에 라운드당 1회만 선택 가능한 일반 액션 (통제·감지·은닉거래와 배타) */
+const MAIN_NIGHT_ACTIONS = new Set([
+  'mine',
+  'repair_survivor',
+  'repair_rebel',
+  'search',
+  'assassinate',
+  'plunder',
+  'destroy',
+]);
+
+function isMainNightAction(actionId: string): boolean {
+  return MAIN_NIGHT_ACTIONS.has(actionId);
+}
+
 export default function Game0bTestroomPage() {
   return (
     <GameLayout role="testroom">
@@ -360,6 +375,7 @@ function PlayerActionPanel({
 }) {
   const { role, core } = getPlayerRoleCore(game, playerNum);
   const [actionDone, setActionDone] = useState(false);
+  const [controlActive, setControlActive] = useState(false);
   const [detectUsed, setDetectUsed] = useState(false);
   const [hiddenTradeUsed, setHiddenTradeUsed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -373,6 +389,7 @@ function PlayerActionPanel({
 
   useEffect(() => {
     setActionDone(false);
+    setControlActive(false);
     setDetectUsed(false);
     setHiddenTradeUsed(false);
     setSearchResult(null);
@@ -400,16 +417,14 @@ function PlayerActionPanel({
       if (!res.ok) {
         setMsg(j.error || '액션 실패');
       } else {
-        const isNonConsuming =
-          actionId === 'detect' || actionId === 'hidden_trade' || actionId === 'control';
-        if (!isNonConsuming) {
+        const isAuxiliary = actionId === 'detect' || actionId === 'hidden_trade';
+        if (actionId === 'control') {
+          setControlActive(true);
+        } else if (isAuxiliary) {
+          if (actionId === 'detect') setDetectUsed(true);
+          if (actionId === 'hidden_trade') setHiddenTradeUsed(true);
+        } else if (actionId !== 'skip') {
           setActionDone(true);
-        }
-        if (actionId === 'detect') {
-          setDetectUsed(true);
-        }
-        if (actionId === 'hidden_trade') {
-          setHiddenTradeUsed(true);
         }
         if (actionId === 'search' && j.search_result) {
           setSearchResult(`${target}번 플레이어 → ${j.search_result}`);
@@ -437,7 +452,7 @@ function PlayerActionPanel({
   };
 
   const handleEndTurn = async () => {
-    if (!actionDone) {
+    if (!actionDone && !controlActive) {
       await handleSubmitAction('skip');
     }
     onEnd();
@@ -467,8 +482,10 @@ function PlayerActionPanel({
           {actions.map((a) => {
             const disabled =
               submitting ||
-              (actionDone && !a.nonConsuming) ||
               core < a.cost ||
+              (a.id === 'control' && actionDone) ||
+              (isMainNightAction(a.id) && (actionDone || controlActive)) ||
+              (a.id !== 'control' && !isMainNightAction(a.id) && actionDone && !a.nonConsuming) ||
               (a.id === 'detect' && detectUsed) ||
               (a.id === 'hidden_trade' && hiddenTradeUsed);
             const cfg = ACTION_CONFIG[a.id];
@@ -676,7 +693,7 @@ function getActionsForRole(role: string | null, game: Game0bRow): ActionDef[] {
     case '사령관':
       return [
         { id: 'detect', label: '감지', cost: 0, needsTarget: false, nonConsuming: true },
-        { id: 'control', label: '통제', cost: 5, needsTarget: true, nonConsuming: true },
+        { id: 'control', label: '통제', cost: 5, needsTarget: true },
         { id: 'mine', label: '채굴', cost: 0, needsTarget: false },
         { id: 'repair_survivor', label: '수리', cost: 1, needsTarget: false },
       ];
