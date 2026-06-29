@@ -108,7 +108,11 @@ export async function POST(req: NextRequest) {
       );
       const usedControl = usedTypes.includes('control');
       const usedMain = usedTypes.some((t) => MAIN_NIGHT_ACTIONS.has(t));
+      const actorRole = (game as Record<string, unknown>)[playerRoleKey(playerNumber)] as string | null;
 
+      if (actionType === 'control' && actorRole === '혁명가' && usedControl) {
+        return NextResponse.json({ error: '혁명가의 통제는 라운드당 1회만 가능합니다.' }, { status: 400 });
+      }
       if (actionType === 'control' && usedMain) {
         return NextResponse.json({ error: '일반 액션 후에는 통제를 사용할 수 없습니다.' }, { status: 400 });
       }
