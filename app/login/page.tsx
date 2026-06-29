@@ -40,6 +40,7 @@ function LoginContent() {
   const [errorMessage, setErrorMessage] = useState('');
   const [showTouchText, setShowTouchText] = useState(false);
   const [nfcError, setNfcError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const nfcInputRef = useRef<HTMLInputElement>(null);
   const nfcAutoSubmitRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -188,46 +189,114 @@ function LoginContent() {
   const processNFC = useCallback(async (nfcIdRaw: string) => {
     const nfcId = nfcIdRaw?.trim();
     if (!nfcId) return;
+    if (!selectedUser) return;
 
-    if (!gameId) {
+    if (accessState.status !== 'ready') {
       setNfcError('게임 정보가 없습니다. 컨트롤 페이지에서 로그인 화면을 열어주세요.');
       return;
     }
-    if (!selectedUser) return;
 
-    setNfcError('');
-    setLoading(true);
-    try {
-      const apiUrl = `${window.location.origin}/api/game/${encodeURIComponent(gameId)}/register-player`;
-      const res = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: selectedUser.id,
-          nfc_id: nfcId,
-        }),
-      });
-      let data: { error?: string };
-      try {
-        data = await res.json();
-      } catch {
-        const msg = res.ok ? '응답 처리 중 오류가 발생했습니다.' : `서버 오류 (${res.status})`;
-        setNfcError(msg);
+    const { gameKind, sessionId, gameId: readyGameId } = accessState;
+
+    if (gameKind === 'game_0a') {
+      if (!readyGameId) {
+        setNfcError('게임 정보가 없습니다. 컨트롤 페이지에서 로그인 화면을 열어주세요.');
         return;
       }
 
-      if (res.ok && (data as { success?: boolean }).success === true) {
-        showScreen('success');
-      } else {
-        setNfcError((data as { error?: string }).error || '등록에 실패했습니다.');
+      setNfcError('');
+      setSuccessMessage('');
+      setLoading(true);
+      try {
+        const apiUrl = `${window.location.origin}/api/game/${encodeURIComponent(readyGameId)}/register-player`;
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: selectedUser.id,
+            nfc_id: nfcId,
+          }),
+        });
+        let data: { error?: string };
+        try {
+          data = await res.json();
+        } catch {
+          const msg = res.ok ? '응답 처리 중 오류가 발생했습니다.' : `서버 오류 (${res.status})`;
+          setNfcError(msg);
+          return;
+        }
+
+        if (res.ok && (data as { success?: boolean }).success === true) {
+          showScreen('success');
+        } else {
+          setNfcError((data as { error?: string }).error || '등록에 실패했습니다.');
+        }
+      } catch (err) {
+        console.error('NFC 등록 fetch 오류:', err);
+        setNfcError('네트워크 오류가 발생했습니다. 연결을 확인해주세요.');
+      } finally {
+        setLoading(false);
       }
+      return;
+    }
+
+    if (!sessionId) {
+      setNfcError('세션 정보가 없습니다.');
+      return;
+    }
+
+    const nfcLookupPath =
+      gameKind === 'game_0b'
+        ? '/api/game/game_0b/nfc-lookup'
+        : gameKind === 'game_0c'
+          ? '/api/game/game_0c/nfc-lookup'
+          : null;
+
+    if (!nfcLookupPath) {
+      setNfcError('입장 등록에 실패했습니다. 다시 시도해주세요');
+      return;
+    }
+
+    setNfcError('');
+    setSuccessMessage('');
+    setLoading(true);
+    try {
+      const lookupRes = await fetch(nfcLookupPath, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nfc_id: nfcId, session_id: sessionId }),
+      });
+      const lookupData = await lookupRes.json();
+      if (!lookupRes.ok || typeof lookupData.player_number !== 'number') {
+        setNfcError(lookupData.error || '입장 등록에 실패했습니다. 다시 시도해주세요');
+        return;
+      }
+
+      const registerRes = await fetch('/api/common/register-participant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          player_number: lookupData.player_number,
+          user_id: selectedUser.id,
+        }),
+      });
+      const registerData = await registerRes.json();
+      if (!registerRes.ok || !registerData.registered) {
+        setNfcError(registerData.error || '입장 등록에 실패했습니다. 다시 시도해주세요');
+        return;
+      }
+
+      setSuccessMessage('입장이 완료되었습니다');
+      setShowTouchText(true);
+      showScreen('success');
     } catch (err) {
-      console.error('NFC 등록 fetch 오류:', err);
-      setNfcError('네트워크 오류가 발생했습니다. 연결을 확인해주세요.');
+      console.error('NFC 공통 등록 오류:', err);
+      setNfcError('입장 등록에 실패했습니다. 다시 시도해주세요');
     } finally {
       setLoading(false);
     }
-  }, [gameId, selectedUser]);
+  }, [accessState, selectedUser, showScreen]);
 
   const resetToStart = () => {
     setPin('');
@@ -241,6 +310,7 @@ function LoginContent() {
     setPasswordErrorMessage('');
     setErrorMessage('');
     setNfcError('');
+    setSuccessMessage('');
     showScreen('intro');
   };
 
@@ -620,9 +690,18 @@ function LoginContent() {
             className="fixed inset-0 bg-black text-white flex flex-col justify-center items-center gap-8 z-10 cursor-pointer"
             onClick={resetToStart}
           >
-            <TypewriterText text="ACCESS GRANTED. WELCOME, PLAYER." color="white" onComplete={() => setShowTouchText(true)} />
-            {showTouchText && (
-              <p className="text-sm tracking-wider text-white/75 animate-pulse">TOUCH THE SCREEN</p>
+            {successMessage ? (
+              <>
+                <p className="text-2xl font-bold tracking-wide text-center px-6">{successMessage}</p>
+                <p className="text-sm tracking-wider text-white/75 animate-pulse">TOUCH THE SCREEN</p>
+              </>
+            ) : (
+              <>
+                <TypewriterText text="ACCESS GRANTED. WELCOME, PLAYER." color="white" onComplete={() => setShowTouchText(true)} />
+                {showTouchText && (
+                  <p className="text-sm tracking-wider text-white/75 animate-pulse">TOUCH THE SCREEN</p>
+                )}
+              </>
             )}
           </motion.div>
         )}
