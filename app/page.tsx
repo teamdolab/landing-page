@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Power, MapPin, Info, MessageCircle } from 'lucide-react';
+import { MapPin, Info, MessageCircle } from 'lucide-react';
+import Image from 'next/image';
+import { IntroScreen } from '@/app/_components/landing/IntroScreen';
 import { usePostHog } from 'posthog-js/react';
 import { gtagEvent } from '@/lib/analytics';
 
@@ -110,8 +112,6 @@ export default function Home() {
     posthog?.capture(name, props);
   };
 
-  const [isPowerOn, setIsPowerOn] = useState(false);
-  const [sweepDone, setSweepDone] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showFormStep2, setShowFormStep2] = useState(false);
@@ -159,14 +159,6 @@ export default function Home() {
 
   // 전화번호: 하이픈/공백 제거, 숫자만
   const normalizePhone = (p: string) => p.replace(/\D/g, '');
-
-  const handlePowerClick = () => {
-    if (isPowerOn) return;
-    setIsPowerOn(true);
-    setTimeout(() => setSweepDone(true), 1200);
-    // 텍스트 전류 효과 끝난 뒤 2초 후 신청 페이지로 전환
-    setTimeout(() => setShowSignUp(true), 3200);
-  };
 
   // 실시간 예약 현황 로드
   const loadAvailability = async () => {
@@ -467,8 +459,6 @@ export default function Home() {
       // Step 1에서 뒤로가기 - 전원 끄기
       setShowForm(false);
       setShowSignUp(false);
-      setIsPowerOn(false);
-      setSweepDone(false);
       // 폼 초기화
       setName('');
       setPhone('');
@@ -485,7 +475,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-grid-pattern flex flex-col items-center justify-center relative overflow-hidden font-body">
+    <main className="min-h-screen bg-grid-v12 flex flex-col items-center justify-center relative overflow-hidden font-body">
 
       {/* 약관 모달 */}
       <AnimatePresence>
@@ -494,7 +484,7 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60"
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-ink/60"
             onClick={() => setTermsModal(null)}
           >
             <motion.div
@@ -502,21 +492,21 @@ export default function Home() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-phantom-white border-2 border-neon-orange clip-cut-corner max-h-[85vh] w-full max-w-lg flex flex-col"
+              className="bg-white border border-line clip-chamfer max-h-[85vh] w-full max-w-lg flex flex-col"
             >
-              <div className="p-4 border-b-2 border-neon-orange/30 flex-shrink-0">
-                <h3 className="font-orbitron text-sm font-bold text-neon-orange uppercase tracking-widest">
+              <div className="p-4 border-b border-line flex-shrink-0">
+                <h3 className="font-mono text-xs font-bold text-signal uppercase tracking-widest">
                   {termsModal === 'privacy' ? '개인정보 수집 및 이용 동의' : termsModal === 'marketing' ? '마케팅 정보 수신 동의' : '환불 규정'}
                 </h3>
               </div>
-              <div className="p-4 overflow-y-auto flex-1 text-text-main text-sm leading-relaxed whitespace-pre-line">
+              <div className="p-4 overflow-y-auto flex-1 text-ink text-sm leading-relaxed whitespace-pre-line">
                 {termsModal === 'privacy' ? PRIVACY_TERMS : termsModal === 'marketing' ? MARKETING_TERMS : REFUND_TERMS}
               </div>
-              <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30">
+              <div className="p-4 flex-shrink-0 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setTermsModal(null)}
-                  className="w-full font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
+                  className="w-full btn-signal"
                 >
                   확인
                 </button>
@@ -533,7 +523,7 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60"
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-ink/60"
             onClick={() => setShowAvailability(false)}
           >
             <motion.div
@@ -541,18 +531,18 @@ export default function Home() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-phantom-white border-2 border-neon-orange clip-cut-corner max-h-[85vh] w-full max-w-2xl flex flex-col"
+              className="bg-white border border-line clip-chamfer max-h-[85vh] w-full max-w-2xl flex flex-col"
             >
-              <div className="p-4 border-b-2 border-neon-orange/30 flex-shrink-0">
-                <h3 className="font-orbitron text-lg font-bold text-neon-orange uppercase tracking-widest">
+              <div className="p-4 border-b border-line flex-shrink-0">
+                <h3 className="font-mono text-lg font-bold text-signal uppercase tracking-widest">
                   실시간 예약 현황
                 </h3>
               </div>
               <div className="p-4 overflow-y-auto flex-1">
                 {loadingSessions ? (
-                  <p className="text-center text-text-sub font-body">로딩 중...</p>
+                  <p className="text-center text-ink-2 font-body">로딩 중...</p>
                 ) : sessions.length === 0 ? (
-                  <p className="text-center text-text-sub font-body">예약 가능한 세션이 없습니다.</p>
+                  <p className="text-center text-ink-2 font-body">예약 가능한 세션이 없습니다.</p>
                 ) : (
                   <div className="space-y-3">
                     {sessions.map((session) => {
@@ -561,31 +551,31 @@ export default function Home() {
                       return (
                         <div
                           key={session.session_id}
-                          className={`clip-cut-corner p-4 border-2 transition-all ${
+                          className={`clip-chamfer p-4 border transition-all duration-base ${
                             isClosed
-                              ? 'border-gray-300 bg-white/30 opacity-60'
-                              : 'border-neon-orange/40 bg-white/60'
+                              ? 'border-line bg-paper-2 opacity-60'
+                              : 'border-line bg-white'
                           }`}
                         >
                           <div className="flex justify-between items-start mb-2">
                             <div>
-                              <h4 className={`font-orbitron text-base font-bold ${isClosed ? 'text-gray-500' : 'text-text-main'}`}>
+                              <h4 className={`font-display text-base font-bold ${isClosed ? 'text-gray-500' : 'text-ink'}`}>
                                 {session.game_name}
                               </h4>
                             </div>
                             <span
-                              className={`font-orbitron text-xs font-bold px-2 py-1 border clip-cut-corner ${
+                              className={`font-mono text-xs font-bold px-2 py-1 border clip-chamfer ${
                                 displayStatus === '진행확정'
-                                  ? 'bg-neon-orange text-white border-neon-orange'
+                                  ? 'bg-signal text-white border-signal'
                                   : displayStatus === '모집중'
-                                  ? 'bg-green-500 text-white border-green-500'
-                                  : 'bg-gray-400 text-white border-gray-400'
+                                  ? 'bg-ink text-white border-ink'
+                                  : 'bg-gray text-white border-gray'
                               }`}
                             >
                               {displayStatus}
                             </span>
                           </div>
-                          <div className={`grid grid-cols-2 gap-2 text-sm ${isClosed ? 'text-gray-400' : 'text-text-sub'}`}>
+                          <div className={`grid grid-cols-2 gap-2 text-sm ${isClosed ? 'text-gray-400' : 'text-ink-2'}`}>
                             <p className="font-body">
                               일시: {session.session_date} {(() => {
                                 const start = session.session_time?.slice(0, 5) || '';
@@ -604,7 +594,7 @@ export default function Home() {
                               현재 인원: {session.current_capacity} / {session.max_capacity}
                             </p>
                             <p className="font-body">
-                              잔여 석: <span className={`font-bold ${isClosed ? 'text-gray-400' : 'text-text-main'}`}>{session.available_slots}</span>석
+                              잔여 석: <span className={`font-bold ${isClosed ? 'text-gray-400' : 'text-ink'}`}>{session.available_slots}</span>석
                             </p>
                           </div>
                         </div>
@@ -613,11 +603,11 @@ export default function Home() {
                   </div>
                 )}
               </div>
-              <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30">
+              <div className="p-4 flex-shrink-0 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setShowAvailability(false)}
-                  className="w-full font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
+                  className="w-full btn-signal"
                 >
                   닫기
                 </button>
@@ -634,7 +624,7 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60"
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-ink/60"
             onClick={() => setShowGameIntro(null)}
           >
             <motion.div
@@ -642,14 +632,14 @@ export default function Home() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-phantom-white border-2 border-neon-orange clip-cut-corner max-h-[85vh] w-full max-w-lg flex flex-col"
+              className="bg-white border border-line clip-chamfer max-h-[85vh] w-full max-w-lg flex flex-col"
             >
-              <div className="p-4 border-b-2 border-neon-orange/30 flex-shrink-0">
-                <h3 className="font-orbitron text-sm font-bold text-neon-orange tracking-widest normal-case">
+              <div className="p-4 border-b border-line flex-shrink-0">
+                <h3 className="font-mono text-xs font-bold text-signal tracking-widest normal-case">
                   {showGameIntro ? getGameIntroDisplayTitle(showGameIntro) : ''}
                 </h3>
               </div>
-              <div className="p-4 overflow-y-auto flex-1 text-text-main text-sm leading-relaxed whitespace-pre-line">
+              <div className="p-4 overflow-y-auto flex-1 text-ink text-sm leading-relaxed whitespace-pre-line">
                 {showGameIntro === '대선 포커' ? (
                   <>
                     유권자가 되어 판을 움직일 것인가,{'\n'}
@@ -673,11 +663,11 @@ export default function Home() {
                   ''
                 )}
               </div>
-              <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30">
+              <div className="p-4 flex-shrink-0 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setShowGameIntro(null)}
-                  className="w-full font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
+                  className="w-full btn-signal"
                 >
                   확인
                 </button>
@@ -694,7 +684,7 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60"
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-ink/60"
             onClick={() => setShowInfoModal(null)}
           >
             <motion.div
@@ -702,23 +692,23 @@ export default function Home() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-phantom-white border-2 border-neon-orange clip-cut-corner max-h-[85vh] w-full max-w-lg flex flex-col"
+              className="bg-white border border-line clip-chamfer max-h-[85vh] w-full max-w-lg flex flex-col"
             >
-              <div className="p-4 border-b-2 border-neon-orange/30 flex-shrink-0">
-                <h3 className="font-orbitron text-sm font-bold text-neon-orange uppercase tracking-widest">
+              <div className="p-4 border-b border-line flex-shrink-0">
+                <h3 className="font-mono text-xs font-bold text-signal uppercase tracking-widest">
                   {showInfoModal === 'venue' ? '장소' : '콘텐츠 정보'}
                 </h3>
               </div>
-              <div className="p-4 overflow-y-auto flex-1 text-text-main text-sm leading-relaxed">
+              <div className="p-4 overflow-y-auto flex-1 text-ink text-sm leading-relaxed">
                 {showInfoModal === 'venue' && (
                   <>
                     <p>우비공 문래(영등포구 도림로 147길 22, 2층)</p>
-                    <p className="text-xs text-text-sub mt-2">* 추후 변경 될 수 있습니다.</p>
+                    <p className="text-xs text-ink-2 mt-2">* 추후 변경 될 수 있습니다.</p>
                   </>
                 )}
                 {showInfoModal === 'content' && (
                   <>
-                    <p className="font-orbitron text-xs font-bold text-neon-orange uppercase tracking-widest mb-2">소개</p>
+                    <p className="font-display text-xs font-bold text-signal uppercase tracking-widest mb-2">소개</p>
                     <p className="mb-4">
                       소셜전략게임 연구소 DO:LAB에서 진행하는 게임을 만나보세요!
                       <br />
@@ -731,18 +721,18 @@ export default function Home() {
                       <br />
                       지금 바로 신청하세요! &quot;DO:NEON PROJECT&quot;
                     </p>
-                    <p className="font-orbitron text-xs font-bold text-neon-orange uppercase tracking-widest mb-2">유의사항</p>
+                    <p className="font-display text-xs font-bold text-signal uppercase tracking-widest mb-2">유의사항</p>
                     <p>
                       DO:LAB의 모든 게임은 최소 진행 인원이 8명입니다. 최소 진행 인원이 플레이 당일 자정(00시 00분)까지 8명 미만일 경우 게임은 취소되며, 전액 환불해드립니다.
                     </p>
                   </>
                 )}
               </div>
-              <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30">
+              <div className="p-4 flex-shrink-0 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setShowInfoModal(null)}
-                  className="w-full font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
+                  className="w-full btn-signal"
                 >
                   확인
                 </button>
@@ -759,7 +749,7 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60"
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-ink/60"
             onClick={() => setShowEventModal(null)}
           >
             <motion.div
@@ -767,14 +757,14 @@ export default function Home() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-phantom-white border-2 border-neon-orange clip-cut-corner max-h-[85vh] w-full max-w-lg flex flex-col"
+              className="bg-white border border-line clip-chamfer max-h-[85vh] w-full max-w-lg flex flex-col"
             >
-              <div className="p-4 border-b-2 border-neon-orange/30 flex-shrink-0">
-                <h3 className="font-orbitron text-sm font-bold text-neon-orange uppercase tracking-widest">
+              <div className="p-4 border-b border-line flex-shrink-0">
+                <h3 className="font-mono text-xs font-bold text-signal uppercase tracking-widest">
                   EVENT!
                 </h3>
               </div>
-              <div className="p-4 overflow-y-auto flex-1 text-text-main text-sm leading-relaxed">
+              <div className="p-4 overflow-y-auto flex-1 text-ink text-sm leading-relaxed">
                 {showEventModal === 'newuser' && (
                   <p>
                     신규 테스터 등록 시 마케팅 정보 동의할 경우, 3,000 크레딧을 적립해드립니다!
@@ -792,11 +782,11 @@ export default function Home() {
                   </p>
                 )}
               </div>
-              <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30">
+              <div className="p-4 flex-shrink-0 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setShowEventModal(null)}
-                  className="w-full font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
+                  className="w-full btn-signal"
                 >
                   확인
                 </button>
@@ -813,7 +803,7 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60"
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-ink/60"
             onClick={() => setShowSignupConfirm(false)}
           >
             <motion.div
@@ -821,34 +811,34 @@ export default function Home() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-phantom-white border-2 border-neon-orange clip-cut-corner max-w-lg w-full flex flex-col"
+              className="bg-white border border-line clip-chamfer max-w-lg w-full flex flex-col"
             >
-              <div className="p-4 border-b-2 border-neon-orange/30 flex-shrink-0">
-                <h3 className="font-orbitron text-sm font-bold text-neon-orange uppercase tracking-widest">
+              <div className="p-4 border-b border-line flex-shrink-0">
+                <h3 className="font-mono text-xs font-bold text-signal uppercase tracking-widest">
                   가입 확인
                 </h3>
               </div>
-              <div className="p-4 flex-1 text-text-main text-sm leading-relaxed">
+              <div className="p-4 flex-1 text-ink text-sm leading-relaxed">
                 <p>
                   <span className="font-bold">{nickname}#{normalizePhone(phone).slice(-4) || '****'}</span>
                   으로 등록하시겠습니까?
                 </p>
-                <p className="mt-2 text-xs text-text-sub/80">
+                <p className="mt-2 text-xs text-ink-2/80">
                   (#은 PIN 번호이며, 전화번호 뒷자리로 자동 설정됩니다.)
                 </p>
               </div>
-              <div className="p-4 flex-shrink-0 border-t-2 border-neon-orange/30 flex gap-3">
+              <div className="p-4 flex-shrink-0 border-t border-line flex gap-3">
                 <button
                   type="button"
                   onClick={() => setShowSignupConfirm(false)}
-                  className="flex-1 font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-transparent text-neon-orange clip-cut-corner hover:bg-neon-orange/10 transition-colors"
+                  className="flex-1 btn-signal-outline"
                 >
                   아니오
                 </button>
                 <button
                   type="button"
                   onClick={handleSignupConfirm}
-                  className="flex-1 font-orbitron text-sm font-bold uppercase py-2.5 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner hover:shadow-neon-orange transition-shadow"
+                  className="flex-1 btn-signal"
                 >
                   예
                 </button>
@@ -858,170 +848,8 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* ========== 인트로 화면 (전원 ~ 텍스트 켜짐) ========== */}
       {!showSignUp && (
-      <section className="relative flex flex-col items-center justify-center px-4 text-center z-10 w-full">
-        {/* 1. 상단 문구 — 항상 밝게 */}
-        <h1 className="font-orbitron text-xl md:text-2xl lg:text-3xl text-text-main font-bold tracking-[0.2em] mb-10 md:mb-14">
-          당신의 두뇌 ON 하시겠습니까?
-        </h1>
-
-        {/* 2. DO : N E [전원 O] N   PROJECT — 두 번째 O가 전원 */}
-        <div className="flex flex-col items-center gap-2 md:gap-3">
-          <div className="flex flex-wrap items-center justify-center gap-x-1 md:gap-x-2 max-w-4xl">
-            {/* D */}
-            <motion.span
-              className="font-orbitron text-3xl md:text-5xl lg:text-7xl font-black uppercase"
-              initial={false}
-              animate={{
-                color: isPowerOn ? '#222222' : '#666666',
-                opacity: isPowerOn ? 1 : 0.08,
-                textShadow: isPowerOn
-                  ? '0 0 12px rgba(255, 79, 0, 0.25), 0 0 24px rgba(255, 79, 0, 0.15)'
-                  : 'none',
-              }}
-              transition={{ duration: 0.5, delay: isPowerOn ? 0.25 : 0 }}
-            >
-              D
-            </motion.span>
-            {/* O (첫 번째 O) */}
-            <motion.span
-              className="font-orbitron text-3xl md:text-5xl lg:text-7xl font-black uppercase"
-              initial={false}
-              animate={{
-                color: isPowerOn ? '#222222' : '#666666',
-                opacity: isPowerOn ? 1 : 0.08,
-                textShadow: isPowerOn
-                  ? '0 0 12px rgba(255, 79, 0, 0.25), 0 0 24px rgba(255, 79, 0, 0.15)'
-                  : 'none',
-              }}
-              transition={{ duration: 0.5, delay: isPowerOn ? 0.28 : 0 }}
-            >
-              O
-            </motion.span>
-            {/* : */}
-            <motion.span
-              className="font-orbitron text-3xl md:text-5xl lg:text-7xl font-black uppercase"
-              initial={false}
-              animate={{
-                color: isPowerOn ? '#222222' : '#666666',
-                opacity: isPowerOn ? 1 : 0.08,
-              }}
-              transition={{ duration: 0.5, delay: isPowerOn ? 0.22 : 0 }}
-            >
-              :
-            </motion.span>
-            {/* N */}
-            <motion.span
-              className="font-orbitron text-3xl md:text-5xl lg:text-7xl font-black uppercase"
-              initial={false}
-              animate={{
-                color: isPowerOn ? '#222222' : '#666666',
-                opacity: isPowerOn ? 1 : 0.08,
-                textShadow: isPowerOn
-                  ? '0 0 12px rgba(255, 79, 0, 0.25), 0 0 24px rgba(255, 79, 0, 0.15)'
-                  : 'none',
-              }}
-              transition={{ duration: 0.5, delay: isPowerOn ? 0.32 : 0 }}
-            >
-              N
-            </motion.span>
-            {/* E */}
-            <motion.span
-              className="font-orbitron text-3xl md:text-5xl lg:text-7xl font-black uppercase"
-              initial={false}
-              animate={{
-                color: isPowerOn ? '#222222' : '#666666',
-                opacity: isPowerOn ? 1 : 0.08,
-                textShadow: isPowerOn
-                  ? '0 0 12px rgba(255, 79, 0, 0.25), 0 0 24px rgba(255, 79, 0, 0.15)'
-                  : 'none',
-              }}
-              transition={{ duration: 0.5, delay: isPowerOn ? 0.38 : 0 }}
-            >
-              E
-            </motion.span>
-            {/* 전원 버튼 — NEON의 두 번째 O, 항상 밝게 */}
-            <div className="relative inline-flex mx-0.5">
-              <motion.button
-                type="button"
-                onClick={handlePowerClick}
-                disabled={isPowerOn}
-                className="relative flex items-center justify-center p-1 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
-                whileHover={!isPowerOn ? { scale: 1.1 } : {}}
-                whileTap={!isPowerOn ? { scale: 0.95 } : {}}
-              >
-                <Power
-                  size={56}
-                  strokeWidth={2.5}
-                  className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 text-neon-orange drop-shadow-[0_0_12px_rgba(255,79,0,0.6)]"
-                />
-                {isPowerOn && (
-                  <motion.span
-                    className="absolute inset-0 rounded-full bg-neon-orange/20"
-                    initial={{ scale: 0.8, opacity: 0.8 }}
-                    animate={{ scale: 2, opacity: 0 }}
-                    transition={{ duration: 0.8 }}
-                  />
-                )}
-              </motion.button>
-            </div>
-            {/* N */}
-            <motion.span
-              className="font-orbitron text-3xl md:text-5xl lg:text-7xl font-black uppercase"
-              initial={false}
-              animate={{
-                color: isPowerOn ? '#222222' : '#666666',
-                opacity: isPowerOn ? 1 : 0.08,
-                textShadow: isPowerOn
-                  ? '0 0 12px rgba(255, 79, 0, 0.25), 0 0 24px rgba(255, 79, 0, 0.15)'
-                  : 'none',
-              }}
-              transition={{ duration: 0.5, delay: isPowerOn ? 0.5 : 0 }}
-            >
-              N
-            </motion.span>
-
-            <span className="w-3 md:w-4" />
-
-            {/* PROJECT */}
-            <motion.span
-              className="font-body text-2xl md:text-4xl lg:text-5xl font-bold uppercase tracking-widest"
-              initial={false}
-              animate={{
-                color: isPowerOn ? '#222222' : '#666666',
-                opacity: isPowerOn ? 1 : 0.08,
-                textShadow: isPowerOn
-                  ? '0 0 12px rgba(255, 79, 0, 0.25), 0 0 24px rgba(255, 79, 0, 0.15)'
-                  : 'none',
-              }}
-              transition={{ duration: 0.5, delay: isPowerOn ? 0.6 : 0 }}
-            >
-              PROJECT
-            </motion.span>
-          </div>
-        </div>
-
-        {/* 전류 스윕 효과 — 전원 클릭 시 왼쪽에서 오른쪽으로 지나가는 선 */}
-        <AnimatePresence>
-          {isPowerOn && !sweepDone && (
-            <motion.div
-              className="absolute inset-0 pointer-events-none flex items-center justify-center"
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <motion.div
-                className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[2px] bg-gradient-to-r from-transparent via-neon-orange to-transparent origin-left"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 1, ease: [0.4, 0, 0.2, 1] }}
-                style={{ boxShadow: '0 0 20px rgba(255, 79, 0, 0.8)' }}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </section>
+        <IntroScreen onComplete={() => setShowSignUp(true)} />
       )}
 
       {/* ========== 게임 신청 페이지 ========== */}
@@ -1035,21 +863,18 @@ export default function Home() {
             transition={{ duration: 0.5 }}
             className="relative w-full max-w-2xl mx-auto px-6 py-12 md:py-16 z-10"
           >
-            {/* DO:LAB */}
-            <p className="font-orbitron text-sm md:text-base font-bold tracking-[0.3em] text-neon-orange uppercase mb-1">
+            <p className="font-mono text-xs text-signal uppercase tracking-[0.3em] mb-1">
               DO:LAB
             </p>
-            {/* NEON PROJECT */}
-            <h1 className="font-orbitron text-2xl md:text-3xl lg:text-4xl font-black text-text-main tracking-tight mb-1">
+            <h1 className="font-display text-3xl font-bold text-ink tracking-tight mb-1">
               NEON PROJECT
             </h1>
-            <p className="font-body text-sm text-text-sub uppercase tracking-widest mb-10 md:mb-12">
+            <p className="font-mono text-xs text-ink-2 uppercase tracking-widest mb-8">
               SEASON: 0
             </p>
 
-            {/* 소개 글 + 시즌 0 게임 영역 */}
-            <div className="bg-deep-dark/5 border-2 border-neon-orange clip-cut-corner p-6 md:p-8 mb-8">
-              <p className="text-text-main text-base md:text-lg leading-relaxed mb-6">
+            <div className="signup-panel p-6 md:p-8 mb-8">
+              <p className="font-body text-base text-ink leading-[1.7] mb-4">
                 신인류 프로젝트, <span className="font-bold">DO:NEON PROJECT(두뇌ON 프로젝트)</span>가 시작됩니다.
                 <br />
                 신뢰를 쌓고 함께 승리를 만들어낼 것인지,
@@ -1057,37 +882,36 @@ export default function Home() {
                 마지막 순간 배신으로 판을 뒤집을 것인지,
                 <br />
                 혹은 누구의 도움도 없이 끝까지 살아남을 것인지.
-                <br />
-                <br />
+              </p>
+              <p className="font-body text-md font-bold text-ink mb-6">
                 당신은 어떤 선택을 하시겠습니까?
               </p>
-              {/* 시즌 0 게임 구획 */}
-              <div className="border-t-2 border-neon-orange/40 pt-6">
-                <p className="font-orbitron text-xs font-bold text-neon-orange uppercase tracking-widest mb-4">
+              <div className="border-t border-line pt-6">
+                <p className="font-mono text-xs text-signal uppercase tracking-widest mb-4">
                   시즌 0 게임
                 </p>
-                <div className="flex flex-wrap gap-4 md:gap-6">
+                <div className="flex flex-wrap gap-5">
                   <figure className="flex-shrink-0">
                     <button
                       type="button"
                       onClick={() => setShowGameIntro('대선 포커')}
-                      className="relative w-24 h-36 border-2 border-neon-orange clip-cut-corner cursor-pointer overflow-hidden hover:border-neon-orange/80 transition-colors bg-white/30 block"
+                      className="game-card-signup"
+                      style={{ ['--ga' as string]: '#E23B4E' }}
                     >
                       <img
                         src="/daesun-poker-poster.png"
                         alt="대선 포커"
-                        className="w-full h-full object-cover"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                           const fallback = e.currentTarget.nextElementSibling as HTMLElement;
                           if (fallback) fallback.style.display = 'flex';
                         }}
                       />
-                      <span className="absolute inset-0 hidden items-center justify-center bg-white/80 font-orbitron text-xs font-bold text-text-main">
+                      <span className="absolute inset-0 hidden items-center justify-center bg-white/80 font-body text-sm font-bold text-ink">
                         대선 포커
                       </span>
                     </button>
-                    <figcaption className="mt-1.5 font-orbitron text-xs font-bold text-neon-orange uppercase tracking-wider text-center">
+                    <figcaption className="mt-2 text-sm font-body font-bold text-ink text-center max-w-[6rem]">
                       대선 포커
                     </figcaption>
                   </figure>
@@ -1095,12 +919,12 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => setShowGameIntro('수송선게임')}
-                      className="relative w-24 h-36 border-2 border-neon-orange clip-cut-corner cursor-pointer overflow-hidden hover:border-neon-orange/80 transition-colors bg-gradient-to-b from-slate-900/90 to-slate-800/90 block"
+                      className="game-card-signup"
+                      style={{ ['--ga' as string]: '#6B46D9' }}
                     >
                       <img
                         src="/susongseon-game-poster.png"
                         alt="수송선게임"
-                        className="w-full h-full object-cover"
                         onError={(e) => {
                           const el = e.currentTarget;
                           if (el.dataset.tryLegacy !== '1') {
@@ -1113,11 +937,11 @@ export default function Home() {
                           if (fallback) fallback.style.display = 'flex';
                         }}
                       />
-                      <span className="absolute inset-0 hidden flex-col items-center justify-center gap-0.5 bg-slate-900/85 px-1 text-center font-orbitron text-[9px] font-bold leading-tight text-cyan-300">
+                      <span className="absolute inset-0 hidden flex-col items-center justify-center gap-1 bg-ink/85 px-1 text-center font-body text-sm font-bold text-white">
                         수송선게임
                       </span>
                     </button>
-                    <figcaption className="mt-1.5 font-orbitron text-xs font-bold text-neon-orange tracking-wider text-center max-w-[6rem]">
+                    <figcaption className="mt-2 text-sm font-body font-bold text-ink text-center max-w-[6rem]">
                       수송선게임
                     </figcaption>
                   </figure>
@@ -1125,44 +949,40 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 금액 — 35,000 → 25,000 (28% 할인) */}
-            <div className="flex flex-wrap items-baseline gap-3 mb-4">
-              <span className="font-body text-text-sub text-lg line-through">
-                35,000
-              </span>
-              <span className="font-orbitron text-2xl md:text-3xl font-black text-text-main">
-                25,000
-              </span>
-              <span className="font-body text-neon-orange text-sm md:text-base font-bold uppercase">
-                28% 할인
-              </span>
+            <div className="flex flex-wrap items-baseline gap-3 mb-5">
+              <span className="font-body text-sm text-gray line-through">35,000</span>
+              <span className="font-mono text-2xl font-bold text-ink">25,000</span>
+              <span className="price-tag-v12">28% 할인</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4 mb-8">
               <button
                 type="button"
                 onClick={() => setShowInfoModal('venue')}
-                className="inline-flex items-center gap-1.5 text-text-sub hover:text-neon-orange transition-colors px-2 py-1 rounded hover:bg-neon-orange/10"
+                className="signup-meta-link"
               >
-                <MapPin size={18} strokeWidth={2} />
-                <span className="font-body text-xs">장소</span>
+                <MapPin size={16} strokeWidth={2} className="text-ink-2" />
+                장소
               </button>
               <button
                 type="button"
                 onClick={() => setShowInfoModal('content')}
-                className="inline-flex items-center gap-1.5 text-text-sub hover:text-neon-orange transition-colors px-2 py-1 rounded hover:bg-neon-orange/10"
+                className="signup-meta-link"
               >
-                <Info size={18} strokeWidth={2} />
-                <span className="font-body text-xs">콘텐츠 정보</span>
+                <Info size={16} strokeWidth={2} className="text-ink-2" />
+                콘텐츠 정보
               </button>
               <a
                 href={KAKAO_CHANNEL_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-text-sub hover:text-neon-orange transition-colors px-2 py-1 rounded hover:bg-neon-orange/10"
+                className="signup-meta-link"
               >
-                <MessageCircle size={18} strokeWidth={2} />
-                <span className="font-body text-xs">카카오톡 채널 문의하기</span>
+                <MessageCircle size={16} strokeWidth={2} className="text-ink-2" />
+                카카오톡 채널 문의하기
               </a>
             </div>
-            {/* 실시간 예약 확인 / 게임 참가하기 버튼 */}
+
             <div className="flex flex-col gap-4">
               <button
                 type="button"
@@ -1170,14 +990,14 @@ export default function Home() {
                   setShowAvailability(true);
                   loadAvailability();
                 }}
-                className="inline-flex font-orbitron text-base md:text-lg font-bold uppercase tracking-[0.2em] py-2.5 px-5 border-2 border-neon-orange bg-transparent text-neon-orange clip-cut-corner transition-all duration-300 hover:bg-neon-orange hover:text-text-light focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
+                className="btn-signal-outline w-full sm:w-auto"
               >
                 실시간 예약 확인
               </button>
               <button
                 type="button"
                 onClick={() => { setShowForm(true); track('apply_start'); }}
-                className="inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2"
+                className="btn-signal w-full sm:w-auto"
               >
                 게임 참가하기
               </button>
@@ -1199,25 +1019,25 @@ export default function Home() {
             <button
               type="button"
               onClick={handleGoBack}
-              className="mb-4 font-orbitron text-sm text-neon-orange hover:text-neon-orange/80 uppercase tracking-widest flex items-center gap-2 transition-colors"
+              className="mb-4 font-display text-sm text-signal hover:text-signal/80 uppercase tracking-widest flex items-center gap-2 transition-colors"
             >
               ← 뒤로가기
             </button>
 
-            <p className="font-orbitron text-sm md:text-base font-bold tracking-[0.3em] text-neon-orange uppercase mb-1">
+            <p className="font-display text-sm md:text-base font-bold tracking-[0.3em] text-signal uppercase mb-1">
               DO:LAB
             </p>
-            <h1 className="font-orbitron text-2xl md:text-3xl lg:text-4xl font-black text-text-main tracking-tight mb-1">
+            <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-black text-ink tracking-tight mb-1">
               NEON PROJECT
             </h1>
-            <p className="font-body text-sm text-text-sub uppercase tracking-widest mb-8 md:mb-10">
+            <p className="font-body text-sm text-ink-2 uppercase tracking-widest mb-8 md:mb-10">
               SEASON: 0
             </p>
 
             <div className="space-y-6">
               {/* 성명 */}
               <div>
-                <label htmlFor="name" className="block font-body text-xs text-text-sub uppercase tracking-widest mb-2">
+                <label htmlFor="name" className="block font-body text-xs text-ink-2 uppercase tracking-widest mb-2">
                   성명
                 </label>
                 <input
@@ -1226,13 +1046,13 @@ export default function Home() {
                   placeholder="김네온"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full font-body text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
+                  className="input-v12"
                 />
               </div>
 
               {/* 전화번호 */}
               <div>
-                <label htmlFor="phone" className="block font-body text-xs text-text-sub uppercase tracking-widest mb-2">
+                <label htmlFor="phone" className="block font-body text-xs text-ink-2 uppercase tracking-widest mb-2">
                   전화번호
                 </label>
                 <input
@@ -1242,7 +1062,7 @@ export default function Home() {
                   placeholder="01012345678"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                  className="w-full font-body text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
+                  className="input-v12"
                 />
               </div>
               
@@ -1255,7 +1075,7 @@ export default function Home() {
               type="button"
               onClick={handleStep1Continue}
               disabled={loading}
-              className="mt-10 inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-10 btn-signal text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? '확인 중...' : '계속'}
             </button>
@@ -1276,18 +1096,18 @@ export default function Home() {
             <button
               type="button"
               onClick={handleGoBack}
-              className="mb-4 font-orbitron text-sm text-neon-orange hover:text-neon-orange/80 uppercase tracking-widest flex items-center gap-2 transition-colors"
+              className="mb-4 font-display text-sm text-signal hover:text-signal/80 uppercase tracking-widest flex items-center gap-2 transition-colors"
             >
               ← 뒤로가기
             </button>
 
-            <p className="font-orbitron text-sm md:text-base font-bold tracking-[0.3em] text-neon-orange uppercase mb-1">
+            <p className="font-display text-sm md:text-base font-bold tracking-[0.3em] text-signal uppercase mb-1">
               DO:LAB
             </p>
-            <h1 className="font-orbitron text-2xl md:text-3xl lg:text-4xl font-black text-text-main tracking-tight mb-1">
+            <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-black text-ink tracking-tight mb-1">
               NEON PROJECT
             </h1>
-            <p className="font-body text-sm text-text-sub uppercase tracking-widest mb-8 md:mb-10">
+            <p className="font-body text-sm text-ink-2 uppercase tracking-widest mb-8 md:mb-10">
               {isExistingUser ? '로그인' : 'SEASON: 0'}
             </p>
 
@@ -1295,10 +1115,10 @@ export default function Home() {
               {/* 기존 회원: 닉네임 표시 (읽기 전용) */}
               {isExistingUser && (
                 <div>
-                  <label className="block font-body text-xs text-text-sub uppercase tracking-widest mb-2">
+                  <label className="block font-body text-xs text-ink-2 uppercase tracking-widest mb-2">
                     닉네임
                   </label>
-                  <div className="w-full font-body text-text-main bg-transparent border-2 border-neon-orange/50 clip-cut-corner py-3 px-4">
+                  <div className="w-full input-v12 bg-paper-2">
                     {nickname}
                   </div>
                 </div>
@@ -1307,7 +1127,7 @@ export default function Home() {
               {/* 신규 회원: 닉네임 입력 */}
               {!isExistingUser && (
                 <div>
-                  <label htmlFor="nickname" className="block font-body text-xs text-text-sub uppercase tracking-widest mb-2">
+                  <label htmlFor="nickname" className="block font-body text-xs text-ink-2 uppercase tracking-widest mb-2">
                     닉네임
                   </label>
                   <input
@@ -1316,14 +1136,14 @@ export default function Home() {
                     placeholder="(한글 2-6자)"
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
-                    className="w-full font-body text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
+                    className="input-v12"
                   />
                 </div>
               )}
 
               {/* 패스워드(숫자 4자리) */}
               <div>
-                <label htmlFor="password" className="block font-body text-xs text-text-sub uppercase tracking-widest mb-2">
+                <label htmlFor="password" className="block font-body text-xs text-ink-2 uppercase tracking-widest mb-2">
                   패스워드(숫자 4자리)
                 </label>
                 <input
@@ -1334,7 +1154,7 @@ export default function Home() {
                   placeholder="0000"
                   value={password}
                   onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                  className="w-full font-body text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
+                  className="input-v12"
                 />
               </div>
 
@@ -1348,16 +1168,16 @@ export default function Home() {
                         type="checkbox" 
                         checked={privacyConsent}
                         onChange={(e) => setPrivacyConsent(e.target.checked)}
-                        className="w-4 h-4 accent-neon-orange border-2 border-neon-orange rounded" 
+                        className="w-4 h-4 accent-signal border border-signal clip-chamfer" 
                       />
-                      <span className="font-body text-sm text-text-main">
+                      <span className="font-body text-sm text-ink">
                         개인정보 수집 및 이용 동의(필수)
                       </span>
                     </label>
                     <button
                       type="button"
                       onClick={() => setTermsModal('privacy')}
-                      className="font-body text-xs text-neon-orange border border-neon-orange clip-cut-corner py-1.5 px-3 hover:bg-neon-orange hover:text-text-light transition-colors"
+                      className="font-body text-xs text-signal border border-signal clip-chamfer py-1.5 px-3 hover:bg-signal hover:text-white transition-colors"
                     >
                       약관확인
                     </button>
@@ -1370,23 +1190,23 @@ export default function Home() {
                         type="checkbox" 
                         checked={marketingConsent}
                         onChange={(e) => setMarketingConsent(e.target.checked)}
-                        className="w-4 h-4 accent-neon-orange border-2 border-neon-orange rounded" 
+                        className="w-4 h-4 accent-signal border border-signal clip-chamfer" 
                       />
-                      <span className="font-body text-sm text-text-main">
+                      <span className="font-body text-sm text-ink">
                         마케팅 정보 동의(선택)
                       </span>
                     </label>
                     <button
                       type="button"
                       onClick={() => setTermsModal('marketing')}
-                      className="font-body text-xs text-neon-orange border border-neon-orange clip-cut-corner py-1.5 px-3 hover:bg-neon-orange hover:text-text-light transition-colors"
+                      className="font-body text-xs text-signal border border-signal clip-chamfer py-1.5 px-3 hover:bg-signal hover:text-white transition-colors"
                     >
                       약관확인
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowEventModal('newuser')}
-                      className="font-body text-xs text-neon-orange font-bold cursor-pointer hover:underline"
+                      className="font-body text-xs text-signal font-bold cursor-pointer hover:underline"
                     >
                       EVENT!
                     </button>
@@ -1395,13 +1215,13 @@ export default function Home() {
                   {/* 추천인 — 전화번호(하이픈 제외) */}
                   <div>
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <label htmlFor="referrer" className="font-body text-xs text-text-sub uppercase tracking-widest">
+                      <label htmlFor="referrer" className="font-body text-xs text-ink-2 uppercase tracking-widest">
                         추천인
                       </label>
                       <button
                         type="button"
                         onClick={() => setShowEventModal('referrer')}
-                        className="font-body text-xs text-neon-orange font-bold cursor-pointer hover:underline"
+                        className="font-body text-xs text-signal font-bold cursor-pointer hover:underline"
                       >
                         EVENT!
                       </button>
@@ -1413,7 +1233,7 @@ export default function Home() {
                       placeholder="01012345678"
                       value={referrer}
                       onChange={(e) => setReferrer(e.target.value.replace(/\D/g, ''))}
-                      className="w-full font-body text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
+                      className="input-v12"
                     />
                   </div>
                 </>
@@ -1428,7 +1248,7 @@ export default function Home() {
               type="button"
               onClick={handleStep2Continue}
               disabled={loading}
-              className="mt-10 inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-10 btn-signal text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (isExistingUser ? '로그인 중...' : '가입 중...') : (isExistingUser ? '로그인' : '가입 및 신청하기')}
             </button>
@@ -1449,36 +1269,36 @@ export default function Home() {
             <button
               type="button"
               onClick={handleGoBack}
-              className="mb-4 font-orbitron text-sm text-neon-orange hover:text-neon-orange/80 uppercase tracking-widest flex items-center gap-2 transition-colors"
+              className="mb-4 font-display text-sm text-signal hover:text-signal/80 uppercase tracking-widest flex items-center gap-2 transition-colors"
             >
               ← 뒤로가기
             </button>
 
-            <p className="font-orbitron text-sm md:text-base font-bold tracking-[0.3em] text-neon-orange uppercase mb-1">
+            <p className="font-display text-sm md:text-base font-bold tracking-[0.3em] text-signal uppercase mb-1">
               DO:LAB
             </p>
-            <h1 className="font-orbitron text-2xl md:text-3xl lg:text-4xl font-black text-text-main tracking-tight mb-1">
+            <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-black text-ink tracking-tight mb-1">
               NEON PROJECT
             </h1>
-            <p className="font-body text-sm text-text-sub uppercase tracking-widest mb-8 md:mb-10">
+            <p className="font-body text-sm text-ink-2 uppercase tracking-widest mb-8 md:mb-10">
               SEASON: 0
             </p>
 
             <div className="space-y-6">
               {/* 참가 일정 */}
               <div>
-                <label htmlFor="schedule" className="block font-body text-xs text-text-sub uppercase tracking-widest mb-2">
+                <label htmlFor="schedule" className="block font-body text-xs text-ink-2 uppercase tracking-widest mb-2">
                   참가 일정
                 </label>
                 {loadingSessions ? (
-                  <p className="font-body text-sm text-text-sub">로딩 중...</p>
+                  <p className="font-body text-sm text-ink-2">로딩 중...</p>
                 ) : (
                   <select
                     id="schedule"
                     value={selectedSession}
                     onChange={(e) => setSelectedSession(e.target.value)}
-                    className="w-full font-body text-text-main bg-white border-2 border-neon-orange clip-cut-corner py-3 px-4 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0 appearance-none bg-no-repeat bg-right pr-10"
-                    style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%23FF4F00\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E")' }}
+                    className="w-full input-v12 appearance-none bg-no-repeat bg-right pr-10"
+                    style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%23EE5D0C\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E")' }}
                   >
                     <option value="">-- 일정 선택 --</option>
                     {sessions.map((session) => {
@@ -1500,7 +1320,7 @@ export default function Home() {
 
               {/* 크레딧 사용 + 잔여 크레딧 확인하기 */}
               <div>
-                <label htmlFor="credit" className="block font-body text-xs text-text-sub uppercase tracking-widest mb-2">
+                <label htmlFor="credit" className="block font-body text-xs text-ink-2 uppercase tracking-widest mb-2">
                   크레딧 사용
                 </label>
                 <div className="flex flex-wrap items-center gap-3 mb-2">
@@ -1510,26 +1330,26 @@ export default function Home() {
                     placeholder="0"
                     value={creditUsed}
                     onChange={(e) => setCreditUsed(e.target.value.replace(/\D/g, ''))}
-                    className="w-32 font-body text-text-main bg-transparent border-2 border-neon-orange clip-cut-corner py-3 px-4 placeholder:text-text-sub/60 focus:outline-none focus:ring-2 focus:ring-neon-orange focus:ring-offset-0"
+                    className="w-32 input-v12"
                   />
-                  <span className="text-text-sub">/</span>
+                  <span className="text-ink-2">/</span>
                   <button
                     type="button"
                     onClick={handleCheckCredits}
                     disabled={loading}
-                    className="font-body text-xs text-neon-orange border-2 border-neon-orange clip-cut-corner py-2.5 px-4 hover:bg-neon-orange hover:text-text-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="font-mono text-xs text-signal btn-signal-outline py-2 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     잔여 크레딧 확인하기
                   </button>
                 </div>
-                <p className="font-body text-sm text-text-sub">
+                <p className="font-body text-sm text-ink-2">
                   현재 크레딧: {userCredits.toLocaleString()}
                 </p>
               </div>
 
               {/* 참가비 — 세션 금액에서 크레딧 사용분 뺀 금액 */}
               <div>
-                <p className="font-body text-xs text-text-sub uppercase tracking-widest mb-2">
+                <p className="font-body text-xs text-ink-2 uppercase tracking-widest mb-2">
                   참가비
                 </p>
                 {selectedSession ? (
@@ -1539,13 +1359,13 @@ export default function Home() {
                     const credits = Number(creditUsed) || 0;
                     const finalPrice = Math.max(0, basePrice - credits);
                     return (
-                      <p className="font-orbitron text-lg text-text-main">
+                      <p className="font-display text-lg text-ink">
                         {basePrice.toLocaleString()} - {credits.toLocaleString()}(크레딧) = {finalPrice.toLocaleString()}원
                       </p>
                     );
                   })()
                 ) : (
-                  <p className="font-orbitron text-lg text-text-sub">일정을 먼저 선택해주세요</p>
+                  <p className="font-display text-lg text-ink-2">일정을 먼저 선택해주세요</p>
                 )}
               </div>
 
@@ -1556,27 +1376,27 @@ export default function Home() {
                     type="checkbox"
                     checked={refundConsent}
                     onChange={(e) => setRefundConsent(e.target.checked)}
-                    className="w-4 h-4 accent-neon-orange border-2 border-neon-orange rounded" 
+                    className="w-4 h-4 accent-signal border border-signal clip-chamfer" 
                   />
-                  <span className="font-body text-sm text-text-main">
+                  <span className="font-body text-sm text-ink">
                     환불 규정 동의(필수)
                   </span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setTermsModal('refund')}
-                  className="font-body text-xs text-neon-orange border border-neon-orange clip-cut-corner py-1.5 px-3 hover:bg-neon-orange hover:text-text-light transition-colors"
+                  className="font-body text-xs text-signal border border-signal clip-chamfer py-1.5 px-3 hover:bg-signal hover:text-white transition-colors"
                 >
                   약관확인
                 </button>
               </div>
 
               {/* 입금 안내 */}
-              <div className="bg-deep-dark/5 border-2 border-neon-orange clip-cut-corner p-4 md:p-5">
-                <p className="font-body text-xs text-text-sub uppercase tracking-widest mb-2">
+              <div className="panel-v12 p-4 md:p-5">
+                <p className="font-body text-xs text-ink-2 uppercase tracking-widest mb-2">
                   입금 안내
                 </p>
-                <p className="text-text-main text-sm leading-relaxed">
+                <p className="text-ink text-sm leading-relaxed">
                   <span className="font-bold">환불 규정 약관을 꼭 확인해주세요.</span>
                   <br />
                   참가비는 아래 계좌로 입금해주세요.
@@ -1584,7 +1404,7 @@ export default function Home() {
                   참가 신청 하시면 문자로 입금 계좌를 발송해드립니다.
                   <br />
                   참가 신청 이후에 12시간 내에 입금이 확인되지 않을 경우, 자동으로 신청이 취소됩니다.
-                  <hr className="my-3 border-t border-neon-orange/30 w-full" />
+                  <hr className="my-3 border-t border-signal/30 w-full" />
                   <span className="font-bold">카카오뱅크 3333-16-760925 예금주: 김석원</span>
                 </p>
               </div>
@@ -1599,7 +1419,7 @@ export default function Home() {
               type="button"
               onClick={handleApplyComplete}
               disabled={loading}
-              className="mt-10 inline-flex font-orbitron text-lg md:text-xl font-bold uppercase tracking-[0.2em] py-3 px-6 border-2 border-neon-orange bg-neon-orange text-text-light clip-cut-corner transition-all duration-300 hover:shadow-neon-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-orange focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-10 btn-signal text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? '신청 중...' : '참가 신청 완료'}
             </button>
@@ -1615,13 +1435,20 @@ export default function Home() {
             transition={{ duration: 0.5 }}
             className="relative w-full max-w-2xl mx-auto px-6 py-12 md:py-16 z-10 text-center"
           >
-            <p className="font-orbitron text-sm md:text-base font-bold tracking-[0.3em] text-neon-orange uppercase mb-6">
+            <p className="eyebrow-v12 mb-6">
               DO:LAB · NEON PROJECT
             </p>
-            <h2 className="font-orbitron text-2xl md:text-3xl font-black text-text-main tracking-tight mb-4">
+            <Image
+              src="/brand/dio.png"
+              alt=""
+              width={64}
+              height={64}
+              className="mx-auto mb-6 w-16 h-16 object-contain"
+            />
+            <h2 className="font-display text-3xl font-black text-ink tracking-tight mb-4">
               신청이 완료되었습니다.
             </h2>
-            <p className="font-body text-xl md:text-2xl text-text-main font-medium">
+            <p className="font-body text-xl text-ink font-medium">
               환영합니다, 테스터 님.
             </p>
           </motion.section>

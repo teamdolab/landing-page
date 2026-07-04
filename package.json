@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "setup": "test -f .env.local || cp .env.example .env.local",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
