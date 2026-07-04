@@ -863,19 +863,18 @@ export default function Home() {
             transition={{ duration: 0.5 }}
             className="relative w-full max-w-2xl mx-auto px-6 py-12 md:py-16 z-10"
           >
-            {/* DO:LAB */}
-            <p className="eyebrow-v12 mb-1">
+            <p className="font-mono text-xs text-signal uppercase tracking-[0.3em] mb-1">
               DO:LAB
             </p>
-            <h1 className="font-display text-3xl font-black text-ink tracking-tight mb-1">
+            <h1 className="font-display text-3xl font-bold text-ink tracking-tight mb-1">
               NEON PROJECT
             </h1>
             <p className="font-mono text-xs text-ink-2 uppercase tracking-widest mb-8">
               SEASON: 0
             </p>
 
-            <div className="panel-v12 p-6 md:p-8 mb-8">
-              <p className="text-ink text-base md:text-lg leading-relaxed mb-6">
+            <div className="signup-panel p-6 md:p-8 mb-8">
+              <p className="font-body text-base text-ink leading-[1.7] mb-4">
                 신인류 프로젝트, <span className="font-bold">DO:NEON PROJECT(두뇌ON 프로젝트)</span>가 시작됩니다.
                 <br />
                 신뢰를 쌓고 함께 승리를 만들어낼 것인지,
@@ -883,38 +882,36 @@ export default function Home() {
                 마지막 순간 배신으로 판을 뒤집을 것인지,
                 <br />
                 혹은 누구의 도움도 없이 끝까지 살아남을 것인지.
-                <br />
-                <br />
+              </p>
+              <p className="font-body text-md font-bold text-ink mb-6">
                 당신은 어떤 선택을 하시겠습니까?
               </p>
-              {/* 시즌 0 게임 구획 */}
               <div className="border-t border-line pt-6">
-                <p className="font-mono text-xs font-bold text-signal uppercase tracking-widest mb-4">
+                <p className="font-mono text-xs text-signal uppercase tracking-widest mb-4">
                   시즌 0 게임
                 </p>
-                <div className="flex flex-wrap gap-4 md:gap-6">
+                <div className="flex flex-wrap gap-5">
                   <figure className="flex-shrink-0">
                     <button
                       type="button"
                       onClick={() => setShowGameIntro('대선 포커')}
-                      className="relative w-24 h-36 border-2 border-poker clip-chamfer cursor-pointer overflow-hidden hover:opacity-90 transition-opacity bg-white block"
+                      className="game-card-signup"
                       style={{ ['--ga' as string]: '#E23B4E' }}
                     >
                       <img
                         src="/daesun-poker-poster.png"
                         alt="대선 포커"
-                        className="w-full h-full object-cover"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                           const fallback = e.currentTarget.nextElementSibling as HTMLElement;
                           if (fallback) fallback.style.display = 'flex';
                         }}
                       />
-                      <span className="absolute inset-0 hidden items-center justify-center bg-white/80 font-display text-xs font-bold text-ink">
+                      <span className="absolute inset-0 hidden items-center justify-center bg-white/80 font-body text-sm font-bold text-ink">
                         대선 포커
                       </span>
                     </button>
-                    <figcaption className="mt-2 font-mono text-xs font-bold text-poker uppercase tracking-wider text-center">
+                    <figcaption className="mt-2 text-sm font-body font-bold text-ink text-center max-w-[6rem]">
                       대선 포커
                     </figcaption>
                   </figure>
@@ -922,13 +919,12 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => setShowGameIntro('수송선게임')}
-                      className="relative w-24 h-36 border-2 border-ship clip-chamfer cursor-pointer overflow-hidden hover:opacity-90 transition-opacity bg-ink block"
+                      className="game-card-signup"
                       style={{ ['--ga' as string]: '#6B46D9' }}
                     >
                       <img
                         src="/susongseon-game-poster.png"
                         alt="수송선게임"
-                        className="w-full h-full object-cover"
                         onError={(e) => {
                           const el = e.currentTarget;
                           if (el.dataset.tryLegacy !== '1') {
@@ -941,11 +937,11 @@ export default function Home() {
                           if (fallback) fallback.style.display = 'flex';
                         }}
                       />
-                      <span className="absolute inset-0 hidden flex-col items-center justify-center gap-1 bg-ink/85 px-1 text-center font-mono text-micro font-bold leading-tight text-ship">
+                      <span className="absolute inset-0 hidden flex-col items-center justify-center gap-1 bg-ink/85 px-1 text-center font-body text-sm font-bold text-white">
                         수송선게임
                       </span>
                     </button>
-                    <figcaption className="mt-2 font-mono text-xs font-bold text-ship tracking-wider text-center max-w-[6rem]">
+                    <figcaption className="mt-2 text-sm font-body font-bold text-ink text-center max-w-[6rem]">
                       수송선게임
                     </figcaption>
                   </figure>
@@ -953,44 +949,40 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 금액 — 35,000 → 25,000 (28% 할인) */}
-            <div className="flex flex-wrap items-baseline gap-3 mb-4">
-              <span className="font-body text-ink-2 text-lg line-through">
-                35,000
-              </span>
-              <span className="font-display text-2xl font-black text-ink">
-                25,000
-              </span>
-              <span className="font-mono text-xs text-signal font-bold uppercase">
-                28% 할인
-              </span>
+            <div className="flex flex-wrap items-baseline gap-3 mb-5">
+              <span className="font-body text-sm text-gray line-through">35,000</span>
+              <span className="font-mono text-2xl font-bold text-ink">25,000</span>
+              <span className="price-tag-v12">28% 할인</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4 mb-8">
               <button
                 type="button"
                 onClick={() => setShowInfoModal('venue')}
-                className="inline-flex items-center gap-2 text-ink-2 hover:text-signal transition-colors px-2 py-1 clip-chamfer hover:bg-paper-2"
+                className="signup-meta-link"
               >
-                <MapPin size={18} strokeWidth={2} />
-                <span className="font-body text-xs">장소</span>
+                <MapPin size={16} strokeWidth={2} className="text-ink-2" />
+                장소
               </button>
               <button
                 type="button"
                 onClick={() => setShowInfoModal('content')}
-                className="inline-flex items-center gap-2 text-ink-2 hover:text-signal transition-colors px-2 py-1 clip-chamfer hover:bg-paper-2"
+                className="signup-meta-link"
               >
-                <Info size={18} strokeWidth={2} />
-                <span className="font-body text-xs">콘텐츠 정보</span>
+                <Info size={16} strokeWidth={2} className="text-ink-2" />
+                콘텐츠 정보
               </button>
               <a
                 href={KAKAO_CHANNEL_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-ink-2 hover:text-signal transition-colors px-2 py-1 clip-chamfer hover:bg-paper-2"
+                className="signup-meta-link"
               >
-                <MessageCircle size={18} strokeWidth={2} />
-                <span className="font-body text-xs">카카오톡 채널 문의하기</span>
+                <MessageCircle size={16} strokeWidth={2} className="text-ink-2" />
+                카카오톡 채널 문의하기
               </a>
             </div>
-            {/* 실시간 예약 확인 / 게임 참가하기 버튼 */}
+
             <div className="flex flex-col gap-4">
               <button
                 type="button"
@@ -1005,7 +997,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => { setShowForm(true); track('apply_start'); }}
-                className="btn-signal w-full sm:w-auto text-base"
+                className="btn-signal w-full sm:w-auto"
               >
                 게임 참가하기
               </button>

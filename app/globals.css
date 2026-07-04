@@ -87,7 +87,54 @@ input[type='number'] {
   }
 
   .modal-panel-v12 {
-    @apply panel-v12 max-h-[85vh] w-full flex flex-col shadow-signal;
+    @apply panel-v12 max-h-[85vh] w-full flex flex-col;
+  }
+
+  /* 게임 신청 페이지 (STEP 3) */
+  .signup-panel {
+    @apply bg-white border border-line clip-chamfer;
+  }
+
+  .game-card-signup {
+    --ga: var(--signal);
+    position: relative;
+    width: 6rem;
+    height: 9rem;
+    padding: 0;
+    background: var(--white);
+    border: 1px solid var(--line);
+    clip-path: var(--chamfer);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.22s var(--ease-out);
+  }
+
+  .game-card-signup:hover {
+    transform: translateY(-4px);
+  }
+
+  .game-card-signup:focus-visible {
+    outline: 3px solid var(--ga);
+    outline-offset: 2px;
+  }
+
+  .game-card-signup img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .price-tag-v12 {
+    @apply font-mono text-xs font-bold text-white bg-signal px-3 py-1 clip-chamfer;
+  }
+
+  .signup-meta-link {
+    @apply inline-flex items-center gap-2 font-mono text-sm text-ink-2 clip-chamfer px-2 py-1 transition-colors duration-fast hover:text-signal;
+  }
+
+  .signup-meta-link:hover svg {
+    color: var(--signal);
   }
 }
 
