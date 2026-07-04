@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
 
 @tailwind base;
@@ -6,118 +5,123 @@
 @tailwind utilities;
 
 :root {
-  --phantom-white: #F2F4F6;
-  --deep-dark: #1A1A1A;
-  --neon-orange: #FF4F00;
-  --text-main: #1a1a1a;
-  --text-sub: #555555;
-  --text-light: #FFFFFF;
-  --title-font: 'Orbitron', sans-serif;
-  --body-font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  --paper: #EFF0F2;
+  --paper-2: #F6F7F8;
+  --white: #FCFCFD;
+  --ink: #101113;
+  --ink-2: #55575C;
+  --gray: #8B8E94;
+  --signal: #EE5D0C;
+  --signal-deep: #C74B05;
+  --neo-cyan: #2BD6E4;
+  --line: rgba(16, 17, 19, 0.12);
+  --line-soft: rgba(16, 17, 19, 0.06);
+  --chamfer: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in: cubic-bezier(0.55, 0, 0.7, 0.9);
+  --dur-fast: 150ms;
+  --dur-base: 300ms;
+  --dur-slow: 800ms;
+  --dur-cinematic: 1900ms;
 }
 
 body {
-  color: var(--text-main);
-  background: var(--phantom-white);
+  color: var(--ink);
+  background: var(--paper);
   overflow-x: hidden;
-  font-family: var(--body-font);
+  font-family: var(--font-body), 'Pretendard Variable', Pretendard, system-ui, sans-serif;
   font-weight: 500;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 입력 필드에도 Pretendard 폰트 적용 */
 input,
 textarea,
 select,
 button {
-  font-family: var(--body-font);
+  font-family: inherit;
 }
 
-/* 숫자 입력 필드는 Orbitron */
-input[type="number"] {
-  font-family: var(--title-font);
+input[type='number'] {
+  font-family: var(--font-mono), 'IBM Plex Mono', monospace;
 }
 
-/* Design System - Grid Background (연한 회색 모눈종이) */
-.bg-grid-pattern {
-  background-color: var(--phantom-white);
-  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.07) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.07) 1px, transparent 1px);
+.bg-grid-v12 {
+  background-color: var(--paper);
+  background-image: linear-gradient(to right, var(--line-soft) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line-soft) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
-/* Cut Corner - clip-path utility */
-.clip-cut-corner {
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%);
+.clip-chamfer {
+  clip-path: var(--chamfer);
 }
 
-.clip-cut-corner-both {
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
-}
-
-/* HUD Border - 장비 느낌 */
-.border-device {
-  border: 2px solid var(--neon-orange);
-}
-
-/* 전광판 전류 효과 - 텍스트가 순차적으로 켜짐 */
-@keyframes current-flow {
-  0% {
-    opacity: 0.15;
-    text-shadow: none;
-    color: var(--text-sub);
+@layer components {
+  .panel-v12 {
+    @apply bg-white border border-line clip-chamfer;
   }
-  20% {
-    opacity: 0.4;
-    text-shadow: 0 0 8px rgba(255, 79, 0, 0.4);
-    color: var(--text-main);
+
+  .input-v12 {
+    @apply w-full font-body text-base text-ink bg-white border border-line clip-chamfer py-3 px-4 placeholder:text-gray focus:outline-none focus:ring-2 focus:ring-neo-cyan focus:border-transparent transition-shadow duration-fast;
   }
-  100% {
+
+  .btn-signal {
+    @apply inline-flex items-center justify-center font-mono text-xs font-bold uppercase tracking-widest py-3 px-5 border border-signal bg-signal text-white clip-chamfer transition-all duration-base hover:bg-signal-deep hover:shadow-signal focus:outline-none focus-visible:ring-2 focus-visible:ring-neo-cyan focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-signal-outline {
+    @apply inline-flex items-center justify-center font-mono text-xs font-bold uppercase tracking-widest py-3 px-5 border border-signal bg-transparent text-signal clip-chamfer transition-all duration-base hover:bg-signal hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-neo-cyan focus-visible:ring-offset-2;
+  }
+
+  .label-v12 {
+    @apply block font-mono text-xs text-ink-2 uppercase tracking-widest mb-2;
+  }
+
+  .eyebrow-v12 {
+    @apply font-mono text-xs text-signal uppercase tracking-[0.3em];
+  }
+
+  .modal-overlay-v12 {
+    @apply fixed inset-0 z-[200] flex items-center justify-center p-4 bg-ink/60;
+  }
+
+  .modal-panel-v12 {
+    @apply panel-v12 max-h-[85vh] w-full flex flex-col shadow-signal;
+  }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
     opacity: 1;
-    text-shadow: 0 0 12px rgba(255, 79, 0, 0.3), 0 0 24px rgba(255, 79, 0, 0.2);
-    color: var(--text-main);
+    transform: none;
+    transition: none;
   }
 }
 
-.animate-current-flow {
-  animation: current-flow 0.6s ease-out forwards;
-}
-
-/* 전원 버튼 글로우 */
-.text-glow-orange {
-  text-shadow: 0 0 10px rgba(255, 79, 0, 0.6), 0 0 20px rgba(255, 79, 0, 0.4);
-}
-
-/* 전류 스윕 오버레이 (선이 지나가는 느낌) */
-@keyframes sweep-line {
+@keyframes intro-flash {
   0% {
-    transform: scaleX(0);
-    opacity: 0.8;
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
   }
   100% {
-    transform: scaleX(1);
     opacity: 0;
   }
 }
 
-.sweep-line {
-  animation: sweep-line 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-/* Login kiosk - shake, pulse-wave */
-@keyframes login-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-10px); }
-  75% { transform: translateX(10px); }
-}
-.animate-login-shake {
-  animation: login-shake 0.4s ease-in-out;
-}
-@keyframes login-pulse-wave {
-  0% { transform: scale(0.8); opacity: 0.8; border-width: 2px; }
-  100% { transform: scale(3); opacity: 0; border-width: 0; }
-}
-.animate-login-pulse-wave {
-  animation: login-pulse-wave 2s infinite;
+.animate-intro-flash {
+  animation: intro-flash 400ms var(--ease-in) forwards;
 }

@@ -1,26 +1,20 @@
 import type { Metadata } from "next";
-import { Orbitron, Share_Tech_Mono, IBM_Plex_Sans_KR } from "next/font/google";
+import { Chakra_Petch, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { PostHogProvider } from "./providers/PostHogProvider";
 import { PageViewTracker } from "./_components/PageViewTracker";
 
-const orbitron = Orbitron({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-orbitron",
-});
-
-const shareTechMono = Share_Tech_Mono({
-  subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-share-tech-mono",
-});
-
-const ibmPlexSansKR = IBM_Plex_Sans_KR({
+const chakraPetch = Chakra_Petch({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-body",
+  variable: "--font-display",
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
@@ -51,10 +45,10 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${orbitron.variable} ${shareTechMono.variable} ${ibmPlexSansKR.variable}`}
+      className={`${chakraPetch.variable} ${ibmPlexMono.variable}`}
+      style={{ ["--font-body" as string]: "'Pretendard Variable', Pretendard, system-ui, sans-serif" }}
     >
-      <body className={`${ibmPlexSansKR.className} antialiased`}>
-        {/* GA4 */}
+      <body className="font-body antialiased">
         {GA_ID && (
           <>
             <Script
