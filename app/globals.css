@@ -109,19 +109,3 @@ input[type='number'] {
     transition: none;
   }
 }
-
-@keyframes intro-flash {
-  0% {
-    opacity: 0;
-  }
-  30% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-.animate-intro-flash {
-  animation: intro-flash 400ms var(--ease-in) forwards;
-}

@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Info, MessageCircle } from 'lucide-react';
-import { IntroCanvas, type IntroPhase } from '@/app/_components/landing/IntroCanvas';
 import Image from 'next/image';
+import { IntroScreen } from '@/app/_components/landing/IntroScreen';
 import { usePostHog } from 'posthog-js/react';
 import { gtagEvent } from '@/lib/analytics';
 
@@ -112,7 +112,6 @@ export default function Home() {
     posthog?.capture(name, props);
   };
 
-  const [introPhase, setIntroPhase] = useState<IntroPhase>('idle');
   const [showSignUp, setShowSignUp] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showFormStep2, setShowFormStep2] = useState(false);
@@ -160,14 +159,6 @@ export default function Home() {
 
   // 전화번호: 하이픈/공백 제거, 숫자만
   const normalizePhone = (p: string) => p.replace(/\D/g, '');
-
-  const handlePowerClick = () => {
-    if (introPhase !== 'idle') return;
-    setIntroPhase('converge');
-    setTimeout(() => setIntroPhase('flash'), 900);
-    setTimeout(() => setIntroPhase('zoom'), 1100);
-    setTimeout(() => setShowSignUp(true), 1900);
-  };
 
   // 실시간 예약 현황 로드
   const loadAvailability = async () => {
@@ -468,7 +459,6 @@ export default function Home() {
       // Step 1에서 뒤로가기 - 전원 끄기
       setShowForm(false);
       setShowSignUp(false);
-      setIntroPhase('idle');
       // 폼 초기화
       setName('');
       setPhone('');
@@ -858,15 +848,8 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* ========== 인트로 화면 (파워온 시퀀스) ========== */}
       {!showSignUp && (
-        <section className="relative z-10 w-full">
-          <IntroCanvas
-            phase={introPhase}
-            onPowerClick={handlePowerClick}
-            disabled={introPhase !== 'idle'}
-          />
-        </section>
+        <IntroScreen onComplete={() => setShowSignUp(true)} />
       )}
 
       {/* ========== 게임 신청 페이지 ========== */}
