@@ -1,13 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import type { Game0bRow } from '@/lib/game-0b-types';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export function useGame0b(sessionId: string | null) {
   const [game, setGame] = useState<Game0bRow | null>(null);
