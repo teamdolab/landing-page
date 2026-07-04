@@ -2,7 +2,6 @@
 
 import { useRef, useState } from 'react';
 import { IntroCanvas } from './IntroCanvas';
-import { SYM } from './sym';
 import './intro-v12-vars.css';
 import './intro-v12.css';
 
@@ -52,7 +51,7 @@ export function IntroScreen({ onComplete }) {
               <polygon points="50,3 94,26.5 94,73.5 50,97 6,73.5 6,26.5" />
             </svg>
             <span className="hex-glow" aria-hidden />
-            <img src={SYM} alt="" />
+            <img src="/brand/dolab-symbol.png" alt="" />
           </button>
           <div className="intro-hint mono">{armed ? 'POWERING ON…' : 'PRESS TO POWER ON'}</div>
         </div>
