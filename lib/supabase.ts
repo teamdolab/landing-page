@@ -1,9 +1,21 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+
+if (!isSupabaseConfigured && typeof window !== 'undefined') {
+  console.warn(
+    '[DO:LAB] NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY 가 없습니다. ' +
+      '.env.local 파일을 설정하면 신청·예약 API가 동작합니다.',
+  );
+}
+
+export const supabase: SupabaseClient = createClient(
+  supabaseUrl ?? 'https://placeholder.supabase.co',
+  supabaseAnonKey ?? 'placeholder-anon-key',
+);
 
 // ============================================
 // 타입 정의 (새로운 스키마)
