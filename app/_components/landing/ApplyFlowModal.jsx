@@ -340,6 +340,8 @@ export function ApplyFlowModal({ flow }) {
             <div className="sub-body scroll">
               {loadingSessions ? (
                 <p className="hint">로딩 중…</p>
+              ) : sessionLoadError ? (
+                <p className="flow-error">{sessionLoadError}</p>
               ) : allSessions.length === 0 ? (
                 <p className="hint">예약 가능한 세션이 없습니다.</p>
               ) : (

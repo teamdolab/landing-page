@@ -654,7 +654,7 @@ function useReveal() {
 
 export default function LandingV12() {
   const applyFlow = useApplyFlow();
-  const { openFlow, allSessions, loadingSessions, loadAllSessions } = applyFlow;
+  const { openFlow, allSessions, loadingSessions, loadAllSessions, sessionLoadError } = applyFlow;
 
   const [powered, setPowered] = useState(false);
   const [armed, setArmed] = useState(false);
@@ -865,6 +865,8 @@ export default function LandingV12() {
         <div className="sched-list reveal d1">
           {loadingSessions && allSessions.length === 0 ? (
             <p className="hint" style={{ padding: '20px 6px' }}>일정 불러오는 중…</p>
+          ) : sessionLoadError ? (
+            <p className="flow-error" style={{ padding: '20px 6px' }}>{sessionLoadError}</p>
           ) : allSessions.length === 0 ? (
             <p className="hint" style={{ padding: '20px 6px' }}>현재 모집 중인 일정이 없습니다.</p>
           ) : (
