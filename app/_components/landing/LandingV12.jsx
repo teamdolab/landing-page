@@ -60,19 +60,19 @@ const WHAT = [
   { k: 'SYSTEM', t: '전용 시스템을 통해 진행되는', d: '' },
   { k: 'GAME', t: '두뇌 게임', d: '' },
 ];
-/** 후기 3번 릴스 — GitHub 100MB 제한 회피용 외부 URL (Supabase Storage 등) */
+/** 후기 3번 릴스 — Instagram URL (100MB+ 영상, Vercel env로 설정) */
+const REVIEW_REEL_3_INSTAGRAM = process.env.NEXT_PUBLIC_REVIEW_REEL_3_INSTAGRAM?.trim() || '';
 const REVIEW_REEL_3_URL = process.env.NEXT_PUBLIC_REVIEW_REEL_3_URL?.trim() || '';
 
 const REVIEWS = [
   { q: '"처음 보는 사람들이랑 이렇게 몰입할 줄 몰랐어요."', who: '피험자 NEO-0031', photo: '/reviews/review-1.jpg', alt: 'DO:LAB 세션 현장 1' },
   { q: '"마지막 배신 한 방에 소름 돋음. 또 옵니다."', who: '피험자 NEO-0028', photo: '/reviews/review-2.jpg', alt: 'DO:LAB 세션 현장 2' },
   {
-    q: '"룰 몰라도 됐어요. 설명 듣고 바로 �로 빠져듦."',
+    q: '"룰 몰라도 됐어요. 설명 듣고 바로 빠져듦."',
     who: '피험자 NEO-0035',
-    video: REVIEW_REEL_3_URL || '/reviews/수송선게임reel3.mp4',
-    videoSources: REVIEW_REEL_3_URL
-      ? [REVIEW_REEL_3_URL]
-      : ['/reviews/수송선게임reel3.mp4', '/reviews/수송선게임reel3.mov'],
+    instagram: REVIEW_REEL_3_INSTAGRAM || undefined,
+    video: REVIEW_REEL_3_INSTAGRAM ? undefined : (REVIEW_REEL_3_URL || undefined),
+    videoSources: REVIEW_REEL_3_INSTAGRAM ? undefined : (REVIEW_REEL_3_URL ? [REVIEW_REEL_3_URL] : undefined),
     poster: '/reviews/review-3.jpg',
     alt: '수송선게임 세션 릴스',
     reel: true,
@@ -407,6 +407,14 @@ const STYLES = `
 .rev-media.reel { aspect-ratio: 9/16; max-width: 280px; margin: 0 auto; width: 100%; background: #101113; }
 .rev-media img, .rev-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rev-media video { background: #101113; }
+.rev-insta-link { display: block; position: absolute; inset: 0; color: inherit; text-decoration: none; }
+.rev-insta-link img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rev-insta-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  background: rgba(16,17,19,.42); transition: background .2s; }
+.rev-insta-link:hover .rev-insta-overlay { background: rgba(238,93,12,.5); }
+.rev-insta-play { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center;
+  border: 2px solid rgba(255,255,255,.85); border-radius: 50%; font-size: 18px; color: #fff; padding-left: 3px; }
+.rev-insta-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: .22em; color: #fff; }
 .rev-media span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .2em; color: var(--gray); }
 .rev-q { font-size: 16.5px; font-weight: 700; line-height: 1.6; }
@@ -885,7 +893,21 @@ export default function LandingV12() {
           {REVIEWS.map((r, i) => (
             <div className={`rev-card reveal d${i + 1}`} key={i}>
               <div className={`rev-media${r.reel ? ' reel' : ''}`}>
-                {r.video ? (
+                {r.instagram ? (
+                  <a
+                    href={r.instagram}
+                    className="rev-insta-link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`${r.alt || '세션 릴스'} — Instagram에서 보기`}
+                  >
+                    <img src={r.poster || '/reviews/review-3.jpg'} alt="" loading="lazy" />
+                    <span className="rev-insta-overlay">
+                      <span className="rev-insta-play" aria-hidden>▶</span>
+                      <span className="rev-insta-label">INSTAGRAM REEL</span>
+                    </span>
+                  </a>
+                ) : r.video ? (
                   <video
                     poster={r.poster}
                     controls
