@@ -60,18 +60,19 @@ const WHAT = [
   { k: 'SYSTEM', t: '전용 시스템을 통해 진행되는', d: '' },
   { k: 'GAME', t: '두뇌 게임', d: '' },
 ];
+/** 후기 3번 릴스 — GitHub 100MB 제한 회피용 외부 URL (Supabase Storage 등) */
+const REVIEW_REEL_3_URL = process.env.NEXT_PUBLIC_REVIEW_REEL_3_URL?.trim() || '';
+
 const REVIEWS = [
   { q: '"처음 보는 사람들이랑 이렇게 몰입할 줄 몰랐어요."', who: '피험자 NEO-0031', photo: '/reviews/review-1.jpg', alt: 'DO:LAB 세션 현장 1' },
   { q: '"마지막 배신 한 방에 소름 돋음. 또 옵니다."', who: '피험자 NEO-0028', photo: '/reviews/review-2.jpg', alt: 'DO:LAB 세션 현장 2' },
   {
-    q: '"룰 몰라도 됐어요. 설명 듣고 바로 빠져듦."',
+    q: '"룰 몰라도 됐어요. 설명 듣고 바로 �로 빠져듦."',
     who: '피험자 NEO-0035',
-    video: '/reviews/수송선게임reel3',
-    videoSources: [
-      '/reviews/수송선게임reel3.mp4',
-      '/reviews/수송선게임reel3.mov',
-      '/reviews/수송선게임reel3',
-    ],
+    video: REVIEW_REEL_3_URL || '/reviews/수송선게임reel3.mp4',
+    videoSources: REVIEW_REEL_3_URL
+      ? [REVIEW_REEL_3_URL]
+      : ['/reviews/수송선게임reel3.mp4', '/reviews/수송선게임reel3.mov'],
     poster: '/reviews/review-3.jpg',
     alt: '수송선게임 세션 릴스',
     reel: true,
