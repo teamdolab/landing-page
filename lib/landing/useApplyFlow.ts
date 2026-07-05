@@ -9,6 +9,7 @@ import {
   verifyReferrerExists,
   getSessionAvailability,
   getUserCredits,
+  isSupabaseLive,
   type SessionAvailability,
 } from '@/lib/supabase';
 import { gtagEvent } from '@/lib/analytics';
@@ -35,6 +36,7 @@ export function useApplyFlow() {
   const [sessions, setSessions] = useState<SessionAvailability[]>([]);
   const [allSessions, setAllSessions] = useState<SessionAvailability[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const [sessionLoadError, setSessionLoadError] = useState<string | null>(null);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -86,13 +88,25 @@ export function useApplyFlow() {
   }, [resetForm]);
 
   const loadAllSessions = useCallback(async () => {
+    if (!isSupabaseLive) {
+      setSessionLoadError('.env.local에 Supabase URL과 anon key를 설정해주세요.');
+      setAllSessions([]);
+      return [];
+    }
+
     setLoadingSessions(true);
+    setSessionLoadError(null);
     try {
       const data = await getSessionAvailability();
       setAllSessions(data);
+      if (data.length === 0) {
+        setSessionLoadError('모집 중인 일정이 없습니다. Admin에서 세션을 추가해주세요.');
+      }
       return data;
     } catch (err) {
-      console.error('세션 조회 실패:', err);
+      const msg = err instanceof Error ? err.message : '세션 정보를 불러오는데 실패했습니다.';
+      setSessionLoadError(msg);
+      setAllSessions([]);
       return [];
     } finally {
       setLoadingSessions(false);
@@ -100,15 +114,24 @@ export function useApplyFlow() {
   }, []);
 
   const loadSessionsForSchedule = useCallback(async () => {
+    if (!isSupabaseLive) {
+      setSessionLoadError('.env.local에 Supabase URL과 anon key를 설정해주세요.');
+      setSessions([]);
+      return [];
+    }
+
     setLoadingSessions(true);
+    setSessionLoadError(null);
     try {
       const data = await getSessionAvailability();
       const open = data.filter((s) => s.status === '모집중' && s.available_slots > 0);
       setSessions(open);
       return open;
     } catch (err) {
-      console.error('세션 조회 실패:', err);
-      setError('세션 정보를 불러오는데 실패했습니다.');
+      const msg = err instanceof Error ? err.message : '세션 정보를 불러오는데 실패했습니다.';
+      setSessionLoadError(msg);
+      setError(msg);
+      setSessions([]);
       return [];
     } finally {
       setLoadingSessions(false);
@@ -404,6 +427,8 @@ export function useApplyFlow() {
     sessions,
     allSessions,
     loadingSessions,
+    sessionLoadError,
+    isSupabaseLive,
     name,
     setName,
     phone,

@@ -5,10 +5,22 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-if (!isSupabaseConfigured && typeof window !== 'undefined') {
+/** placeholder가 아닌 실제 Supabase 프로젝트가 연결됐는지 */
+export const isSupabaseLive =
+  isSupabaseConfigured &&
+  !supabaseUrl!.includes('placeholder') &&
+  supabaseAnonKey !== 'placeholder-anon-key';
+
+type SupabaseErr = { message?: string; code?: string; details?: string; hint?: string };
+
+function formatSupabaseError(error: SupabaseErr): string {
+  return [error.message, error.code && `(${error.code})`, error.details, error.hint].filter(Boolean).join(' — ');
+}
+
+if (!isSupabaseLive && typeof window !== 'undefined') {
   console.warn(
-    '[DO:LAB] NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY 가 없습니다. ' +
-      '.env.local 파일을 설정하면 신청·예약 API가 동작합니다.',
+    '[DO:LAB] .env.local에 실제 NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY 를 설정하면 ' +
+      '일정·신청 API가 동작합니다.',
   );
 }
 
@@ -114,11 +126,16 @@ export async function checkUserExists(name: string, phone: string): Promise<User
 
 // 실시간 예약 현황 조회
 export async function getSessionAvailability(): Promise<SessionAvailability[]> {
+  if (!isSupabaseLive) {
+    return [];
+  }
+
   const { data, error } = await supabase.rpc('get_session_availability');
 
   if (error) {
-    console.error('세션 조회 에러:', error);
-    return [];
+    const msg = formatSupabaseError(error);
+    console.error('세션 조회 에러:', msg || error);
+    throw new Error(msg || '세션 정보를 불러오지 못했습니다.');
   }
 
   return data || [];

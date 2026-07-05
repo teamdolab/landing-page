@@ -16,6 +16,7 @@ export function ApplyFlowModal({ flow }) {
     sessions,
     allSessions,
     loadingSessions,
+    sessionLoadError,
     name,
     setName,
     phone,
