@@ -63,7 +63,19 @@ const WHAT = [
 const REVIEWS = [
   { q: '"처음 보는 사람들이랑 이렇게 몰입할 줄 몰랐어요."', who: '피험자 NEO-0031', photo: '/reviews/review-1.jpg', alt: 'DO:LAB 세션 현장 1' },
   { q: '"마지막 배신 한 방에 소름 돋음. 또 옵니다."', who: '피험자 NEO-0028', photo: '/reviews/review-2.jpg', alt: 'DO:LAB 세션 현장 2' },
-  { q: '"룰 몰라도 됐어요. 설명 듣고 바로 빠져듦."', who: '피험자 NEO-0035', photo: '/reviews/review-3.jpg', alt: 'DO:LAB 세션 현장 3' },
+  {
+    q: '"룰 몰라도 됐어요. 설명 듣고 바로 빠져듦."',
+    who: '피험자 NEO-0035',
+    video: '/reviews/수송선게임reel3',
+    videoSources: [
+      '/reviews/수송선게임reel3.mp4',
+      '/reviews/수송선게임reel3.mov',
+      '/reviews/수송선게임reel3',
+    ],
+    poster: '/reviews/review-3.jpg',
+    alt: '수송선게임 세션 릴스',
+    reel: true,
+  },
 ];
 const FAQS = [
   { q: '혼자 가도 되나요?', a: '네, 대부분 혼자 오십니다. 처음 만난 분들과 한 테이블에서 매칭됩니다.' },
@@ -391,7 +403,9 @@ const STYLES = `
   repeating-linear-gradient(0deg, var(--gl-2) 0 1px, transparent 1px 24px),
   repeating-linear-gradient(90deg, var(--gl-2) 0 1px, transparent 1px 24px),
   linear-gradient(150deg, #DCDDE0, #ECEDEF); }
-.rev-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rev-media.reel { aspect-ratio: 9/16; max-width: 280px; margin: 0 auto; width: 100%; background: #101113; }
+.rev-media img, .rev-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rev-media video { background: #101113; }
 .rev-media span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .2em; color: var(--gray); }
 .rev-q { font-size: 16.5px; font-weight: 700; line-height: 1.6; }
@@ -869,8 +883,20 @@ export default function LandingV12() {
         <div className="rev-grid">
           {REVIEWS.map((r, i) => (
             <div className={`rev-card reveal d${i + 1}`} key={i}>
-              <div className="rev-media">
-                {r.photo ? (
+              <div className={`rev-media${r.reel ? ' reel' : ''}`}>
+                {r.video ? (
+                  <video
+                    poster={r.poster}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    aria-label={r.alt || '세션 영상'}
+                  >
+                    {(r.videoSources || [r.video]).map((src) => (
+                      <source key={src} src={src} />
+                    ))}
+                  </video>
+                ) : r.photo ? (
                   <img src={r.photo} alt={r.alt || '세션 후기'} loading="lazy" />
                 ) : (
                   <span className="mono">PHOTO / VIDEO</span>
