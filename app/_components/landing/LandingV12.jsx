@@ -81,7 +81,10 @@ function InstagramReelEmbed({ permalink, title }) {
   );
 }
 
-/** 후기 3번 릴스 — Instagram URL (100MB+ 영상, Vercel env로 설정) */
+/** 후기 2·3번 릴스 — Instagram URL */
+const REVIEW_REEL_2_INSTAGRAM =
+  process.env.NEXT_PUBLIC_REVIEW_REEL_2_INSTAGRAM?.trim() ||
+  'https://www.instagram.com/reel/DaKjJe1pQhz/';
 const REVIEW_REEL_3_INSTAGRAM =
   process.env.NEXT_PUBLIC_REVIEW_REEL_3_INSTAGRAM?.trim() ||
   'https://www.instagram.com/reel/DZ4lZK5p-Sp/';
@@ -89,7 +92,13 @@ const REVIEW_REEL_3_URL = process.env.NEXT_PUBLIC_REVIEW_REEL_3_URL?.trim() || '
 
 const REVIEWS = [
   { q: '"처음 보는 사람들이랑 이렇게 몰입할 줄 몰랐어요."', who: '피험자 NEO-0031', photo: '/reviews/review-1.jpg', alt: 'DO:LAB 세션 현장 1' },
-  { q: '"마지막 배신 한 방에 소름 돋음. 또 옵니다."', who: '피험자 NEO-0028', photo: '/reviews/review-2.jpg', alt: 'DO:LAB 세션 현장 2' },
+  {
+    q: '"마지막 배신 한 방에 소름 돋음. 또 옵니다."',
+    who: '피험자 NEO-0028',
+    instagram: REVIEW_REEL_2_INSTAGRAM,
+    alt: 'DO:LAB 세션 릴스',
+    reel: true,
+  },
   {
     q: '"룰 몰라도 됐어요. 설명 듣고 바로 빠져듦."',
     who: '피험자 NEO-0035',
