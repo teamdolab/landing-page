@@ -61,7 +61,9 @@ const WHAT = [
   { k: 'GAME', t: '두뇌 게임', d: '' },
 ];
 /** 후기 3번 릴스 — Instagram URL (100MB+ 영상, Vercel env로 설정) */
-const REVIEW_REEL_3_INSTAGRAM = process.env.NEXT_PUBLIC_REVIEW_REEL_3_INSTAGRAM?.trim() || '';
+const REVIEW_REEL_3_INSTAGRAM =
+  process.env.NEXT_PUBLIC_REVIEW_REEL_3_INSTAGRAM?.trim() ||
+  'https://www.instagram.com/reel/DZ4lZK5p-Sp/';
 const REVIEW_REEL_3_URL = process.env.NEXT_PUBLIC_REVIEW_REEL_3_URL?.trim() || '';
 
 const REVIEWS = [
