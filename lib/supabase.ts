@@ -104,7 +104,28 @@ export type UserExistsResult = {
 // 유틸리티 함수
 // ============================================
 
-// 유저 존재 여부 확인 (서버 API — RLS/RPC 이슈 우회)
+// RPC fallback (service role API 실패 시)
+async function checkUserExistsRpc(name: string, phone: string): Promise<UserExistsResult> {
+  const { data, error } = await supabase.rpc('check_user_exists', {
+    p_name: name,
+    p_phone: phone,
+  });
+
+  if (error || !data || !Array.isArray(data) || data.length === 0) {
+    console.error('check_user_exists RPC error:', error?.message ?? error);
+    throw new Error('유저 정보를 확인하는데 실패했습니다. .env.local의 Supabase 키를 확인해주세요.');
+  }
+
+  const row = data[0] as { user_exists: boolean; user_id: string | null; nickname: string | null; credits: number };
+  return {
+    user_exists: Boolean(row.user_exists),
+    user_id: row.user_id ?? null,
+    nickname: row.nickname ?? null,
+    credits: row.credits ?? 0,
+  };
+}
+
+// 유저 존재 여부 확인 (서버 API 우선, 실패 시 RPC fallback)
 export async function checkUserExists(name: string, phone: string): Promise<UserExistsResult> {
   const trimmedName = name.trim();
   const normalizedPhone = phone.replace(/\D/g, '');
@@ -116,21 +137,23 @@ export async function checkUserExists(name: string, phone: string): Promise<User
       body: JSON.stringify({ name: trimmedName, phone: normalizedPhone }),
     });
 
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      throw new Error((errBody as { error?: string }).error || '유저 정보를 확인하는데 실패했습니다.');
+    if (res.ok) {
+      const data = (await res.json()) as UserExistsResult;
+      return {
+        user_exists: Boolean(data.user_exists),
+        user_id: data.user_id ?? null,
+        nickname: data.nickname ?? null,
+        credits: data.credits ?? 0,
+      };
     }
 
-    const data = (await res.json()) as UserExistsResult;
-    return {
-      user_exists: Boolean(data.user_exists),
-      user_id: data.user_id ?? null,
-      nickname: data.nickname ?? null,
-      credits: data.credits ?? 0,
-    };
+    const errBody = await res.json().catch(() => ({}));
+    const apiError = (errBody as { error?: string }).error;
+    console.warn('check-user API failed, trying RPC fallback:', apiError ?? res.status);
+    return checkUserExistsRpc(trimmedName, normalizedPhone);
   } catch (err) {
-    if (err instanceof Error) throw err;
-    throw new Error('유저 정보를 확인하는데 실패했습니다.');
+    console.warn('check-user fetch failed, trying RPC fallback:', err);
+    return checkUserExistsRpc(trimmedName, normalizedPhone);
   }
 }
 

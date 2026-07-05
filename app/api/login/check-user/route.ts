@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error('check-user API error:', err);
-    return NextResponse.json({ error: '유저 정보를 확인하는데 실패했습니다.' }, { status: 500 });
+    const message = err instanceof Error ? err.message : '유저 정보를 확인하는데 실패했습니다.';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
