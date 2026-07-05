@@ -60,6 +60,27 @@ const WHAT = [
   { k: 'SYSTEM', t: '전용 시스템을 통해 진행되는', d: '' },
   { k: 'GAME', t: '두뇌 게임', d: '' },
 ];
+/** Instagram 릴스 URL → /embed/ 경로 (페이지 내 재생) */
+function toInstagramEmbedUrl(url) {
+  if (!url) return '';
+  const base = url.split('?')[0].replace(/\/embed\/?$/, '').replace(/\/$/, '');
+  return `${base}/embed/`;
+}
+
+function InstagramReelEmbed({ permalink, title }) {
+  return (
+    <iframe
+      className="rev-insta-embed"
+      src={toInstagramEmbedUrl(permalink)}
+      title={title}
+      allowFullScreen
+      allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+      scrolling="no"
+      loading="lazy"
+    />
+  );
+}
+
 /** 후기 3번 릴스 — Instagram URL (100MB+ 영상, Vercel env로 설정) */
 const REVIEW_REEL_3_INSTAGRAM =
   process.env.NEXT_PUBLIC_REVIEW_REEL_3_INSTAGRAM?.trim() ||
@@ -406,17 +427,10 @@ const STYLES = `
   repeating-linear-gradient(0deg, var(--gl-2) 0 1px, transparent 1px 24px),
   repeating-linear-gradient(90deg, var(--gl-2) 0 1px, transparent 1px 24px),
   linear-gradient(150deg, #DCDDE0, #ECEDEF); }
-.rev-media.reel { aspect-ratio: 9/16; max-width: 280px; margin: 0 auto; width: 100%; background: #101113; }
+.rev-media.reel { aspect-ratio: 9/16; max-width: 340px; margin: 0 auto; width: 100%; background: #101113; min-height: 420px; }
 .rev-media img, .rev-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rev-media video { background: #101113; }
-.rev-insta-link { display: block; position: absolute; inset: 0; color: inherit; text-decoration: none; }
-.rev-insta-link img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.rev-insta-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
-  background: rgba(16,17,19,.42); transition: background .2s; }
-.rev-insta-link:hover .rev-insta-overlay { background: rgba(238,93,12,.5); }
-.rev-insta-play { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center;
-  border: 2px solid rgba(255,255,255,.85); border-radius: 50%; font-size: 18px; color: #fff; padding-left: 3px; }
-.rev-insta-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: .22em; color: #fff; }
+.rev-insta-embed { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #101113; }
 .rev-media span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .2em; color: var(--gray); }
 .rev-q { font-size: 16.5px; font-weight: 700; line-height: 1.6; }
@@ -896,19 +910,7 @@ export default function LandingV12() {
             <div className={`rev-card reveal d${i + 1}`} key={i}>
               <div className={`rev-media${r.reel ? ' reel' : ''}`}>
                 {r.instagram ? (
-                  <a
-                    href={r.instagram}
-                    className="rev-insta-link"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`${r.alt || '세션 릴스'} — Instagram에서 보기`}
-                  >
-                    <img src={r.poster || '/reviews/review-3.jpg'} alt="" loading="lazy" />
-                    <span className="rev-insta-overlay">
-                      <span className="rev-insta-play" aria-hidden>▶</span>
-                      <span className="rev-insta-label">INSTAGRAM REEL</span>
-                    </span>
-                  </a>
+                  <InstagramReelEmbed permalink={r.instagram} title={r.alt || '세션 릴스'} />
                 ) : r.video ? (
                   <video
                     poster={r.poster}
