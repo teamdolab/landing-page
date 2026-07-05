@@ -31,8 +31,8 @@ const NEO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcwAAAM4CAYAAABBR9KgA
    ════════════════════════════════════════════════════════════ */
 
 const GAMES = [
-  { id: 'poker', name: '대선 포커', tag: 'SIM #0A', sub: '심리 · 베팅 · 블러핑', accent: '#E23B4E' },
-  { id: 'ship', name: '수송선게임', tag: 'SIM #0B', sub: '정체 은닉 · 추리 · 전략', accent: '#6B46D9' },
+  { id: 'poker', name: '대선 포커', tag: 'SIM #0A', sub: '심리 · 베팅 · 블러핑', accent: '#E23B4E', poster: '/daesun-poker-poster.png' },
+  { id: 'ship', name: '수송선게임', tag: 'SIM #0B', sub: '정체 은닉 · 추리 · 전략', accent: '#6B46D9', poster: '/susongseon-game-poster.png' },
   { id: 'zombie', name: '좀비게임', tag: 'SIM #0C', sub: '생존 · 감염 · 공조', accent: '#37E0A0' },
 ];
 const HOW = [
@@ -48,9 +48,9 @@ const WHAT = [
   { k: 'GAME', t: '두뇌 게임', d: '운이 아니라 판단으로 승부가 갈립니다.' },
 ];
 const REVIEWS = [
-  { q: '"처음 보는 사람들이랑 이렇게 몰입할 줄 몰랐어요."', who: '피험자 NEO-0031' },
-  { q: '"마지막 배신 한 방에 소름 돋음. 또 옵니다."', who: '피험자 NEO-0028' },
-  { q: '"룰 몰라도 됐어요. 설명 듣고 바로 빠져듦."', who: '피험자 NEO-0035' },
+  { q: '"처음 보는 사람들이랑 이렇게 몰입할 줄 몰랐어요."', who: '피험자 NEO-0031', photo: '/reviews/review-1.jpg', alt: 'DO:LAB 세션 현장 1' },
+  { q: '"마지막 배신 한 방에 소름 돋음. 또 옵니다."', who: '피험자 NEO-0028', photo: '/reviews/review-2.jpg', alt: 'DO:LAB 세션 현장 2' },
+  { q: '"룰 몰라도 됐어요. 설명 듣고 바로 빠져듦."', who: '피험자 NEO-0035', photo: '/reviews/review-3.jpg', alt: 'DO:LAB 세션 현장 3' },
 ];
 const FAQS = [
   { q: '혼자 가도 되나요?', a: '네, 대부분 혼자 오십니다. 처음 만난 분들과 한 테이블에서 매칭됩니다.' },
@@ -359,12 +359,13 @@ const STYLES = `
   display: flex; flex-direction: column; gap: 20px; clip-path: var(--chamfer); }
 .rev-card::before { content: '“'; position: absolute; top: 14px; right: 22px;
   font-family: 'Chakra Petch', sans-serif; font-size: 64px; line-height: 1; color: rgba(238,93,12,.16); }
-.rev-media { aspect-ratio: 4/3; background:
+.rev-media { aspect-ratio: 4/3; position: relative; overflow: hidden; background:
   repeating-linear-gradient(0deg, var(--gl-2) 0 1px, transparent 1px 24px),
   repeating-linear-gradient(90deg, var(--gl-2) 0 1px, transparent 1px 24px),
-  linear-gradient(150deg, #DCDDE0, #ECEDEF);
-  display: flex; align-items: center; justify-content: center; }
-.rev-media span { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .2em; color: var(--gray); }
+  linear-gradient(150deg, #DCDDE0, #ECEDEF); }
+.rev-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rev-media span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .2em; color: var(--gray); }
 .rev-q { font-size: 16.5px; font-weight: 700; line-height: 1.6; }
 .rev-who { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--gray); letter-spacing: .1em; }
 
@@ -385,6 +386,7 @@ const STYLES = `
 .game-poster::before { content: ''; position: absolute; inset: 0; opacity: .5; transition: opacity .3s;
   background: repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, transparent 1px 3px); }
 .game-poster::after { content: ''; position: absolute; inset: 12px; border: 1px solid rgba(255,255,255,.18); }
+.game-poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
 .game-poster b { font-family: 'Chakra Petch', sans-serif; color: #fff; font-size: clamp(24px,2.6vw,34px); font-weight: 700; z-index: 1;
   text-shadow: 0 2px 14px rgba(0,0,0,.5); }
 .game-meta { padding: 22px 26px 26px; display: flex; flex-direction: column; gap: 7px; border-top: 3px solid var(--ga); }
@@ -835,7 +837,13 @@ export default function LandingV12() {
         <div className="rev-grid">
           {REVIEWS.map((r, i) => (
             <div className={`rev-card reveal d${i + 1}`} key={i}>
-              <div className="rev-media"><span className="mono">PHOTO / VIDEO</span></div>
+              <div className="rev-media">
+                {r.photo ? (
+                  <img src={r.photo} alt={r.alt || '세션 후기'} loading="lazy" />
+                ) : (
+                  <span className="mono">PHOTO / VIDEO</span>
+                )}
+              </div>
               <p className="rev-q">{r.q}</p>
               <span className="rev-who mono">— {r.who}</span>
             </div>
@@ -849,7 +857,13 @@ export default function LandingV12() {
         <div className="game-grid">
           {GAMES.map((g, i) => (
             <button type="button" className={`game-card reveal d${i + 1}`} key={g.id} style={{ '--ga': g.accent }} onClick={() => openFlow()}>
-              <div className="game-poster"><b className="disp">{g.name}</b></div>
+              <div className="game-poster">
+                {g.poster ? (
+                  <img src={g.poster} alt={g.name} loading="lazy" />
+                ) : (
+                  <b className="disp">{g.name}</b>
+                )}
+              </div>
               <div className="game-meta">
                 <div className="top"><b>{g.name}</b><span className="live mono">● LIVE</span></div>
                 <span className="sub">{g.sub}</span>
