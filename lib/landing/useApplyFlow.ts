@@ -186,7 +186,7 @@ export function useApplyFlow() {
       setStepIdx(2);
     } catch (err) {
       console.error('유저 확인 실패:', err);
-      setError('유저 정보를 확인하는데 실패했습니다.');
+      setError(err instanceof Error ? err.message : '유저 정보를 확인하는데 실패했습니다.');
     } finally {
       setLoading(false);
     }

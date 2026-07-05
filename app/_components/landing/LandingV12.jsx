@@ -501,6 +501,7 @@ const STYLES = `
 .flow-hub-lead b { color: var(--ink); }
 .flow-price { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .flow-hub-btn { margin-top: 16px; }
+.flow-step-hint { margin: 0 0 18px; font-size: 11px; font-weight: 700; letter-spacing: .2em; color: var(--orange); text-transform: uppercase; }
 .flow-error { margin: 16px 0 0; font-size: 13px; font-weight: 700; color: #c0392b; }
 .flow-kakao { display: inline-block; margin-top: 8px; color: var(--orange); text-decoration: none; }
 .input.readonly { display: flex; align-items: center; color: var(--ink-2); background: var(--paper-2); }

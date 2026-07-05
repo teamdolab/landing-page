@@ -157,6 +157,7 @@ export function ApplyFlowModal({ flow }) {
             {/* 2 — 인증 (가입/로그인) */}
             {stepIdx === 2 && (
               <>
+                <p className="flow-step-hint mono">{isExistingUser ? '기존 회원 로그인' : '신규 회원 가입'}</p>
                 {isExistingUser && (
                   <div className="field">
                     <span className="label">닉네임</span>

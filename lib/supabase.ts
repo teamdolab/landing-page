@@ -104,24 +104,34 @@ export type UserExistsResult = {
 // 유틸리티 함수
 // ============================================
 
-// 유저 존재 여부 확인 (RPC 사용 - RLS 적용 시 user_info 직접 조회 불가)
+// 유저 존재 여부 확인 (서버 API — RLS/RPC 이슈 우회)
 export async function checkUserExists(name: string, phone: string): Promise<UserExistsResult> {
-  const { data, error } = await supabase.rpc('check_user_exists', {
-    p_name: name,
-    p_phone: phone,
-  });
+  const trimmedName = name.trim();
+  const normalizedPhone = phone.replace(/\D/g, '');
 
-  if (error || !data || !Array.isArray(data) || data.length === 0) {
-    return { user_exists: false, user_id: null, nickname: null, credits: 0 };
+  try {
+    const res = await fetch('/api/login/check-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: trimmedName, phone: normalizedPhone }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error((errBody as { error?: string }).error || '유저 정보를 확인하는데 실패했습니다.');
+    }
+
+    const data = (await res.json()) as UserExistsResult;
+    return {
+      user_exists: Boolean(data.user_exists),
+      user_id: data.user_id ?? null,
+      nickname: data.nickname ?? null,
+      credits: data.credits ?? 0,
+    };
+  } catch (err) {
+    if (err instanceof Error) throw err;
+    throw new Error('유저 정보를 확인하는데 실패했습니다.');
   }
-
-  const row = data[0] as { user_exists: boolean; user_id: string | null; nickname: string | null; credits: number };
-  return {
-    user_exists: row.user_exists ?? false,
-    user_id: row.user_id ?? null,
-    nickname: row.nickname ?? null,
-    credits: row.credits ?? 0,
-  };
 }
 
 // 실시간 예약 현황 조회
