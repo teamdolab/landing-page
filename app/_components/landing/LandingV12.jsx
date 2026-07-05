@@ -24,7 +24,7 @@ const NEO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcwAAAM4CAYAAABBR9KgA
    - 큰 타이포 + 큰 여백 = 고급감의 8할
 
    [IA] ①인트로 ②히어로 ③WHAT ④HOW(5스텝) ⑤후기 ⑥게임 ⑦일정+CTA ⑧FAQ ⑨푸터
-   메뉴: WHAT / GAME / SCHEDULE / FAQ / APPLY (스크롤 앵커)
+   메뉴: WHAT / GAME / SCHEDULE / FAQ / APPLY (데스크톱 상단 · 모바일 하단 탭)
 
    [에셋 자리] 중앙 캐릭터·게임 포스터·후기 사진 = 외주/촬영. 플레이스홀더.
    [배선] 목업은 룩·구조·스크롤 시연용. 실제 핸들러는 기존 코드 연결(별도 명세).
@@ -35,17 +35,30 @@ const GAMES = [
   { id: 'ship', name: '수송선게임', tag: 'SIM #0B', sub: '정체 은닉 · 추리 · 전략', accent: '#6B46D9', poster: '/susongseon-game-poster.png' },
   { id: 'zombie', name: '좀비게임', tag: 'SIM #0C', sub: '생존 · 감염 · 공조', accent: '#37E0A0' },
 ];
+const MARQUEE_ITEMS = [
+  'DO:LAB 소셜전략게임 연구소',
+  'DO:NEON PROJECT',
+  '신뢰 · 배신 · 생존',
+  '지금 바로 신청하세요',
+];
+const NAV_TABS = [
+  { id: 'what', label: 'WHAT' },
+  { id: 'games', label: 'GAME' },
+  { id: 'schedule', label: 'SCHED' },
+  { id: 'faq', label: 'FAQ' },
+  { id: 'apply', label: 'APPLY', primary: true },
+];
 const HOW = [
-  { no: '01', t: '예약', d: '원하는 일정을 예약합니다.' },
-  { no: '02', t: '현장 시스템 로그인', d: '연구소에 도착해 현장 시스템에 로그인합니다.' },
-  { no: '03', t: '플레이어 카드 발급', d: 'NFC 플레이어 카드를 받습니다. 150분간 당신의 신분증.' },
-  { no: '04', t: '게임 플레이', d: '낮엔 공개 토론, 밤엔 비밀 부스. 5라운드.' },
-  { no: '05', t: '현장 시스템 로그아웃', d: '카드를 반납하고 결과·크레딧을 확인합니다.' },
+  { no: '01', t: '예약', d: '' },
+  { no: '02', t: '현장 시스템 로그인', d: '' },
+  { no: '03', t: '플레이어 카드 발급', d: '' },
+  { no: '04', t: '게임 플레이', d: '' },
+  { no: '05', t: '현장 시스템 로그아웃', d: '' },
 ];
 const WHAT = [
-  { k: 'PLAYERS', t: '8–12명의 참가자와', d: '매번 처음 만나는 사람들과 한 테이블에 앉습니다.' },
-  { k: 'SYSTEM', t: '전용 시스템을 통해 진행되는', d: 'NFC 카드·중앙 스크린·비밀 부스가 게임을 진행합니다.' },
-  { k: 'GAME', t: '두뇌 게임', d: '운이 아니라 판단으로 승부가 갈립니다.' },
+  { k: 'PLAYERS', t: '8–12명의 참가자와', d: '' },
+  { k: 'SYSTEM', t: '전용 시스템을 통해 진행되는', d: '' },
+  { k: 'GAME', t: '두뇌 게임', d: '' },
 ];
 const REVIEWS = [
   { q: '"처음 보는 사람들이랑 이렇게 몰입할 줄 몰랐어요."', who: '피험자 NEO-0031', photo: '/reviews/review-1.jpg', alt: 'DO:LAB 세션 현장 1' },
@@ -125,11 +138,26 @@ const STYLES = `
 .nav-menu { display: flex; align-items: center; gap: 30px; font-size: 12.5px; font-weight: 700; letter-spacing: .1em; }
 .nav-menu a { color: var(--ink-2); text-decoration: none; cursor: pointer; transition: color .15s; }
 .nav-menu a:hover { color: var(--orange); }
-@media (max-width: 880px) { .nav-menu { gap: 14px; font-size: 11px; } .nav-apply { padding: 10px 16px; font-size: 11px; } }
+@media (max-width: 880px) { .nav-menu { display: none; } }
 .nav-apply { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 700; letter-spacing: .08em;
   background: var(--ink); color: var(--white); border: 0; padding: 12px 22px; cursor: pointer;
   clip-path: var(--chamfer); transition: background .18s; }
 .nav-apply:hover { background: var(--orange); }
+
+/* 모바일 하단 탭 네비 */
+.nav-tabs { display: none; }
+@media (max-width: 880px) {
+  .nav-tabs { display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 55;
+    background: rgba(239,240,242,.96); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--gl); padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); gap: 4px; }
+  .nav-tab { flex: 1; min-width: 0; padding: 10px 2px; font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px; font-weight: 700; letter-spacing: .05em; background: none; border: 0;
+    color: var(--ink-2); cursor: pointer; transition: color .15s, background .15s; }
+  .nav-tab:hover, .nav-tab:active { color: var(--orange); }
+  .nav-tab.primary { background: var(--ink); color: var(--white); clip-path: var(--chamfer); }
+  .nav-tab.primary:hover, .nav-tab.primary:active { background: var(--orange); color: var(--white); }
+  .rg.on { padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
+}
 
 /* ── 인트로: 뉴럴 부팅 (인터랙티브 파티클 + 시네마틱 전환) ── */
 .intro { position: fixed; inset: 0; z-index: 90;
@@ -327,7 +355,7 @@ const STYLES = `
 @media (max-width: 820px) { .what-cell:not(:last-child)::after { content: '⌄'; right: auto; left: 50%; top: auto; bottom: -20px; transform: translateX(-50%); } }
 .what-cell small { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; font-weight: 700; letter-spacing: .24em; color: var(--orange); }
 .what-cell h3 { margin: 20px 0 12px; font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
-.what-cell p { margin: 0; font-size: 14.5px; line-height: 1.75; color: var(--ink-2); }
+.what-cell p { margin: 0; font-size: 14.5px; line-height: 1.75; color: var(--ink-2); min-height: 1.75em; }
 
 /* ── HOW: 다크 타임라인 ── */
 .how-sec { background:
@@ -350,7 +378,7 @@ const STYLES = `
   margin-bottom: 26px; -webkit-text-stroke: 0; }
 @media (max-width: 900px) { .how-no { position: absolute; left: 0; top: 0; margin: 0; } }
 .how-cell h3 { margin: 0 0 9px; font-size: 17.5px; font-weight: 800; }
-.how-cell p { margin: 0; font-size: 13.5px; line-height: 1.7; color: rgba(255,255,255,.58); }
+.how-cell p { margin: 0; font-size: 13.5px; line-height: 1.7; color: rgba(255,255,255,.58); min-height: 1.7em; }
 
 /* ── 후기 ── */
 .rev-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
@@ -540,7 +568,7 @@ const STYLES = `
 .scroll-top:hover { background: var(--orange); }
 .scroll-top:active { transform: translateY(1px); }
 .scroll-top:focus-visible { outline: 3px solid rgba(238,93,12,.55); outline-offset: 3px; }
-@media (max-width: 640px) { .scroll-top { right: 16px; bottom: 16px; width: 46px; height: 46px; } }
+@media (max-width: 880px) { .scroll-top { right: 16px; bottom: calc(68px + env(safe-area-inset-bottom, 0px)); width: 46px; height: 46px; } }
 `;
 
 
@@ -792,7 +820,11 @@ export default function LandingV12() {
       <div className="marquee" aria-hidden>
         <div className="marquee-in mono">
           {Array.from({ length: 4 }).map((_, i) => (
-            <span key={i}>NEW ERA OF NEO-HUMAN<em>■</em>DO:NEON PROJECT<em>■</em>신뢰 · 배신 · 생존<em>■</em>SEASON 0 NOW RUNNING<em>■</em></span>
+            <span key={i}>
+              {MARQUEE_ITEMS.map((text) => (
+                <span key={text}>{text}<em>■</em></span>
+              ))}
+            </span>
           ))}
         </div>
       </div>
@@ -809,7 +841,7 @@ export default function LandingV12() {
             <div className="what-cell" key={w.k}>
               <small className="mono">{w.k}</small>
               <h3>{w.t}</h3>
-              <p>{w.d}</p>
+              <p className="what-desc">{w.d || '\u00A0'}</p>
             </div>
           ))}
         </div>
@@ -824,7 +856,7 @@ export default function LandingV12() {
               <div className="how-cell" key={h.no}>
                 <div className="how-no mono">{h.no}</div>
                 <h3>{h.t}</h3>
-                <p>{h.d}</p>
+                <p className="how-desc">{h.d || '\u00A0'}</p>
               </div>
             ))}
           </div>
@@ -944,6 +976,21 @@ export default function LandingV12() {
       </footer>
 
       <ApplyFlowModal flow={applyFlow} />
+
+      {powered && (
+        <nav className="nav-tabs" aria-label="모바일 섹션 이동">
+          {NAV_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`nav-tab mono${tab.primary ? ' primary' : ''}`}
+              onClick={() => (tab.id === 'apply' ? openFlow() : goTo(tab.id))}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      )}
 
       {powered && (
         <button
