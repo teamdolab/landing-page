@@ -7,7 +7,7 @@ import { logAdminAction } from '@/lib/audit-log';
 const MASTER_TABLES: Record<string, string[]> = {
   stores: ['code', 'name', 'active'],
   seasons: ['code', 'name', 'active'],
-  game_types: ['code', 'name', 'game_kind', 'active'],
+  game_types: ['code', 'name', 'game_kind', 'active', 'intro_text', 'is_coming_soon'],
 };
 
 function pickAllowed(table: string, body: Record<string, unknown>): Record<string, unknown> {
