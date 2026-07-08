@@ -24,6 +24,7 @@ const ibmPlexSansKR = IBM_Plex_Sans_KR({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://do-lab.co.kr"),
   title: "DO:LAB - 소셜전략게임 연구소",
   description: "당신의 두뇌 ON. DO:NEON PROJECT",
   openGraph: {
@@ -33,11 +34,19 @@ export const metadata: Metadata = {
     siteName: "DO:LAB",
     locale: "ko_KR",
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "DO:LAB - 소셜전략게임 연구소",
     description: "당신의 두뇌 ON. DO:NEON PROJECT",
+    images: ["/og-image.png"],
   },
 };
 
